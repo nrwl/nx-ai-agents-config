@@ -5,7 +5,7 @@ description: |
 allowed-tools: Bash, Read, Glob, Grep, Edit, Write, mcp__nx-mcp__nx_generators, mcp__nx-mcp__nx_generator_schema
 ---
 
-# Run Nx Generator AHASDHASHD ASHD
+# Run Nx Generator
 
 Nx generators are powerful tools that scaffold code, create projects, add components, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.
 
