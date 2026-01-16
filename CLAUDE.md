@@ -11,3 +11,7 @@
 - If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
 
 <!-- nx configuration end-->
+
+# Self-healing CI
+
+- If the claude plugin verification task fails, fix it by running the build claude plugin script (`npx nx build-claude-plugin`)

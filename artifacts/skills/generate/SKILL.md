@@ -2,7 +2,6 @@
 name: generate
 description: |
   Generate code using nx generators. ALWAYS use this first when generating code with Nx instead of calling MCP tools and running nx generate immediately. This is used to scaffold code or transform existing code - for example creating libraries or apps, creating components, or anything else that is boilerplate code or automates repetitive tasks. Use this whenever someone wants to 'create', 'generate', 'add' artifacts of that kind in an nx repo.
-allowed-tools: Bash, Read, Glob, Grep, Edit, Write, mcp__nx-mcp__nx_generators, mcp__nx-mcp__nx_generator_schema
 ---
 
 # Run Nx Generator
@@ -77,6 +76,9 @@ Before generating, examine the target area of the codebase:
 - Identify patterns and conventions used in the repo
 - Note naming conventions, file structures, and configuration patterns
 - Try to match these patterns when configuring the generator
+
+For example, if similar libraries are using a specific test runner, build tool or linter, try to match that if possible.
+If components or other artifacts are built with a specific naming convention, try to match it.
 
 ### 4. Validate Required Options
 
