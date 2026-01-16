@@ -78,6 +78,9 @@ Before generating, examine the target area of the codebase:
 - Note naming conventions, file structures, and configuration patterns
 - Try to match these patterns when configuring the generator
 
+For example, if similar libraries are using a specific test runner, build tool or linter, try to match that if possible.
+If components or other artifacts are built with a specific naming convention, try to match it.
+
 ### 4. Validate Required Options
 
 Ensure all required options have values:
