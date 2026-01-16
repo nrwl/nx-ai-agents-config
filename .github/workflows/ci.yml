@@ -37,7 +37,7 @@ jobs:
         run: bash scripts/verify-plugin-build.sh
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      - run: npx nx-cloud record -- npx nx format:check  --base="remotes/origin/main"
+      - run: npx nx format:check  --base="remotes/origin/main"
       - run: npx nx run-many -t lint test build typecheck e2e-ci
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       # - run: npx nx fix-ci
