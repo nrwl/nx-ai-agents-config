@@ -17,5 +17,12 @@
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "nx": {
+    "targets": {
+      "build-claude-plugin": {
+        "command": "node scripts/build-claude-plugin.mjs"
+      }
+    }
+  }
 }
