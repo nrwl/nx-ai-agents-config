@@ -4,7 +4,7 @@ description: 'Polls Nx Cloud CI pipeline and self-healing status. Returns struct
 model: haiku
 tools:
   - Bash
-  - mcp__nx__ci_information
+  - mcp__nx-mcp__ci_information
 ---
 
 # Nx CI Monitor Subagent
