@@ -134,6 +134,7 @@ This means the expected CIPE was never created - CI likely failed before Nx task
    ```
 
 2. **If user configured auto-fix attempts** (e.g., `--auto-fix-workflow`):
+
    - Detect package manager: check for `pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`
    - Run install to update lockfile:
      ```bash
@@ -187,7 +188,8 @@ Task(
   agent: "nx-ci-monitor",
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
-           New-CIPE timeout: <new-cipe-timeout> minutes."
+           New-CIPE timeout: <new-cipe-timeout> minutes.
+           Verbosity: <verbosity>."
 )
 ```
 
@@ -199,6 +201,7 @@ Task(
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CIPE timeout: <new-cipe-timeout> minutes.
+           Verbosity: <verbosity>.
 
            WAIT MODE: A new CIPE should spawn. Ignore old CIPE until new one appears.
            Expected commit SHA: <expected_commit_sha>
@@ -285,54 +288,25 @@ Users can override default behaviors:
 
 ## Example Session
 
-### Example 1: Normal Flow with Self-Healing
+### Example 1: Normal Flow with Self-Healing (medium verbosity)
 
 ```
 [nx-ci-monitor] Starting CI monitor for branch 'feature/add-auth'
 [nx-ci-monitor] Config: max-cycles=5, timeout=120m, verbosity=medium
 
 [nx-ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] CIPE: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
+[CI Monitor] CIPE: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
+[CI Monitor] CIPE: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
 
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration 1 | Elapsed: 1m 30s
-[CI Monitor] CIPE Status:        IN_PROGRESS
-[CI Monitor] Self-Healing:       NOT_STARTED
-[CI Monitor] → CI pipeline running...
-[CI Monitor] ─────────────────────────────────────────────────────
-
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration 2 | Elapsed: 3m 00s
-[CI Monitor] CIPE Status:        FAILED
-[CI Monitor] Self-Healing:       IN_PROGRESS
-[CI Monitor] → CI failed. Self-healing generating fix...
-[CI Monitor] ─────────────────────────────────────────────────────
-
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration 3 | Elapsed: 5m 00s
-[CI Monitor] CIPE Status:        FAILED
-[CI Monitor] Self-Healing:       COMPLETED
-[CI Monitor] Verification:       COMPLETED
-[CI Monitor] → Fix ready! Verified successfully.
-[CI Monitor] ─────────────────────────────────────────────────────
-
-[nx-ci-monitor] Cycle 1 | Elapsed: 5m | CIPE: FAILED | Self-Healing: COMPLETED
-[nx-ci-monitor] Fix available! Verification: COMPLETED, Confidence: 85%
+[nx-ci-monitor] Fix available! Verification: COMPLETED
 [nx-ci-monitor] Applying fix via MCP...
 [nx-ci-monitor] Fix applied in CI. Waiting for new CIPE...
-[nx-ci-monitor] Tracking: previousCipeUrl=https://cloud.nx.app/cipes/abc123
 
 [nx-ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] New CIPE detected!
+[CI Monitor] CIPE: SUCCEEDED | Elapsed: 8m
 
-[CI Monitor] Waiting for new CIPE... (previous: https://cloud.nx.app/cipes/abc123)
-[CI Monitor] New CIPE detected! URL: https://cloud.nx.app/cipes/def456
-
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration 1 | Elapsed: 8m 00s
-[CI Monitor] CIPE Status:        SUCCEEDED
-[CI Monitor] → CI passed!
-[CI Monitor] ─────────────────────────────────────────────────────
-
-[nx-ci-monitor] Cycle 2 | Elapsed: 12m | CIPE: SUCCEEDED
 [nx-ci-monitor] CI passed successfully!
 
 [nx-ci-monitor] Summary:
@@ -342,57 +316,30 @@ Users can override default behaviors:
   - Result: SUCCESS
 ```
 
-### Example 2: Pre-CIPE Failure (Lockfile Outdated)
+### Example 2: Pre-CIPE Failure (medium verbosity)
 
 ```
 [nx-ci-monitor] Starting CI monitor for branch 'feature/add-products'
 [nx-ci-monitor] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
 
 [nx-ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration 1 | Elapsed: 2m 00s
-[CI Monitor] CIPE Status:        FAILED
-[CI Monitor] Self-Healing:       COMPLETED
-[CI Monitor] → Fix ready! Applying locally...
-[CI Monitor] ─────────────────────────────────────────────────────
+[CI Monitor] CIPE: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
 
 [nx-ci-monitor] Applying fix locally, enhancing, and pushing...
 [nx-ci-monitor] Committed: abc1234
-[nx-ci-monitor] Pushed to origin/feature/add-products
-[nx-ci-monitor] Tracking: expectedCommitSha=abc1234
 
 [nx-ci-monitor] Spawning subagent to poll CI status...
-
-[CI Monitor] Waiting for new CIPE... (expected SHA: abc1234, elapsed: 0m)
-[CI Monitor] Still seeing old CIPE (ignoring)
-[CI Monitor] Waiting for new CIPE... (expected SHA: abc1234, elapsed: 5m)
-[CI Monitor] Still seeing old CIPE (ignoring)
-[CI Monitor] Waiting for new CIPE... (expected SHA: abc1234, elapsed: 15m)
-[CI Monitor] Still seeing old CIPE (ignoring)
-[CI Monitor] Waiting for new CIPE... (expected SHA: abc1234, elapsed: 30m)
-[CI Monitor] ⚠️  New-CIPE timeout reached (30 min). Returning no_new_cipe.
+[CI Monitor] Waiting for new CIPE... (expected SHA: abc1234)
+[CI Monitor] ⚠️  New-CIPE timeout (30 min). Returning no_new_cipe.
 
 [nx-ci-monitor] Status: no_new_cipe
-[nx-ci-monitor] Expected CIPE for commit abc1234 was not created.
-[nx-ci-monitor] CI workflow likely failed before Nx tasks could run.
 [nx-ci-monitor] --auto-fix-workflow enabled. Attempting lockfile update...
-[nx-ci-monitor] Running: pnpm install
-[nx-ci-monitor] Lockfile updated. Committing and pushing...
-[nx-ci-monitor] Committed: def5678
-[nx-ci-monitor] Tracking: expectedCommitSha=def5678
+[nx-ci-monitor] Lockfile updated. Committed: def5678
 
 [nx-ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] New CIPE detected!
+[CI Monitor] CIPE: SUCCEEDED | Elapsed: 18m
 
-[CI Monitor] Waiting for new CIPE... (expected SHA: def5678, elapsed: 0m)
-[CI Monitor] New CIPE detected! URL: https://cloud.nx.app/cipes/ghi789, SHA: def5678
-
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration 1 | Elapsed: 18m 00s
-[CI Monitor] CIPE Status:        SUCCEEDED
-[CI Monitor] → CI passed!
-[CI Monitor] ─────────────────────────────────────────────────────
-
-[nx-ci-monitor] Cycle 3 | Elapsed: 22m | CIPE: SUCCEEDED
 [nx-ci-monitor] CI passed successfully!
 
 [nx-ci-monitor] Summary:
