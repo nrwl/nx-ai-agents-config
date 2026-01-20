@@ -64,7 +64,8 @@ When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect wheth
   "suggestedFixReasoning": "string | null",
   "suggestedFixDescription": "string | null",
   "suggestedFix": "string | null",
-  "shortLink": "string | null"
+  "shortLink": "string | null",
+  "couldAutoApplyTasks": "boolean | null"
 }
 ```
 
@@ -192,6 +193,12 @@ Continue polling (with backoff) if ANY of these conditions are true:
 | `failureClassification == 'FLAKY_TASK'` | Auto-rerun in progress             |
 | `userAction == 'APPLIED_AUTOMATICALLY'` | New CIPE spawning after auto-apply |
 
+When `couldAutoApplyTasks == true`:
+
+- `verificationStatus` = `NOT_STARTED`, `IN_PROGRESS` → keep polling (verification still in progress)
+- `verificationStatus` = `COMPLETED` → return `fix_auto_applying` (auto-apply will happen, main agent spawns wait mode subagent)
+- `verificationStatus` = `FAILED`, `NOT_EXECUTABLE` → return `fix_available` (auto-apply won't happen, needs manual action)
+
 ### Exponential Backoff
 
 Between polls, wait with exponential backoff:
@@ -215,17 +222,18 @@ sleep 120  # Third and subsequent waits (capped)
 
 Return immediately with structured state if ANY of these conditions are true:
 
-| Status              | Condition                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------- |
-| `ci_success`        | `cipeStatus == 'SUCCEEDED'`                                                                             |
-| `fix_available`     | `selfHealingStatus == 'COMPLETED'` AND `suggestedFix != null`                                           |
-| `fix_failed`        | `selfHealingStatus == 'FAILED'`                                                                         |
-| `environment_issue` | `failureClassification == 'ENVIRONMENT_STATE'`                                                          |
-| `no_fix`            | `cipeStatus == 'FAILED'` AND (`selfHealingEnabled == false` OR `selfHealingStatus == 'NOT_EXECUTABLE'`) |
-| `no_new_cipe`       | `expectedCommitSha` or `previousCipeUrl` provided, but no new CIPE detected after 30 min                |
-| `polling_timeout`   | Subagent has been polling for > configured timeout (default 60 min)                                     |
-| `cipe_canceled`     | `cipeStatus == 'CANCELED'`                                                                              |
-| `cipe_timed_out`    | `cipeStatus == 'TIMED_OUT'`                                                                             |
+| Status              | Condition                                                                                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci_success`        | `cipeStatus == 'SUCCEEDED'`                                                                                                                               |
+| `fix_auto_applying` | `selfHealingStatus == 'COMPLETED'` AND `couldAutoApplyTasks == true` AND `verificationStatus == 'COMPLETED'`                                              |
+| `fix_available`     | `selfHealingStatus == 'COMPLETED'` AND `suggestedFix != null` AND (`couldAutoApplyTasks != true` OR `verificationStatus` in (`FAILED`, `NOT_EXECUTABLE`)) |
+| `fix_failed`        | `selfHealingStatus == 'FAILED'`                                                                                                                           |
+| `environment_issue` | `failureClassification == 'ENVIRONMENT_STATE'`                                                                                                            |
+| `no_fix`            | `cipeStatus == 'FAILED'` AND (`selfHealingEnabled == false` OR `selfHealingStatus == 'NOT_EXECUTABLE'`)                                                   |
+| `no_new_cipe`       | `expectedCommitSha` or `previousCipeUrl` provided, but no new CIPE detected after 30 min                                                                  |
+| `polling_timeout`   | Subagent has been polling for > configured timeout (default 60 min)                                                                                       |
+| `cipe_canceled`     | `cipeStatus == 'CANCELED'`                                                                                                                                |
+| `cipe_timed_out`    | `cipeStatus == 'TIMED_OUT'`                                                                                                                               |
 
 ## Subagent Timeout
 
