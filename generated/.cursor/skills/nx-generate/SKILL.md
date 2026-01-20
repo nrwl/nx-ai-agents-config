@@ -1,8 +1,3 @@
----
-name: nx-generate
-description: Generate code using nx generators. USE WHEN scaffolding code or transforming existing code - for example creating libraries or apps, creating components, or anything else that is boilerplate code or automates repetitive tasks. ALWAYS use this first when generating code with Nx instead of calling MCP tools and running nx generate immediately.
----
-
 # Run Nx Generator
 
 Nx generators are powerful tools that scaffold code, create projects, add components, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.
@@ -19,7 +14,12 @@ This skill applies when the user wants to:
 
 ### Step 1: List Available Generators
 
-Use `mcp__nx-mcp__nx_generators` to get a list of all available generators in the workspace. This includes:
+Use the Nx CLI to discover available generators:
+
+- List all generators for a plugin: `npx nx list @nx/react`
+- View available plugins: `npx nx list`
+
+This includes:
 
 - Plugin generators (e.g., `@nx/react:component`, `@nx/js:library`)
 - Local workspace generators (defined in the repo's own plugins)
@@ -42,7 +42,13 @@ Before running any generator, complete these steps:
 
 ### 1. Fetch Generator Schema
 
-Use `mcp__nx-mcp__nx_generator_schema` to understand all available options. Pay attention to:
+Use the `--help` flag to understand all available options:
+
+```bash
+npx nx g @nx/react:component --help
+```
+
+Pay attention to:
 
 - Required options that must be provided
 - Optional options that may be relevant to the user's request
