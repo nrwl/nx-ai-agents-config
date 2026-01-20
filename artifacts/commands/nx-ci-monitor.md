@@ -59,7 +59,8 @@ The subagent returns with one of the following statuses. This table defines the 
 | Status                       | Default Behavior                                                                                                                                                                                                                                                                                 |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ci_success`                 | Exit with success. Log "CI passed successfully!"                                                                                                                                                                                                                                                 |
-| `fix_available` (verified)   | Apply fix via MCP (`update_self_healing_fix` with `action: "apply"`). Self-healing agent applies in CI, new CIPE spawns automatically. Loop to poll for new CIPE.                                                                                                                                |
+| `fix_auto_applying`          | Fix will be auto-applied by self-healing. Do NOT call MCP. Record `last_cipe_url`, spawn new subagent in wait mode to poll for new CIPE.                                                                                                                                                         |
+| `fix_available` (verified)   | Apply fix via MCP (`update_self_healing_fix` with `action: "APPLY"`), then loop to poll for new CIPE.                                                                                                                                                                                            |
 | `fix_available` (unverified) | Analyze fix content (`suggestedFix`, `suggestedFixReasoning`, `taskOutputSummary`). If fix looks correct → apply via MCP. If fix needs enhancement → apply locally with `nx apply-locally <shortLink>`, enhance, commit, push. If fix is wrong → reject via MCP, fix from scratch, commit, push. |
 | `fix_failed`                 | Self-healing failed to generate fix. Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.                                                                                                                                             |
 | `environment_issue`          | Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. New CIPE spawns automatically. Loop to poll for new CIPE.                                                                                                                                |
@@ -74,6 +75,15 @@ The subagent returns with one of the following statuses. This table defines the 
 
 - **Verified** (`verificationStatus == 'COMPLETED'`): Self-healing agent has verified the fix works. Safe to auto-apply.
 - **Unverified** (`verificationStatus != 'COMPLETED'`): Fix not verified. Analyze before deciding.
+
+### Auto-Apply Eligibility
+
+The `couldAutoApplyTasks` field indicates whether the fix is eligible for automatic application:
+
+- **`true`**: Fix is eligible for auto-apply. Subagent keeps polling while verification is in progress. Returns `fix_auto_applying` when verified, or `fix_available` if verification fails.
+- **`false`** or **`null`**: Fix requires manual action (apply via MCP, apply locally, or reject)
+
+**Key point**: When subagent returns `fix_auto_applying`, do NOT call MCP to apply - self-healing handles it. Just spawn a new subagent in wait mode.
 
 ### Apply vs Reject vs Apply Locally
 
@@ -226,6 +236,7 @@ After actions that should trigger a new CIPE, record state before looping:
 
 | Action                        | What to Track                                 | Subagent Mode |
 | ----------------------------- | --------------------------------------------- | ------------- |
+| Fix auto-applying             | `last_cipe_url = current cipeUrl`             | Wait mode     |
 | Apply via MCP                 | `last_cipe_url = current cipeUrl`             | Wait mode     |
 | Apply locally + push          | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
 | Reject + fix + push           | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
