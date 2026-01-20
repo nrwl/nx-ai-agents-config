@@ -16,8 +16,8 @@ This skill applies when the user wants to:
 
 Use the Nx CLI to discover available generators:
 
-- List all generators for a plugin: `pnpm nx list @nx/react`
-- View available plugins: `pnpm nx list`
+- List all generators for a plugin: `npx nx list @nx/react`
+- View available plugins: `npx nx list`
 
 This includes:
 
@@ -45,7 +45,7 @@ Before running any generator, complete these steps:
 Use the `--help` flag to understand all available options:
 
 ```bash
-pnpm nx g @nx/react:component --help
+npx nx g @nx/react:component --help
 ```
 
 Pay attention to:
