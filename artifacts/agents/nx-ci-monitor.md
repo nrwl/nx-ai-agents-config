@@ -55,6 +55,7 @@ When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect wheth
   "branch": "string",
   "commitSha": "string | null",
   "failedTaskIds": "string[]",
+  "verifiedTaskIds": "string[]",
   "selfHealingEnabled": "boolean",
   "selfHealingStatus": "NOT_STARTED | IN_PROGRESS | COMPLETED | FAILED | NOT_EXECUTABLE | null",
   "verificationStatus": "NOT_STARTED | IN_PROGRESS | COMPLETED | FAILED | NOT_EXECUTABLE | null",
@@ -256,6 +257,7 @@ When returning to the main agent, provide a structured response:
 - **Branch:** <branch>
 - **Commit:** <commitSha>
 - **Failed Tasks:** <failedTaskIds>
+- **Verified Tasks:** <verifiedTaskIds>
 
 ### Self-Healing Details
 - **Enabled:** <selfHealingEnabled>
