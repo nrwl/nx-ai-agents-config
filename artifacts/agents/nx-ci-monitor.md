@@ -113,11 +113,11 @@ For `no_new_cipe`: also include `expectedCommitSha`, `previousCipeUrl`, last see
 
 ## Verbosity
 
-| Level     | Output                                                                                 |
-| --------- | -------------------------------------------------------------------------------------- |
-| `minimal` | Final result only                                                                      |
-| `medium`  | State changes: `[CI Monitor] CIPE: FAILED \| Self-Healing: IN_PROGRESS \| Elapsed: 4m` |
-| `verbose` | Every poll with full status box                                                        |
+| Level     | Output                                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
+| `minimal` | Final result only                                                                    |
+| `medium`  | State changes: `[CI Monitor] CI: FAILED \| Self-Healing: IN_PROGRESS \| Elapsed: 4m` |
+| `verbose` | Every poll with full status box                                                      |
 
 ## Notes
 
