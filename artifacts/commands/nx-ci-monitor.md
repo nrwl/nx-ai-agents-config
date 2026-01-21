@@ -72,7 +72,7 @@ Compare `failedTaskIds` vs `verifiedTaskIds`:
 
 - Verified = in both arrays
 - Unverified = in `failedTaskIds` only
-- E2E = unverified with "e2e" in target (`<project>:<target>:<config>`)
+- E2E = unverified with "e2e" in target (`<project>:<target>` or `<project>:<target>:<config>`)
 - Verifiable = unverified, non-e2e
 
 **Path:**
@@ -86,9 +86,11 @@ Compare `failedTaskIds` vs `verifiedTaskIds`:
 1. Detect PM: `pnpm-lock.yaml` → `pnpm nx`, `yarn.lock` → `yarn nx`, else `npx nx`
 2. Spawn `general` subagents to run `<pm> nx run <taskId>` in parallel
 3. All pass → Apply via MCP
-4. Any fail → `nx apply-locally <shortLink>`, enhance, verify, commit, push
+4. Any fail → `nx apply-locally <shortLink>`, enhance, verify again
+   - Still failing → increment `local_verify_count`, loop back to enhance
+   - Passing → commit, push
 
-**Attempt Tracking:**
+**Attempt Tracking** (wraps step 4):
 
 - Increment `local_verify_count` after each enhance cycle
 - If >= `--local-verify-attempts` (default: 3): commit current state, push to CI as final judge
@@ -135,7 +137,7 @@ Task(agent: "nx-ci-monitor", prompt: "Branch: <branch>. Timeout: <timeout>m. Ver
 - MCP actions → `last_cipe_url = cipeUrl`
 - Local push → `expected_commit_sha = $(git rev-parse HEAD)`
 
-**Progress:** State changed → reset `no_progress_count`. Unchanged → increment.
+**Progress:** State changed → reset `no_progress_count`. Unchanged → increment. New CI attempt → reset `local_verify_count`.
 
 ## Error Handling
 
@@ -149,8 +151,8 @@ Task(agent: "nx-ci-monitor", prompt: "Branch: <branch>. Timeout: <timeout>m. Ver
 
 ```
 [nx-ci-monitor] Monitoring branch 'feature/add-auth'...
-[CI Monitor] CIPE: IN_PROGRESS → FAILED | Self-Healing: COMPLETED (5m)
+[CI Monitor] CI: IN_PROGRESS → FAILED | Self-Healing: COMPLETED (5m)
 [nx-ci-monitor] Fix available, applying via MCP...
-[CI Monitor] New CIPE: SUCCEEDED (8m)
+[CI Monitor] New CI attempt: SUCCEEDED (8m)
 [nx-ci-monitor] Done. Cycles: 2, Time: 12m, Result: SUCCESS
 ```

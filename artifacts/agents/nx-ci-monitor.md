@@ -11,6 +11,14 @@ tools:
 
 Poll CIPE status, report to main agent. Do NOT make apply/reject decisions.
 
+**Responsibilities:**
+
+- Poll via `ci_information` tool
+- Exponential backoff between polls
+- Return structured state when actionable
+- Track iterations + elapsed time
+- Output per verbosity level
+
 ## Input Parameters
 
 | Parameter           | Description                                              |
@@ -113,11 +121,11 @@ For `no_new_cipe`: also include `expectedCommitSha`, `previousCipeUrl`, last see
 
 ## Verbosity
 
-| Level     | Output                                                                                 |
-| --------- | -------------------------------------------------------------------------------------- |
-| `minimal` | Final result only                                                                      |
-| `medium`  | State changes: `[CI Monitor] CIPE: FAILED \| Self-Healing: IN_PROGRESS \| Elapsed: 4m` |
-| `verbose` | Every poll with full status box                                                        |
+| Level     | Output                                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
+| `minimal` | Final result only                                                                    |
+| `medium`  | State changes: `[CI Monitor] CI: FAILED \| Self-Healing: IN_PROGRESS \| Elapsed: 4m` |
+| `verbose` | Every poll with full status box                                                      |
 
 ## Notes
 
