@@ -36,13 +36,13 @@ Based on the user's request, identify which generator(s) could fulfill their nee
 
 It's possible that the user request is something that no Nx generator exists for whatsoever. In this case, you can stop using this skill and try to help the user another way. HOWEVER, the burden of proof for this is high. Before aborting, carefully consider each and every generator that's available. Look into details for any that could be related in any way before making this decision.
 
-## Pre-Execution Checklist
+## Pre-Execution Checklist (MANDATORY)
 
-Before running any generator, complete these steps:
+**CRITICAL: You MUST complete ALL of these steps before running any generator. Do NOT skip steps 1 and 2. Running a generator without reading the schema and source code first will lead to incorrect usage and wasted effort.**
 
-### 1. Fetch Generator Schema
+### 1. Fetch Generator Schema (REQUIRED - DO NOT SKIP)
 
-Use the `--help` flag to understand all available options:
+**You MUST run the `--help` command before running any generator.** This is non-negotiable.
 
 ```bash
 npx nx g @nx/react:component --help
@@ -54,7 +54,9 @@ Pay attention to:
 - Optional options that may be relevant to the user's request
 - Default values that might need to be overridden
 
-### 2. Read Generator Source Code
+### 2. Read Generator Source Code (REQUIRED - DO NOT SKIP)
+
+**You MUST read the generator's source code before running it.** Do not skip this step.
 
 Understanding what the generator actually does helps you:
 
@@ -62,11 +64,13 @@ Understanding what the generator actually does helps you:
 - Understand any side effects (updating configs, installing deps, etc.)
 - Identify options that might not be obvious from the schema
 
-To find generator source code:
+**How to find generator source code:**
 
 - For plugin generators: Use `node -e "console.log(require.resolve('@nx/<plugin>/generators.json'));"` to find the generators.json, then locate the source from there
 - If that fails, read directly from `node_modules/<plugin>/generators.json`
 - For local generators: They are typically in `tools/generators/` or a local plugin directory. You can search the repo for the generator name to find it.
+
+**Do NOT proceed to step 3 until you have actually read the generator source files.**
 
 ### 2.5 Reevaluate if the generator is right
 
