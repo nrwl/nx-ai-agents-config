@@ -2,9 +2,6 @@
 name: nx-ci-monitor
 description: 'Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /nx-ci-monitor command to monitor CI Attempt status.'
 model: haiku
-tools:
-  - Bash
-  - mcp__nx__ci_information
 ---
 
 # Nx CI Monitor Subagent
