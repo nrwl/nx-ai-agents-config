@@ -1,6 +1,5 @@
 ---
 description: Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /nx-ci-monitor command to monitor CIPE status.
-model: haiku
 ---
 # Nx CI Monitor Subagent
 

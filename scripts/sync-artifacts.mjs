@@ -198,7 +198,6 @@ function writeOpenCodeAgent(destPath, content, meta) {
   const frontmatter = {
     description: meta.description || '',
   };
-  if (meta.model) frontmatter.model = meta.model;
 
   const output = serializeYamlFrontmatter(frontmatter) + content;
   writeFileSync(destPath, output);
