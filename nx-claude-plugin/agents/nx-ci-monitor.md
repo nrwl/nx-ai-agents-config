@@ -31,7 +31,36 @@ Poll CIPE status, report to main agent. Do NOT make apply/reject decisions.
 
 If `expectedCommitSha` or `previousCipeUrl` provided → detect new CIPE before processing.
 
-## `ci_information` Tool Output
+## `ci_information` Tool
+
+### Parameters
+
+| Parameter | Description                                                                          |
+| --------- | ------------------------------------------------------------------------------------ |
+| `branch`  | Branch name (auto-detects if omitted)                                                |
+| `select`  | Comma-separated fields. Without: full overview. With: JSON of requested fields only. |
+
+### Field Categories
+
+**Minimal** (wait mode only):
+
+```
+cipeUrl,commitSha
+```
+
+**Standard** (normal polling):
+
+```
+cipeStatus,cipeUrl,branch,commitSha,failedTaskIds,verifiedTaskIds,selfHealingEnabled,selfHealingStatus,verificationStatus,userAction,failureClassification,shortLink,couldAutoApplyTasks,confidenceScore,suggestedFixDescription
+```
+
+**Expensive** (never auto-fetch):
+
+```
+suggestedFix,suggestedFixReasoning,taskOutputSummary,remoteTaskSummary,localTaskSummary
+```
+
+### Output Fields
 
 ```json
 {
@@ -46,12 +75,10 @@ If `expectedCommitSha` or `previousCipeUrl` provided → detect new CIPE before 
   "verificationStatus": "NOT_STARTED | IN_PROGRESS | COMPLETED | FAILED | NOT_EXECUTABLE | null",
   "userAction": "NONE | APPLIED | REJECTED | APPLIED_LOCALLY | APPLIED_AUTOMATICALLY | null",
   "failureClassification": "string | null",
-  "taskOutputSummary": "string | null",
-  "suggestedFixReasoning": "string | null",
-  "suggestedFixDescription": "string | null",
-  "suggestedFix": "string | null",
   "shortLink": "string | null",
-  "couldAutoApplyTasks": "boolean | null"
+  "couldAutoApplyTasks": "boolean | null",
+  "confidenceScore": "number | null",
+  "suggestedFixDescription": "string | null"
 }
 ```
 
@@ -70,19 +97,35 @@ No `expectedCommitSha`/`previousCipeUrl` → normal polling.
 
 **CRITICAL**: Ignore old CIPE entirely. Do NOT return actionable states from stale data.
 
-**Wait Mode:**
+**Wait Mode Polling:**
+
+```
+ci_information({ branch, select: "cipeUrl,commitSha" })
+```
 
 1. Start new-CIPE timeout (default: 30 min)
-2. Each poll: check if `cipeUrl` differs from `previousCipeUrl` OR `commitSha` matches `expectedCommitSha`
-3. Old CIPE → ignore, poll again
-4. New CIPE → switch to normal mode
-5. Timeout → return `no_new_cipe`
+2. Poll with **minimal** fields only
+3. Check: `cipeUrl != previousCipeUrl` OR `commitSha == expectedCommitSha`
+4. Old CIPE → sleep, poll again with minimal fields
+5. New CIPE detected → switch to standard fields
+6. Timeout → return `no_new_cipe`
 
-**Why**: Stale CIPE data pollutes main agent's context. Keep it in subagent until new CIPE appears.
+**Why minimal fields**: Stale data wastes context. Fetch only what's needed to detect change.
 
 ## Polling Loop
 
-Call `ci_information({ branch })`. In wait mode, ignore old CIPE. In normal mode, evaluate response.
+### Field Selection
+
+| Mode                           | `select` value  |
+| ------------------------------ | --------------- |
+| Wait mode (detecting new CIPE) | Minimal fields  |
+| Normal mode / Post-detection   | Standard fields |
+
+```
+ci_information({ branch, select: "<field set>" })
+```
+
+Re-fetch each iteration. Never fetch expensive fields.
 
 ### Keep Polling When
 
@@ -98,26 +141,34 @@ Call `ci_information({ branch })`. In wait mode, ignore old CIPE. In normal mode
 
 60s → 90s → 120s (cap). Reset on significant state change.
 
+**CRITICAL**: `sleep` must block. Background commands orphan and pollute output.
+
 ### Return Statuses
 
-| Status              | Condition                                                                                          |
-| ------------------- | -------------------------------------------------------------------------------------------------- |
-| `ci_success`        | `cipeStatus` = `SUCCEEDED`                                                                         |
-| `fix_auto_applying` | `selfHealingStatus` = `COMPLETED` + `couldAutoApplyTasks` + `verificationStatus` = `COMPLETED`     |
-| `fix_available`     | `selfHealingStatus` = `COMPLETED` + `suggestedFix` exists + (no auto-apply OR verification failed) |
-| `fix_failed`        | `selfHealingStatus` = `FAILED`                                                                     |
-| `environment_issue` | `failureClassification` = `ENVIRONMENT_STATE`                                                      |
-| `no_fix`            | `cipeStatus` = `FAILED` + (self-healing disabled OR `NOT_EXECUTABLE`)                              |
-| `no_new_cipe`       | Expected CIPE not found after 30 min                                                               |
-| `polling_timeout`   | Polling > 60 min (configurable)                                                                    |
-| `cipe_canceled`     | `cipeStatus` = `CANCELED`                                                                          |
-| `cipe_timed_out`    | `cipeStatus` = `TIMED_OUT`                                                                         |
+| Status              | Condition                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `ci_success`        | `cipeStatus` = `SUCCEEDED`                                                                      |
+| `fix_auto_applying` | `selfHealingStatus` = `COMPLETED` + `couldAutoApplyTasks` + `verificationStatus` = `COMPLETED`  |
+| `fix_available`     | `selfHealingStatus` = `COMPLETED` + `shortLink` exists + (no auto-apply OR verification failed) |
+| `fix_failed`        | `selfHealingStatus` = `FAILED`                                                                  |
+| `environment_issue` | `failureClassification` = `ENVIRONMENT_STATE`                                                   |
+| `no_fix`            | `cipeStatus` = `FAILED` + (self-healing disabled OR `NOT_EXECUTABLE`)                           |
+| `no_new_cipe`       | Expected CIPE not found after 30 min                                                            |
+| `polling_timeout`   | Polling > 60 min (configurable)                                                                 |
+| `cipe_canceled`     | `cipeStatus` = `CANCELED`                                                                       |
+| `cipe_timed_out`    | `cipeStatus` = `TIMED_OUT`                                                                      |
 
 ## Return Format
 
-Return: `status`, `iterations`, `elapsed` + all `ci_information` tool output fields.
+Return: `status`, `iterations`, `elapsed` + standard fields from `ci_information`.
 
-For `no_new_cipe`: also include `expectedCommitSha`, `previousCipeUrl`, last seen CIPE state.
+Compute and include:
+
+- `selfHealingUrl`: `${cipeUrl}/self-healing` (user-facing link)
+
+For `no_new_cipe`: also include `expectedCommitSha`, `previousCipeUrl`.
+
+**Note**: Expensive fields not returned. Main agent can fetch on-demand or direct user to `selfHealingUrl`.
 
 ## Verbosity
 
@@ -132,3 +183,4 @@ For `no_new_cipe`: also include `expectedCommitSha`, `previousCipeUrl`, last see
 - No apply/reject decisions, no git ops - poll and report only
 - Error from `ci_information` → retry (5 consecutive failures → return `error`)
 - Track new-CIPE timeout (30 min) separately from main polling timeout (60 min)
+- Never background commands - sleeps must block

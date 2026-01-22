@@ -108,7 +108,7 @@ When `verificationStatus` = `FAILED`/`NOT_EXECUTABLE` or no auto-apply:
 | Action        | Command                                                                                  |
 | ------------- | ---------------------------------------------------------------------------------------- |
 | Apply via MCP | `update_self_healing_fix({ shortLink, action: "APPLY" })`                                |
-| Apply locally | `nx apply-locally <shortLink>`                                                           |
+| Apply locally | `nx apply-locally <shortLink>` (fallback: `nx-cloud apply-locally <shortLink>`)          |
 | Reject        | `update_self_healing_fix({ shortLink, action: "REJECT" })`                               |
 | Commit + push | `git add -A && git commit -m "fix: ..." && git push origin $(git branch --show-current)` |
 
@@ -132,6 +132,14 @@ Task(agent: "nx-ci-monitor", prompt: "Branch: <branch>. Timeout: <timeout>m. Ver
 [If wait mode:] WAIT MODE. Expected SHA: <sha>. Previous CIPE: <url>")
 ```
 
+**Subagent returns:** Standard fields only + computed `selfHealingUrl`. No expensive fields (`suggestedFix`, `suggestedFixReasoning`, task outputs).
+
+If expensive fields needed (rare):
+
+```
+ci_information({ branch, select: "suggestedFix" })
+```
+
 **On response:** Check status → execute action → if looping, track state for wait mode:
 
 - MCP actions → `last_cipe_url = cipeUrl`
@@ -139,20 +147,30 @@ Task(agent: "nx-ci-monitor", prompt: "Branch: <branch>. Timeout: <timeout>m. Ver
 
 **Progress:** State changed → reset `no_progress_count`. Unchanged → increment. New CI attempt → reset `local_verify_count`.
 
+## User Reporting
+
+When reporting fix status:
+
+- Brief: use `suggestedFixDescription`
+- Details: link to `selfHealingUrl` ("View details: <url>")
+- Do NOT dump diff or reasoning content
+
 ## Error Handling
 
-| Error                    | Action                           |
-| ------------------------ | -------------------------------- |
-| Git conflict             | Report, exit                     |
-| `nx apply-locally` fails | Report, try manual patch or exit |
-| MCP/subagent error       | Retry once, then report          |
+| Error                    | Action                                                  |
+| ------------------------ | ------------------------------------------------------- |
+| Git conflict             | Report, exit                                            |
+| `nx apply-locally` fails | Try `nx-cloud apply-locally`, else manual patch or exit |
+| MCP/subagent error       | Retry once, then report                                 |
 
 ## Example Flow
 
 ```
 [nx-ci-monitor] Monitoring branch 'feature/add-auth'...
 [CI Monitor] CI: IN_PROGRESS → FAILED | Self-Healing: COMPLETED (5m)
-[nx-ci-monitor] Fix available, applying via MCP...
+[nx-ci-monitor] Fix available: "Update test assertion to match component output"
+  View details: https://cloud.nx.app/cipes/.../self-healing
+  Applying via MCP...
 [CI Monitor] New CI attempt: SUCCEEDED (8m)
 [nx-ci-monitor] Done. Cycles: 2, Time: 12m, Result: SUCCESS
 ```
