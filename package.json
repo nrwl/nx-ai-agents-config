@@ -4,7 +4,9 @@
   "license": "MIT",
   "scripts": {},
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "js-yaml": "^4.1.1"
+  },
   "devDependencies": {
     "@nx/js": "22.3.3",
     "@swc-node/register": "~1.9.1",
@@ -20,8 +22,8 @@
   ],
   "nx": {
     "targets": {
-      "build-claude-plugin": {
-        "command": "node scripts/build-claude-plugin.mjs"
+      "sync-artifacts": {
+        "command": "node scripts/sync-artifacts.mjs"
       }
     }
   }

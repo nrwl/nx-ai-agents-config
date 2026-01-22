@@ -1,3 +1,7 @@
+---
+description: Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically
+argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
+---
 # Nx CI Monitor Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `nx-ci-monitor` subagent to poll CI status and make decisions based on the results.

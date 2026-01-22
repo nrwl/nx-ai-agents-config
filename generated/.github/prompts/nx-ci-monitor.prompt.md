@@ -1,18 +1,7 @@
 ---
-description: 'Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically'
+description: Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically
 argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Task
-  - mcp__nx__ci_information
-  - mcp__nx__update_self_healing_fix
 ---
-
 # Nx CI Monitor Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `nx-ci-monitor` subagent to poll CI status and make decisions based on the results.
@@ -25,25 +14,24 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 ## User Instructions
 
-$ARGUMENTS
+${input:args}
 
 **Important:** If user provides specific instructions, respect them over default behaviors described below.
 
 ## Configuration Defaults
 
-| Setting                   | Default       | Description                                                         |
-| ------------------------- | ------------- | ------------------------------------------------------------------- |
-| `--max-cycles`            | 10            | Maximum CIPE cycles before timeout                                  |
-| `--timeout`               | 120           | Maximum duration in minutes                                         |
-| `--verbosity`             | medium        | Output level: minimal, medium, verbose                              |
-| `--branch`                | (auto-detect) | Branch to monitor                                                   |
-| `--subagent-timeout`      | 60            | Subagent polling timeout in minutes                                 |
-| `--fresh`                 | false         | Ignore previous context, start fresh                                |
-| `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CIPE failures (e.g., lockfile updates) |
-| `--new-cipe-timeout`      | 30            | Minutes to wait for new CIPE after action                           |
-| `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI        |
+| Setting               | Default       | Description                                                         |
+| --------------------- | ------------- | ------------------------------------------------------------------- |
+| `--max-cycles`        | 10            | Maximum CIPE cycles before timeout                                  |
+| `--timeout`           | 120           | Maximum duration in minutes                                         |
+| `--verbosity`         | medium        | Output level: minimal, medium, verbose                              |
+| `--branch`            | (auto-detect) | Branch to monitor                                                   |
+| `--subagent-timeout`  | 60            | Subagent polling timeout in minutes                                 |
+| `--fresh`             | false         | Ignore previous context, start fresh                                |
+| `--auto-fix-workflow` | false         | Attempt common fixes for pre-CIPE failures (e.g., lockfile updates) |
+| `--new-cipe-timeout`  | 30            | Minutes to wait for new CIPE after action                           |
 
-Parse any overrides from `$ARGUMENTS` and merge with defaults.
+Parse any overrides from `${input:args}` and merge with defaults.
 
 ## Session Context Behavior
 
@@ -57,105 +45,25 @@ Parse any overrides from `$ARGUMENTS` and merge with defaults.
 
 The subagent returns with one of the following statuses. This table defines the **default behavior** for each status. User instructions can override any of these.
 
-| Status              | Default Behavior                                                                                                                                                  |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci_success`        | Exit with success. Log "CI passed successfully!"                                                                                                                  |
-| `fix_auto_applying` | Fix will be auto-applied by self-healing. Do NOT call MCP. Record `last_cipe_url`, spawn new subagent in wait mode to poll for new CIPE.                          |
-| `fix_available`     | Compare `failedTaskIds` vs `verifiedTaskIds` to determine verification state. See **Fix Available Decision Logic** section below.                                 |
-| `fix_failed`        | Self-healing failed to generate fix. Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.              |
-| `environment_issue` | Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. New CIPE spawns automatically. Loop to poll for new CIPE. |
-| `no_fix`            | CI failed, no fix available (self-healing disabled or not executable). Attempt local fix if possible. Otherwise exit with failure.                                |
-| `no_new_cipe`       | Expected CIPE never spawned (CI workflow likely failed before Nx tasks). Report to user, attempt common fixes if configured, or exit with guidance.               |
-| `polling_timeout`   | Subagent polling timeout reached. Exit with timeout.                                                                                                              |
-| `cipe_canceled`     | CIPE was canceled. Exit with canceled status.                                                                                                                     |
-| `cipe_timed_out`    | CIPE timed out. Exit with timeout status.                                                                                                                         |
-| `error`             | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise wait 60s and loop.                                                                  |
+| Status                       | Default Behavior                                                                                                                                                                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ci_success`                 | Exit with success. Log "CI passed successfully!"                                                                                                                                                                                                                                                 |
+| `fix_auto_applying`          | Fix will be auto-applied by self-healing. Do NOT call MCP. Record `last_cipe_url`, spawn new subagent in wait mode to poll for new CIPE.                                                                                                                                                         |
+| `fix_available` (verified)   | Apply fix via MCP (`update_self_healing_fix` with `action: "APPLY"`), then loop to poll for new CIPE.                                                                                                                                                                                            |
+| `fix_available` (unverified) | Analyze fix content (`suggestedFix`, `suggestedFixReasoning`, `taskOutputSummary`). If fix looks correct → apply via MCP. If fix needs enhancement → apply locally with `nx apply-locally <shortLink>`, enhance, commit, push. If fix is wrong → reject via MCP, fix from scratch, commit, push. |
+| `fix_failed`                 | Self-healing failed to generate fix. Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.                                                                                                                                             |
+| `environment_issue`          | Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. New CIPE spawns automatically. Loop to poll for new CIPE.                                                                                                                                |
+| `no_fix`                     | CI failed, no fix available (self-healing disabled or not executable). Attempt local fix if possible. Otherwise exit with failure.                                                                                                                                                               |
+| `no_new_cipe`                | Expected CIPE never spawned (CI workflow likely failed before Nx tasks). Report to user, attempt common fixes if configured, or exit with guidance.                                                                                                                                              |
+| `polling_timeout`            | Subagent polling timeout reached. Exit with timeout.                                                                                                                                                                                                                                             |
+| `cipe_canceled`              | CIPE was canceled. Exit with canceled status.                                                                                                                                                                                                                                                    |
+| `cipe_timed_out`             | CIPE timed out. Exit with timeout status.                                                                                                                                                                                                                                                        |
+| `error`                      | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise wait 60s and loop.                                                                                                                                                                                                 |
 
-### Fix Available Decision Logic
+### Verified vs Unverified Fix
 
-When subagent returns `fix_available`, main agent compares `failedTaskIds` vs `verifiedTaskIds`:
-
-#### Step 1: Categorize Tasks
-
-1. **Verified tasks** = tasks in both `failedTaskIds` AND `verifiedTaskIds`
-2. **Unverified tasks** = tasks in `failedTaskIds` but NOT in `verifiedTaskIds`
-3. **E2E tasks** = unverified tasks where target contains "e2e" (task format: `<project>:<target>` or `<project>:<target>:<config>`)
-4. **Verifiable tasks** = unverified tasks that are NOT e2e
-
-#### Step 2: Determine Path
-
-| Condition                               | Path                                     |
-| --------------------------------------- | ---------------------------------------- |
-| No unverified tasks (all verified)      | Apply via MCP                            |
-| Unverified tasks exist, but ALL are e2e | Apply via MCP (treat as verified enough) |
-| Verifiable tasks exist                  | Local verification flow                  |
-
-#### Step 3a: Apply via MCP (fully/e2e-only verified)
-
-- Call `update_self_healing_fix({ shortLink, action: "APPLY" })`
-- Record `last_cipe_url`, spawn subagent in wait mode
-
-#### Step 3b: Local Verification Flow
-
-When verifiable (non-e2e) unverified tasks exist:
-
-1. **Detect package manager:**
-
-   - `pnpm-lock.yaml` exists → `pnpm nx`
-   - `yarn.lock` exists → `yarn nx`
-   - Otherwise → `npx nx`
-
-2. **Run verifiable tasks in parallel:**
-
-   - Spawn `general` subagents to run each task concurrently
-   - Each subagent runs: `<pm> nx run <taskId>`
-   - Collect pass/fail results from all subagents
-
-3. **Evaluate results:**
-
-| Result                    | Action                       |
-| ------------------------- | ---------------------------- |
-| ALL verifiable tasks pass | Apply via MCP                |
-| ANY verifiable task fails | Apply-locally + enhance flow |
-
-4. **Apply-locally + enhance flow:**
-
-   - Run `nx apply-locally <shortLink>`
-   - Enhance the code to fix failing tasks
-   - Run failing tasks again to verify fix
-   - If still failing → increment `local_verify_count`, loop back to enhance
-   - If passing → commit and push, record `expected_commit_sha`, spawn subagent in wait mode
-
-5. **Track attempts** (wraps step 4):
-   - Increment `local_verify_count` after each enhance cycle
-   - If `local_verify_count >= local_verify_attempts` (default: 3):
-     - Get code in commit-able state
-     - Commit and push with message indicating local verification failed
-     - Report to user:
-       ```
-       [nx-ci-monitor] Local verification failed after <N> attempts
-       [nx-ci-monitor] Changes pushed to CI for final validation
-       [nx-ci-monitor] Failed tasks: <taskIds>
-       ```
-     - Record `expected_commit_sha`, spawn subagent in wait mode (let CI be final judge)
-
-#### Commit Message Format
-
-```bash
-git commit -m "fix(<projects>): <brief description>
-
-Failed tasks: <taskId1>, <taskId2>
-Local verification: passed|enhanced|failed-pushing-to-ci"
-```
-
-### Unverified Fix Flow (No Verification Attempted)
-
-When `verificationStatus` is `FAILED`, `NOT_EXECUTABLE`, or fix has `couldAutoApplyTasks != true` with no verification:
-
-- Analyze fix content (`suggestedFix`, `suggestedFixReasoning`, `taskOutputSummary`)
-- If fix looks correct → apply via MCP
-- If fix needs enhancement → use Apply Locally + Enhance Flow above
-- If fix is wrong → reject via MCP, fix from scratch, commit, push
+- **Verified** (`verificationStatus == 'COMPLETED'`): Self-healing agent has verified the fix works. Safe to auto-apply.
+- **Unverified** (`verificationStatus != 'COMPLETED'`): Fix not verified. Analyze before deciding.
 
 ### Auto-Apply Eligibility
 
@@ -263,7 +171,6 @@ Exit the monitoring loop when ANY of these conditions are met:
 cycle_count = 0
 start_time = now()
 no_progress_count = 0
-local_verify_count = 0
 last_state = null
 last_cipe_url = null
 expected_commit_sha = null
@@ -342,7 +249,6 @@ After each action:
 
 - If state changed significantly → reset `no_progress_count = 0`
 - If state unchanged → `no_progress_count++`
-- On new CI attempt detected → reset `local_verify_count = 0`
 
 ## Status Reporting
 
