@@ -67,7 +67,9 @@ When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect wheth
   "suggestedFixDescription": "string | null",
   "suggestedFix": "string | null",
   "shortLink": "string | null",
-  "couldAutoApplyTasks": "boolean | null"
+  "couldAutoApplyTasks": "boolean | null",
+  "confidence": "number | null",
+  "confidenceReasoning": "string | null"
 }
 ```
 
@@ -87,7 +89,7 @@ WAIT_FIELDS:
   # Minimal fields for detecting new CI Attempt
 
 LIGHT_FIELDS:
-  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidenceScore'
+  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning'
   # Status fields for determining actionable state
 
 HEAVY_FIELDS:
@@ -215,7 +217,7 @@ Only fetch minimal fields needed to detect CI Attempt change. Do NOT fetch heavy
 ```
 ci_information({
   branch: "<branch_name>",
-  select: "cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidenceScore"
+  select: "cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning"
 })
 ```
 
@@ -347,7 +349,8 @@ When returning to the main agent, provide a structured response with accumulated
 - **Verification:** <verificationStatus>
 - **User Action:** <userAction>
 - **Classification:** <failureClassification>
-- **Confidence:** <confidenceScore>
+- **Confidence:** <confidence>
+- **Confidence Reasoning:** <confidenceReasoning>
 
 ### Fix Information (if available)
 - **Short Link:** <shortLink>
