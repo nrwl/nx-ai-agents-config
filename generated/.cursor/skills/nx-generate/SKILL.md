@@ -1,3 +1,8 @@
+---
+name: nx-generate
+description: ' Generate code using nx generators. USE WHEN scaffolding code or transforming existing code - for example creating libraries or apps, creating components, or anything else that is boilerplate code or automates repetitive tasks.'
+---
+
 # Run Nx Generator
 
 Nx generators are powerful tools that scaffold code, create projects, add components, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.
@@ -36,13 +41,13 @@ Based on the user's request, identify which generator(s) could fulfill their nee
 
 It's possible that the user request is something that no Nx generator exists for whatsoever. In this case, you can stop using this skill and try to help the user another way. HOWEVER, the burden of proof for this is high. Before aborting, carefully consider each and every generator that's available. Look into details for any that could be related in any way before making this decision.
 
-## Pre-Execution Checklist (MANDATORY)
+## Pre-Execution Checklist
 
-**CRITICAL: You MUST complete ALL of these steps before running any generator. Do NOT skip steps 1 and 2. Running a generator without reading the schema and source code first will lead to incorrect usage and wasted effort.**
+Before running any generator, complete these steps:
 
-### 1. Fetch Generator Schema (REQUIRED - DO NOT SKIP)
+### 1. Fetch Generator Schema
 
-**You MUST run the `--help` command before running any generator.** This is non-negotiable.
+Use the `--help` flag to understand all available options:
 
 ```bash
 npx nx g @nx/react:component --help
@@ -54,9 +59,7 @@ Pay attention to:
 - Optional options that may be relevant to the user's request
 - Default values that might need to be overridden
 
-### 2. Read Generator Source Code (REQUIRED - DO NOT SKIP)
-
-**You MUST read the generator's source code before running it.** Do not skip this step.
+### 2. Read Generator Source Code
 
 Understanding what the generator actually does helps you:
 
@@ -64,13 +67,11 @@ Understanding what the generator actually does helps you:
 - Understand any side effects (updating configs, installing deps, etc.)
 - Identify options that might not be obvious from the schema
 
-**How to find generator source code:**
+To find generator source code:
 
 - For plugin generators: Use `node -e "console.log(require.resolve('@nx/<plugin>/generators.json'));"` to find the generators.json, then locate the source from there
 - If that fails, read directly from `node_modules/<plugin>/generators.json`
 - For local generators: They are typically in `tools/generators/` or a local plugin directory. You can search the repo for the generator name to find it.
-
-**Do NOT proceed to step 3 until you have actually read the generator source files.**
 
 ### 2.5 Reevaluate if the generator is right
 
