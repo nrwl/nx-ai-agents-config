@@ -164,6 +164,8 @@ function writeClaudeAgent(destPath, content, meta) {
     description: meta.description,
   };
   if (meta.model) frontmatter.model = meta.model;
+  if (meta['allowed-tools'])
+    frontmatter['allowed-tools'] = meta['allowed-tools'];
 
   const output = serializeYamlFrontmatter(frontmatter) + content;
   writeFileSync(destPath, output);
@@ -177,6 +179,8 @@ function writeClaudeCommand(destPath, content, meta, config) {
   if (meta.description) frontmatter.description = meta.description;
   if (meta['argument-hint'])
     frontmatter['argument-hint'] = meta['argument-hint'];
+  if (meta['allowed-tools'])
+    frontmatter['allowed-tools'] = meta['allowed-tools'];
 
   const transformedContent = transformArguments(
     content,
@@ -206,6 +210,7 @@ function writeClaudeSkill(destPath, content, meta) {
 function writeOpenCodeAgent(destPath, content, meta) {
   const frontmatter = {
     description: meta.description || '',
+    mode: 'subagent',
   };
 
   const output = serializeYamlFrontmatter(frontmatter) + content;
