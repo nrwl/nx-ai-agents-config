@@ -338,7 +338,7 @@ Based on verbosity level:
 | Level     | What to Report                                                             |
 | --------- | -------------------------------------------------------------------------- |
 | `minimal` | Only final result (success/failure/timeout)                                |
-| `medium`  | State changes + periodic updates ("Cycle N \| Elapsed: Xm \| Status: ...") |
+| `medium`  | State changes + periodic updates ("Cycle N \\| Elapsed: Xm \\| Status: ...") |
 | `verbose` | All of medium + full subagent responses, git outputs, MCP responses        |
 
 ## User Instruction Examples
@@ -428,5 +428,4 @@ Users can override default behaviors:
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
   - Result: SUCCESS
-```
-"""
+```"""

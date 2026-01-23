@@ -11,6 +11,7 @@ import {
 import { join, basename, dirname } from 'path';
 import { execSync } from 'child_process';
 import yaml from 'js-yaml';
+import * as TOML from 'smol-toml';
 
 const rootDir = join(import.meta.dirname, '..');
 const artifactsDir = join(rootDir, 'artifacts');
@@ -62,15 +63,15 @@ const agents = {
   },
   cursor: {
     outputDir: join(generatedDir, '.cursor'),
-    agentsDir: null, // Cursor doesn't support agents
-    agentsExt: null,
+    agentsDir: 'agents',
+    agentsExt: '.md',
     commandsDir: 'commands',
     commandsExt: '.md',
     skillsDir: 'skills',
     skillsFile: 'SKILL.md',
-    supportsAgents: false,
+    supportsAgents: true,
     argumentsPlaceholder: null, // strip entirely
-    writeAgent: null,
+    writeAgent: writeCursorAgent,
     writeCommand: writeCursorCommand,
     writeSkill: writeClaudeSkill, // Same format
   },
@@ -112,13 +113,6 @@ function serializeYamlFrontmatter(meta) {
     forceQuotes: false,
   });
   return `---\n${yamlContent}---\n`;
-}
-
-/**
- * Escape special characters in TOML strings
- */
-function escapeTomlString(str) {
-  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
 }
 
 /**
@@ -248,6 +242,44 @@ function writeCopilotCommand(destPath, content, meta, config) {
 }
 
 /**
+ * Map source model names to Cursor model format
+ * - haiku → fast (lightweight, quick responses)
+ * - sonnet/opus → inherit (use default capable model)
+ * - Unknown models pass through (allows explicit Cursor model IDs)
+ */
+function mapModelToCursor(sourceModel) {
+  const modelMap = {
+    haiku: 'fast',
+    sonnet: 'inherit',
+    opus: 'inherit',
+  };
+  return modelMap[sourceModel] || sourceModel;
+}
+
+/**
+ * Write Cursor agent (YAML frontmatter + markdown)
+ */
+function writeCursorAgent(destPath, content, meta) {
+  const frontmatter = {};
+
+  if (meta.name) frontmatter.name = meta.name;
+  if (meta.description) frontmatter.description = meta.description;
+
+  // Map source model to Cursor model format
+  if (meta.model) {
+    frontmatter.model = mapModelToCursor(meta.model);
+  }
+
+  // Pass through Cursor-specific fields if present
+  if (meta.readonly !== undefined) frontmatter.readonly = meta.readonly;
+  if (meta.is_background !== undefined)
+    frontmatter.is_background = meta.is_background;
+
+  const output = serializeYamlFrontmatter(frontmatter) + content;
+  writeFileSync(destPath, output);
+}
+
+/**
  * Write Cursor command (plain markdown, no frontmatter, $ARGUMENTS stripped)
  */
 function writeCursorCommand(destPath, content, meta, config) {
@@ -259,13 +291,26 @@ function writeCursorCommand(destPath, content, meta, config) {
 }
 
 /**
+ * Convert single-line TOML string to multiline format
+ * Transforms: key = "line1\nline2" -> key = """\nline1\nline2"""
+ */
+function toMultilineTomlString(tomlOutput, key) {
+  const regex = new RegExp(`^(${key} = )"(.*)"$`, 'm');
+  return tomlOutput.replace(regex, (match, prefix, content) => {
+    // Unescape \n to actual newlines and \" to " (quotes don't need escaping in multiline strings)
+    const unescaped = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+    return `${prefix}"""\n${unescaped}"""`;
+  });
+}
+
+/**
  * Write Gemini command (TOML format with {{args}})
  */
 function writeGeminiCommand(destPath, content, meta, config) {
-  let toml = '';
+  const tomlObj = {};
 
   if (meta.description) {
-    toml += `description = "${escapeTomlString(meta.description)}"\n`;
+    tomlObj.description = meta.description;
   }
 
   const transformedContent = transformArguments(
@@ -274,10 +319,17 @@ function writeGeminiCommand(destPath, content, meta, config) {
   );
   const trimmedContent = transformedContent.trim();
   if (trimmedContent) {
-    toml += `prompt = """\n${trimmedContent}\n"""\n`;
+    tomlObj.prompt = trimmedContent;
   }
 
-  writeFileSync(destPath, toml);
+  let tomlOutput = TOML.stringify(tomlObj);
+
+  // Convert prompt to multiline string for readability
+  if (tomlObj.prompt) {
+    tomlOutput = toMultilineTomlString(tomlOutput, 'prompt');
+  }
+
+  writeFileSync(destPath, tomlOutput);
 }
 
 /**
@@ -423,28 +475,69 @@ function processSkills(agentName, config) {
   );
 }
 
-// Main execution
-console.log('Syncing artifacts to generated/ folders...\n');
+// ============== Main Execution ==============
 
-// Clear and recreate generated directory
-recreateDir(generatedDir);
+const isCheckMode = process.argv.includes('--check');
 
-// Process each agent
-for (const [agentName, config] of Object.entries(agents)) {
-  console.log(`\n[${agentName}] → ${config.outputDir.replace(rootDir, '.')}`);
+function runSync() {
+  console.log('Syncing artifacts to generated/ folders...\n');
 
-  mkdirSync(config.outputDir, { recursive: true });
+  // Clear and recreate generated directory
+  recreateDir(generatedDir);
 
-  processAgents(agentName, config);
-  processCommands(agentName, config);
-  processSkills(agentName, config);
+  // Process each agent
+  for (const [agentName, config] of Object.entries(agents)) {
+    console.log(`\n[${agentName}] → ${config.outputDir.replace(rootDir, '.')}`);
+
+    mkdirSync(config.outputDir, { recursive: true });
+
+    processAgents(agentName, config);
+    processCommands(agentName, config);
+    processSkills(agentName, config);
+  }
+
+  // Copy Claude-specific config files
+  console.log('\n[claude] Copying plugin config files...');
+  copyClaudePluginConfigs();
+
+  console.log('\nRunning nx format....');
+  execSync('npx nx format --fix', { stdio: 'inherit' });
+
+  console.log('\nSync complete!');
 }
 
-// Copy Claude-specific config files
-console.log('\n[claude] Copying plugin config files...');
-copyClaudePluginConfigs();
+function runCheck() {
+  // Run sync first
+  runSync();
 
-console.log('\n Running nx format....');
-execSync('npx nx format --fix', { stdio: 'inherit' });
+  console.log('\nChecking for unstaged changes...');
 
-console.log('\nSync complete!');
+  // Check for unstaged changes only (working tree vs index)
+  const gitDiff = execSync('git diff --name-only generated/', {
+    encoding: 'utf-8',
+  }).trim();
+
+  if (gitDiff) {
+    console.error(
+      '\nError: Generated files in generated/ are out of sync with source.'
+    );
+    console.error(
+      "Please run 'npx nx sync-artifacts' and stage the changes.\n"
+    );
+    console.error('Changed files:');
+    console.error(gitDiff);
+    console.error('\nDiff:');
+    const diff = execSync('git diff generated/', { encoding: 'utf-8' });
+    if (diff) console.error(diff);
+    process.exit(1);
+  }
+
+  console.log('\nAll generated artifacts are up to date!');
+}
+
+// Run appropriate mode
+if (isCheckMode) {
+  runCheck();
+} else {
+  runSync();
+}
