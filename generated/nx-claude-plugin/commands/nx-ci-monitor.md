@@ -1,6 +1,11 @@
 ---
 description: Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically
 argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
+allowed-tools:
+  - Bash
+  - Task
+  - mcp__plugin_nx_nx-mcp__ci_information
+  - mcp__plugin_nx_nx-mcp__update_self_healing_fix
 ---
 
 # Nx CI Monitor Command
