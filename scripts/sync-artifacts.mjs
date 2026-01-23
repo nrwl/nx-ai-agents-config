@@ -1,5 +1,15 @@
-import { cpSync, rmSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import {
+  cpSync,
+  rmSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  statSync,
+} from 'fs';
 import { join, basename, dirname } from 'path';
+import { execSync } from 'child_process';
 import yaml from 'js-yaml';
 
 const rootDir = join(import.meta.dirname, '..');
@@ -108,10 +118,7 @@ function serializeYamlFrontmatter(meta) {
  * Escape special characters in TOML strings
  */
 function escapeTomlString(str) {
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n');
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
 }
 
 /**
@@ -136,7 +143,9 @@ function validateAgentMeta(meta, filePath) {
   if (!meta.name) missing.push('name');
   if (!meta.description) missing.push('description');
   if (missing.length > 0) {
-    throw new Error(`Missing required fields in ${filePath}.meta.json: ${missing.join(', ')}`);
+    throw new Error(
+      `Missing required fields in ${filePath}.meta.json: ${missing.join(', ')}`
+    );
   }
 }
 
@@ -144,7 +153,9 @@ function validateCommandMeta(meta, filePath) {
   const missing = [];
   if (!meta.description) missing.push('description');
   if (missing.length > 0) {
-    throw new Error(`Missing required fields in ${filePath}.meta.json: ${missing.join(', ')}`);
+    throw new Error(
+      `Missing required fields in ${filePath}.meta.json: ${missing.join(', ')}`
+    );
   }
 }
 
@@ -170,9 +181,13 @@ function writeClaudeAgent(destPath, content, meta) {
 function writeClaudeCommand(destPath, content, meta, config) {
   const frontmatter = {};
   if (meta.description) frontmatter.description = meta.description;
-  if (meta['argument-hint']) frontmatter['argument-hint'] = meta['argument-hint'];
+  if (meta['argument-hint'])
+    frontmatter['argument-hint'] = meta['argument-hint'];
 
-  const transformedContent = transformArguments(content, config.argumentsPlaceholder);
+  const transformedContent = transformArguments(
+    content,
+    config.argumentsPlaceholder
+  );
   const output = serializeYamlFrontmatter(frontmatter) + transformedContent;
   writeFileSync(destPath, output);
 }
@@ -221,9 +236,13 @@ function writeCopilotAgent(destPath, content, meta) {
 function writeCopilotCommand(destPath, content, meta, config) {
   const frontmatter = {};
   if (meta.description) frontmatter.description = meta.description;
-  if (meta['argument-hint']) frontmatter['argument-hint'] = meta['argument-hint'];
+  if (meta['argument-hint'])
+    frontmatter['argument-hint'] = meta['argument-hint'];
 
-  const transformedContent = transformArguments(content, config.argumentsPlaceholder);
+  const transformedContent = transformArguments(
+    content,
+    config.argumentsPlaceholder
+  );
   const output = serializeYamlFrontmatter(frontmatter) + transformedContent;
   writeFileSync(destPath, output);
 }
@@ -232,7 +251,10 @@ function writeCopilotCommand(destPath, content, meta, config) {
  * Write Cursor command (plain markdown, no frontmatter, $ARGUMENTS stripped)
  */
 function writeCursorCommand(destPath, content, meta, config) {
-  const transformedContent = transformArguments(content, config.argumentsPlaceholder);
+  const transformedContent = transformArguments(
+    content,
+    config.argumentsPlaceholder
+  );
   writeFileSync(destPath, transformedContent);
 }
 
@@ -246,7 +268,10 @@ function writeGeminiCommand(destPath, content, meta, config) {
     toml += `description = "${escapeTomlString(meta.description)}"\n`;
   }
 
-  const transformedContent = transformArguments(content, config.argumentsPlaceholder);
+  const transformedContent = transformArguments(
+    content,
+    config.argumentsPlaceholder
+  );
   const trimmedContent = transformedContent.trim();
   if (trimmedContent) {
     toml += `prompt = """\n${trimmedContent}\n"""\n`;
@@ -317,7 +342,9 @@ function processAgents(agentName, config) {
   const destDir = join(config.outputDir, config.agentsDir);
   mkdirSync(destDir, { recursive: true });
 
-  const files = readdirSync(srcDir).filter((f) => f.endsWith('.md') && !f.endsWith('.meta.json'));
+  const files = readdirSync(srcDir).filter(
+    (f) => f.endsWith('.md') && !f.endsWith('.meta.json')
+  );
   for (const file of files) {
     const srcPath = join(srcDir, file);
     const baseName = basename(file, '.md');
@@ -344,7 +371,9 @@ function processCommands(agentName, config) {
   const destDir = join(config.outputDir, config.commandsDir);
   mkdirSync(destDir, { recursive: true });
 
-  const files = readdirSync(srcDir).filter((f) => f.endsWith('.md') && !f.endsWith('.meta.json'));
+  const files = readdirSync(srcDir).filter(
+    (f) => f.endsWith('.md') && !f.endsWith('.meta.json')
+  );
   for (const file of files) {
     const srcPath = join(srcDir, file);
     const baseName = basename(file, '.md');
@@ -355,7 +384,9 @@ function processCommands(agentName, config) {
     config.writeCommand(destPath, content, meta, config);
   }
 
-  console.log(`  Processed ${files.length} command(s) → ${config.commandsDir}/`);
+  console.log(
+    `  Processed ${files.length} command(s) → ${config.commandsDir}/`
+  );
 }
 
 /**
@@ -387,7 +418,9 @@ function processSkills(agentName, config) {
     config.writeSkill(destSkillFile, content, meta);
   }
 
-  console.log(`  Processed ${skillDirs.length} skill(s) → ${config.skillsDir}/`);
+  console.log(
+    `  Processed ${skillDirs.length} skill(s) → ${config.skillsDir}/`
+  );
 }
 
 // Main execution
@@ -410,5 +443,8 @@ for (const [agentName, config] of Object.entries(agents)) {
 // Copy Claude-specific config files
 console.log('\n[claude] Copying plugin config files...');
 copyClaudePluginConfigs();
+
+console.log('\n Running nx format....');
+execSync('npx nx format --fix', { stdio: 'inherit' });
 
 console.log('\nSync complete!');
