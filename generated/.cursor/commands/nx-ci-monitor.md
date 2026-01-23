@@ -10,8 +10,6 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 ## User Instructions
 
-$ARGUMENTS
-
 **Important:** If user provides specific instructions, respect them over default behaviors described below.
 
 ## Configuration Defaults
@@ -27,8 +25,6 @@ $ARGUMENTS
 | `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CIPE failures (e.g., lockfile updates) |
 | `--new-cipe-timeout`      | 30            | Minutes to wait for new CIPE after action                           |
 | `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI        |
-
-Parse any overrides from `$ARGUMENTS` and merge with defaults.
 
 ## Session Context Behavior
 

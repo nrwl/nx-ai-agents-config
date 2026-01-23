@@ -1,7 +1,6 @@
 ---
 name: nx-generate
-description: |
-  Generate code using nx generators. USE WHEN scaffolding code or transforming existing code - for example creating libraries or apps, creating components, or anything else that is boilerplate code or automates repetitive tasks. ALWAYS use this first when generating code with Nx instead of calling MCP tools and running nx generate immediately.
+description: Generate code using nx generators. USE WHEN scaffolding code or transforming existing code - for example creating libraries or apps, creating components, or anything else that is boilerplate code or automates repetitive tasks. ALWAYS use this first when generating code with Nx instead of calling MCP tools and running nx generate immediately.
 ---
 
 # Run Nx Generator

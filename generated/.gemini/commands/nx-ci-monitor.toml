@@ -1,3 +1,5 @@
+description = "Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically"
+prompt = """
 # Nx CI Monitor Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `nx-ci-monitor` subagent to poll CI status and make decisions based on the results.
@@ -10,7 +12,7 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 ## User Instructions
 
-$ARGUMENTS
+{{args}}
 
 **Important:** If user provides specific instructions, respect them over default behaviors described below.
 
@@ -28,7 +30,7 @@ $ARGUMENTS
 | `--new-cipe-timeout`      | 30            | Minutes to wait for new CIPE after action                           |
 | `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI        |
 
-Parse any overrides from `$ARGUMENTS` and merge with defaults.
+Parse any overrides from `{{args}}` and merge with defaults.
 
 ## Session Context Behavior
 
@@ -336,7 +338,7 @@ Based on verbosity level:
 | Level     | What to Report                                                             |
 | --------- | -------------------------------------------------------------------------- |
 | `minimal` | Only final result (success/failure/timeout)                                |
-| `medium`  | State changes + periodic updates ("Cycle N \| Elapsed: Xm \| Status: ...") |
+| `medium`  | State changes + periodic updates ("Cycle N \\| Elapsed: Xm \\| Status: ...") |
 | `verbose` | All of medium + full subagent responses, git outputs, MCP responses        |
 
 ## User Instruction Examples
@@ -426,4 +428,4 @@ Users can override default behaviors:
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
   - Result: SUCCESS
-```
+```"""

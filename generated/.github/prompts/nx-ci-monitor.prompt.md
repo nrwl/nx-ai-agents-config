@@ -1,16 +1,6 @@
 ---
-description: 'Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically'
+description: Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically
 argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Task
-  - mcp__nx__ci_information
-  - mcp__nx__update_self_healing_fix
 ---
 
 # Nx CI Monitor Command
@@ -25,7 +15,7 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 ## User Instructions
 
-$ARGUMENTS
+${input:args}
 
 **Important:** If user provides specific instructions, respect them over default behaviors described below.
 
@@ -43,7 +33,7 @@ $ARGUMENTS
 | `--new-cipe-timeout`      | 30            | Minutes to wait for new CIPE after action                           |
 | `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI        |
 
-Parse any overrides from `$ARGUMENTS` and merge with defaults.
+Parse any overrides from `${input:args}` and merge with defaults.
 
 ## Session Context Behavior
 

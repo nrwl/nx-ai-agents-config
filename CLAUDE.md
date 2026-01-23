@@ -14,4 +14,17 @@
 
 # Self-healing CI
 
-- If the claude plugin verification task fails, fix it by running the build claude plugin script (`npx nx build-claude-plugin`)
+- If the artifact sync verification task fails, fix it by running the sync artifacts script (`npx nx sync-artifacts`)
+
+# Building Artifacts
+
+This repository generates extensibility artifacts (commands, skills, subagents) for multiple AI agents.
+
+- Source files are in `artifacts/` directory
+- Run `npx nx sync-artifacts` to generate outputs for all agents
+- Generated files go to `generated/` directory:
+  - `generated/nx-claude-plugin/` - Claude Code plugin
+  - `generated/.opencode/` - OpenCode
+  - `generated/.github/` - GitHub Copilot
+  - `generated/.cursor/` - Cursor
+  - `generated/.gemini/` - Gemini
