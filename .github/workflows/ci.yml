@@ -32,9 +32,9 @@ jobs:
 
       - run: npm ci
 
-      # Verify that nx-claude-plugin generated files are in sync with source
-      - name: Verify plugin build
-        run: npx nx-cloud record -- bash scripts/verify-plugin-build.sh
+      # Verify that generated artifacts are in sync with source
+      - name: Verify artifacts sync
+        run: npx nx-cloud record -- npx nx sync-artifacts-verification
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       - run: npx nx format:check  --base="remotes/origin/main"
