@@ -1,6 +1,6 @@
 ---
 name: ci-watcher
-description: Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /nx-ci-monitor command to monitor CI Attempt status.
+description: Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /nx-cloud-ci-monitor command to monitor CI Attempt status.
 model: fast
 ---
 

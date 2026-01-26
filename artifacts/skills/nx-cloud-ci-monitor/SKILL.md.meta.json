@@ -1,6 +1,6 @@
 {
-  "name": "nx-ci-monitor",
-  "description": "Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically",
+  "name": "nx-cloud-ci-monitor",
+  "description": "Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically. Requires Nx Cloud.",
   "command": true,
   "argument-hint": "[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]",
   "allowed-tools": [
