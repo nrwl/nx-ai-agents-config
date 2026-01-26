@@ -1,4 +1,5 @@
 {
   "name": "nx-workspace",
-  "description": "Interact with and manage Nx workspaces. USE WHEN you need to analyze"
+  "description": "Explore and understand Nx workspaces. USE WHEN users ask: 'What projects are in this workspace?', 'How is project X configured?', 'What targets can I run?', 'What's affected by my changes?', 'Which projects depend on library Y?', or any questions about Nx workspace structure, project configuration, or available tasks.",
+  "allowed-tools": ["Bash", "Glob", "Grep", "Read"]
 }
