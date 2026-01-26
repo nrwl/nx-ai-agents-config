@@ -143,7 +143,7 @@ function validateAgentMeta(meta, filePath) {
   }
 }
 
-function validateCommandMeta(meta, filePath) {
+function validateSkillMeta(meta, filePath) {
   const missing = [];
   if (!meta.description) missing.push('description');
   if (missing.length > 0) {
@@ -192,13 +192,26 @@ function writeClaudeCommand(destPath, content, meta, config) {
 
 /**
  * Write Claude skill (YAML frontmatter + markdown)
+ * If meta.command is true, adds user-invocable: true to frontmatter
  */
-function writeClaudeSkill(destPath, content, meta) {
+function writeClaudeSkill(destPath, content, meta, config) {
   const frontmatter = {};
   if (meta.name) frontmatter.name = meta.name;
   if (meta.description) frontmatter.description = meta.description;
 
-  const output = serializeYamlFrontmatter(frontmatter) + content;
+  // For Claude, command skills get user-invocable: true
+  if (meta.command) {
+    frontmatter['user-invocable'] = true;
+    if (meta['argument-hint'])
+      frontmatter['argument-hint'] = meta['argument-hint'];
+    if (meta['allowed-tools'])
+      frontmatter['allowed-tools'] = meta['allowed-tools'];
+  }
+
+  const transformedContent = meta.command
+    ? transformArguments(content, config.argumentsPlaceholder)
+    : content;
+  const output = serializeYamlFrontmatter(frontmatter) + transformedContent;
   writeFileSync(destPath, output);
 }
 
@@ -340,9 +353,19 @@ function writeGeminiCommand(destPath, content, meta, config) {
 /**
  * Write Gemini skill (plain markdown, same content)
  */
-function writeGeminiSkill(destPath, content, meta) {
+function writeGeminiSkill(destPath, content, meta, config) {
   // Gemini skills are plain markdown with frontmatter
-  writeClaudeSkill(destPath, content, meta);
+  // For command skills, use writeGeminiCommand instead
+  if (meta.command) {
+    writeGeminiCommand(destPath, content, meta, config);
+  } else {
+    const frontmatter = {};
+    if (meta.name) frontmatter.name = meta.name;
+    if (meta.description) frontmatter.description = meta.description;
+
+    const output = serializeYamlFrontmatter(frontmatter) + content;
+    writeFileSync(destPath, output);
+  }
 }
 
 // ============== Utility Functions ==============
@@ -416,38 +439,9 @@ function processAgents(agentName, config) {
 }
 
 /**
- * Process commands folder
- */
-function processCommands(agentName, config) {
-  const srcDir = join(artifactsDir, 'commands');
-  if (!existsSync(srcDir)) {
-    console.log(`  Skipped commands/ (source does not exist)`);
-    return;
-  }
-
-  const destDir = join(config.outputDir, config.commandsDir);
-  mkdirSync(destDir, { recursive: true });
-
-  const files = readdirSync(srcDir).filter(
-    (f) => f.endsWith('.md') && !f.endsWith('.meta.json')
-  );
-  for (const file of files) {
-    const srcPath = join(srcDir, file);
-    const baseName = basename(file, '.md');
-    const destPath = join(destDir, baseName + config.commandsExt);
-
-    const { content, meta } = readArtifact(srcPath);
-    validateCommandMeta(meta, srcPath);
-    config.writeCommand(destPath, content, meta, config);
-  }
-
-  console.log(
-    `  Processed ${files.length} command(s) → ${config.commandsDir}/`
-  );
-}
-
-/**
  * Process skills folder
+ * For Claude: command skills go to skills/ with user-invocable: true
+ * For other agents: command skills go to commands/ folder
  */
 function processSkills(agentName, config) {
   const srcDir = join(artifactsDir, 'skills');
@@ -456,28 +450,49 @@ function processSkills(agentName, config) {
     return;
   }
 
-  const destDir = join(config.outputDir, config.skillsDir);
-
   // Skills are in subdirectories: skills/skill-name/SKILL.md
   const skillDirs = readdirSync(srcDir).filter((d) =>
     statSync(join(srcDir, d)).isDirectory()
   );
 
+  let skillCount = 0;
+  let commandCount = 0;
+
   for (const skillDir of skillDirs) {
     const srcSkillFile = join(srcDir, skillDir, 'SKILL.md');
     if (!existsSync(srcSkillFile)) continue;
 
-    const destSkillDir = join(destDir, skillDir);
-    mkdirSync(destSkillDir, { recursive: true });
-
-    const destSkillFile = join(destSkillDir, config.skillsFile);
     const { content, meta } = readArtifact(srcSkillFile);
-    config.writeSkill(destSkillFile, content, meta);
+    validateSkillMeta(meta, srcSkillFile);
+
+    // For Claude, all skills (including commands) go to skills folder
+    // For other agents, command skills go to commands folder
+    if (meta.command && agentName !== 'claude') {
+      // Write as command for non-Claude agents
+      const destDir = join(config.outputDir, config.commandsDir);
+      mkdirSync(destDir, { recursive: true });
+      const destFile = join(destDir, skillDir + config.commandsExt);
+      config.writeCommand(destFile, content, meta, config);
+      commandCount++;
+    } else {
+      // Write as skill
+      const destDir = join(config.outputDir, config.skillsDir);
+      const destSkillDir = join(destDir, skillDir);
+      mkdirSync(destSkillDir, { recursive: true });
+      const destSkillFile = join(destSkillDir, config.skillsFile);
+      config.writeSkill(destSkillFile, content, meta, config);
+      skillCount++;
+    }
   }
 
-  console.log(
-    `  Processed ${skillDirs.length} skill(s) → ${config.skillsDir}/`
-  );
+  if (skillCount > 0) {
+    console.log(`  Processed ${skillCount} skill(s) → ${config.skillsDir}/`);
+  }
+  if (commandCount > 0) {
+    console.log(
+      `  Processed ${commandCount} command(s) → ${config.commandsDir}/`
+    );
+  }
 }
 
 // ============== Main Execution ==============
@@ -497,7 +512,6 @@ function runSync() {
     mkdirSync(config.outputDir, { recursive: true });
 
     processAgents(agentName, config);
-    processCommands(agentName, config);
     processSkills(agentName, config);
   }
 
