@@ -5,7 +5,7 @@ argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity
 
 # Nx CI Monitor Command
 
-You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `nx-ci-monitor` subagent to poll CI status and make decisions based on the results.
+You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `ci-watcher` subagent to poll CI status and make decisions based on the results.
 
 ## Context
 
@@ -261,13 +261,13 @@ expected_commit_sha = null
 
 ### Step 2: Spawn Subagent
 
-Spawn the `nx-ci-monitor` subagent to poll CI status:
+Spawn the `ci-watcher` subagent to poll CI status:
 
 **Fresh start (first spawn, no expected CIPE):**
 
 ```
 Task(
-  agent: "nx-ci-monitor",
+  agent: "ci-watcher",
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CIPE timeout: <new-cipe-timeout> minutes.
@@ -279,7 +279,7 @@ Task(
 
 ```
 Task(
-  agent: "nx-ci-monitor",
+  agent: "ci-watcher",
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CIPE timeout: <new-cipe-timeout> minutes.
