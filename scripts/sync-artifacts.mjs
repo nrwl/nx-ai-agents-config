@@ -44,7 +44,7 @@ const agents = {
     supportsAgents: true,
     argumentsPlaceholder: '$ARGUMENTS', // no change
     writeAgent: writeOpenCodeAgent,
-    writeCommand: writeClaudeCommand, // Same format as Claude
+    writeCommand: writeOpenCodeCommand,
     writeSkill: writeBasicSkill,
   },
   copilot: {
@@ -181,6 +181,23 @@ function writeClaudeCommand(destPath, content, meta, config) {
     frontmatter['argument-hint'] = meta['argument-hint'];
   if (meta['allowed-tools'])
     frontmatter['allowed-tools'] = meta['allowed-tools'];
+
+  const transformedContent = transformArguments(
+    content,
+    config.argumentsPlaceholder
+  );
+  const output = serializeYamlFrontmatter(frontmatter) + transformedContent;
+  writeFileSync(destPath, output);
+}
+
+/**
+ * Write OpenCode command (YAML frontmatter + markdown, without allowed-tools)
+ */
+function writeOpenCodeCommand(destPath, content, meta, config) {
+  const frontmatter = {};
+  if (meta.description) frontmatter.description = meta.description;
+  if (meta['argument-hint'])
+    frontmatter['argument-hint'] = meta['argument-hint'];
 
   const transformedContent = transformArguments(
     content,
@@ -479,23 +496,21 @@ function processSkills(agentName, config) {
     const { content, meta } = readArtifact(srcSkillFile);
     validateSkillMeta(meta, srcSkillFile);
 
-    // For Claude, all skills (including commands) go to skills folder
-    // For other agents, command skills go to commands folder
+    // Always write as skill
+    const destDir = join(config.outputDir, config.skillsDir);
+    const destSkillDir = join(destDir, skillDir);
+    mkdirSync(destSkillDir, { recursive: true });
+    const destSkillFile = join(destSkillDir, config.skillsFile);
+    config.writeSkill(destSkillFile, content, meta, config);
+    skillCount++;
+
+    // For non-Claude agents, also write command skills to commands folder
     if (meta.command && agentName !== 'claude') {
-      // Write as command for non-Claude agents
-      const destDir = join(config.outputDir, config.commandsDir);
-      mkdirSync(destDir, { recursive: true });
-      const destFile = join(destDir, skillDir + config.commandsExt);
+      const cmdDestDir = join(config.outputDir, config.commandsDir);
+      mkdirSync(cmdDestDir, { recursive: true });
+      const destFile = join(cmdDestDir, skillDir + config.commandsExt);
       config.writeCommand(destFile, content, meta, config);
       commandCount++;
-    } else {
-      // Write as skill
-      const destDir = join(config.outputDir, config.skillsDir);
-      const destSkillDir = join(destDir, skillDir);
-      mkdirSync(destSkillDir, { recursive: true });
-      const destSkillFile = join(destSkillDir, config.skillsFile);
-      config.writeSkill(destSkillFile, content, meta, config);
-      skillCount++;
     }
   }
 
