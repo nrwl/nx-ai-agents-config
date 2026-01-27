@@ -44,7 +44,7 @@ Parse any overrides from `${input:args}` and merge with defaults.
 1. **Check `nx.json`** at workspace root for `nxCloudId` or `nxCloudAccessToken`
 2. **If `nx.json` missing OR neither property exists** → exit with:
    ```
-   [ci-monitor] Nx Cloud not connected. Connect your workspace to enable CI monitoring: https://nx.dev/nx-cloud
+   [ci-monitor] Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https://nx.dev/nx-cloud
    ```
 3. **If connected** → continue to main loop
 
