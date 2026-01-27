@@ -45,7 +45,7 @@ const agents = {
     argumentsPlaceholder: '$ARGUMENTS', // no change
     writeAgent: writeOpenCodeAgent,
     writeCommand: writeClaudeCommand, // Same format as Claude
-    writeSkill: writeClaudeSkill, // Same format
+    writeSkill: writeBasicSkill,
   },
   copilot: {
     outputDir: join(generatedDir, '.github'),
@@ -59,7 +59,7 @@ const agents = {
     argumentsPlaceholder: '${input:args}',
     writeAgent: writeCopilotAgent,
     writeCommand: writeCopilotCommand,
-    writeSkill: writeClaudeSkill, // Same format
+    writeSkill: writeBasicSkill,
   },
   cursor: {
     outputDir: join(generatedDir, '.cursor'),
@@ -73,7 +73,7 @@ const agents = {
     argumentsPlaceholder: null, // strip entirely
     writeAgent: writeCursorAgent,
     writeCommand: writeCursorCommand,
-    writeSkill: writeClaudeSkill, // Same format
+    writeSkill: writeBasicSkill,
   },
   gemini: {
     outputDir: join(generatedDir, '.gemini'),
@@ -192,14 +192,14 @@ function writeClaudeCommand(destPath, content, meta, config) {
 
 /**
  * Write Claude skill (YAML frontmatter + markdown)
- * If meta.command is true, adds user-invocable: true to frontmatter
+ * Supports Claude-specific features: user-invocable commands, subagent spawning
  */
 function writeClaudeSkill(destPath, content, meta, config) {
   const frontmatter = {};
   if (meta.name) frontmatter.name = meta.name;
   if (meta.description) frontmatter.description = meta.description;
 
-  // For Claude, command skills get user-invocable: true
+  // Claude-specific: command skills get user-invocable: true
   if (meta.command) {
     frontmatter['user-invocable'] = true;
     if (meta['argument-hint'])
@@ -208,10 +208,30 @@ function writeClaudeSkill(destPath, content, meta, config) {
       frontmatter['allowed-tools'] = meta['allowed-tools'];
   }
 
+  // Claude-specific: subagent field - true maps to 'general-purpose', string passes through
+  if (meta.subagent) {
+    frontmatter.subagent =
+      meta.subagent === true ? 'general-purpose' : meta.subagent;
+    frontmatter.context = 'fork';
+  }
+
   const transformedContent = meta.command
     ? transformArguments(content, config.argumentsPlaceholder)
     : content;
   const output = serializeYamlFrontmatter(frontmatter) + transformedContent;
+  writeFileSync(destPath, output);
+}
+
+/**
+ * Write basic skill (YAML frontmatter with name/description + markdown)
+ * Used by agents that don't have special skill features
+ */
+function writeBasicSkill(destPath, content, meta) {
+  const frontmatter = {};
+  if (meta.name) frontmatter.name = meta.name;
+  if (meta.description) frontmatter.description = meta.description;
+
+  const output = serializeYamlFrontmatter(frontmatter) + content;
   writeFileSync(destPath, output);
 }
 
@@ -351,21 +371,15 @@ function writeGeminiCommand(destPath, content, meta, config) {
 }
 
 /**
- * Write Gemini skill (plain markdown, same content)
+ * Write Gemini skill (YAML frontmatter + markdown)
  */
-function writeGeminiSkill(destPath, content, meta, config) {
-  // Gemini skills are plain markdown with frontmatter
-  // For command skills, use writeGeminiCommand instead
-  if (meta.command) {
-    writeGeminiCommand(destPath, content, meta, config);
-  } else {
-    const frontmatter = {};
-    if (meta.name) frontmatter.name = meta.name;
-    if (meta.description) frontmatter.description = meta.description;
+function writeGeminiSkill(destPath, content, meta) {
+  const frontmatter = {};
+  if (meta.name) frontmatter.name = meta.name;
+  if (meta.description) frontmatter.description = meta.description;
 
-    const output = serializeYamlFrontmatter(frontmatter) + content;
-    writeFileSync(destPath, output);
-  }
+  const output = serializeYamlFrontmatter(frontmatter) + content;
+  writeFileSync(destPath, output);
 }
 
 // ============== Utility Functions ==============
