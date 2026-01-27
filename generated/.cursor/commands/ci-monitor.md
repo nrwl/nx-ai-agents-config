@@ -1,16 +1,4 @@
----
-name: nx-cloud-ci-monitor
-description: Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically. Requires Nx Cloud.
-user-invocable: true
-argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
-allowed-tools:
-  - Bash
-  - Task
-  - mcp__plugin_nx_nx-mcp__ci_information
-  - mcp__plugin_nx_nx-mcp__update_self_healing_fix
----
-
-# Nx Cloud CI Monitor Command
+# CI Monitor Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `ci-watcher` subagent to poll CI status and make decisions based on the results.
 
@@ -21,8 +9,6 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 - **Remote Status:** !`git status -sb | head -1`
 
 ## User Instructions
-
-$ARGUMENTS
 
 **Important:** If user provides specific instructions, respect them over default behaviors described below.
 
@@ -37,17 +23,28 @@ $ARGUMENTS
 | `--subagent-timeout`      | 60            | Subagent polling timeout in minutes                                 |
 | `--fresh`                 | false         | Ignore previous context, start fresh                                |
 | `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CIPE failures (e.g., lockfile updates) |
-| `--new-cipe-timeout`      | 30            | Minutes to wait for new CIPE after action                           |
+| `--new-cipe-timeout`      | 10            | Minutes to wait for new CIPE after action                           |
 | `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI        |
 
-Parse any overrides from `$ARGUMENTS` and merge with defaults.
+## Nx Cloud Connection Check
+
+**CRITICAL**: Before starting the monitoring loop, verify the workspace is connected to Nx Cloud.
+
+### Step 0: Verify Nx Cloud Connection
+
+1. **Check `nx.json`** at workspace root for `nxCloudId` or `nxCloudAccessToken`
+2. **If `nx.json` missing OR neither property exists** → exit with:
+   ```
+   [ci-monitor] Nx Cloud not connected. Connect your workspace to enable CI monitoring: https://nx.dev/nx-cloud
+   ```
+3. **If connected** → continue to main loop
 
 ## Session Context Behavior
 
-**Important:** Within a Claude Code session, conversation context persists. If you Ctrl+C to interrupt the monitor and re-run `/nx-cloud-ci-monitor`, Claude remembers the previous state and may continue from where it left off.
+**Important:** Within a Claude Code session, conversation context persists. If you Ctrl+C to interrupt the monitor and re-run `/ci-monitor`, Claude remembers the previous state and may continue from where it left off.
 
-- **To continue monitoring:** Just re-run `/nx-cloud-ci-monitor` (context is preserved)
-- **To start fresh:** Use `/nx-cloud-ci-monitor --fresh` to ignore previous context
+- **To continue monitoring:** Just re-run `/ci-monitor` (context is preserved)
+- **To start fresh:** Use `/ci-monitor --fresh` to ignore previous context
 - **For a completely clean slate:** Exit Claude Code and restart `claude`
 
 ## Default Behaviors by Status
@@ -130,9 +127,7 @@ When verifiable (non-e2e) unverified tasks exist:
      - Commit and push with message indicating local verification failed
      - Report to user:
        ```
-       [nx-cloud-ci-monitor] Local verification failed after <N> attempts
-       [nx-cloud-ci-monitor] Changes pushed to CI for final validation
-       [nx-cloud-ci-monitor] Failed tasks: <taskIds>
+       [ci-monitor] Local verification failed after <N> attempts. Pushed to CI for final validation. Failed: <taskIds>
        ```
      - Record `expected_commit_sha`, spawn subagent in wait mode (let CI be final judge)
 
@@ -214,11 +209,7 @@ This means the expected CIPE was never created - CI likely failed before Nx task
 1. **Report to user:**
 
    ```
-   [nx-cloud-ci-monitor] Expected CIPE for commit <sha> was not created after 30 min.
-   [nx-cloud-ci-monitor] CI workflow likely failed before Nx tasks could run.
-   [nx-cloud-ci-monitor] Check your CI provider for failures (install step, checkout, auth, etc.)
-   [nx-cloud-ci-monitor] Expected commit: <expectedCommitSha>
-   [nx-cloud-ci-monitor] Last seen CIPE: <previousCipeUrl>
+   [ci-monitor] No CI attempt for <sha> after 10 min. Check CI provider for pre-Nx failures (install, checkout, auth). Last CI attempt: <previousCipeUrl>
    ```
 
 2. **If user configured auto-fix attempts** (e.g., `--auto-fix-workflow`):
@@ -364,7 +355,7 @@ Users can override default behaviors:
 | "if confidence < 70, reject"                     | Check confidence field before applying        |
 | "run 'nx affected -t typecheck' before applying" | Add local verification step                   |
 | "auto-fix workflow failures"                     | Attempt lockfile updates on pre-CIPE failures |
-| "wait 45 min for new CIPE"                       | Override new-CIPE timeout (default: 30 min)   |
+| "wait 45 min for new CIPE"                       | Override new-CIPE timeout (default: 10 min)   |
 
 ## Error Handling
 
@@ -382,58 +373,58 @@ Users can override default behaviors:
 ### Example 1: Normal Flow with Self-Healing (medium verbosity)
 
 ```
-[nx-cloud-ci-monitor] Starting CI monitor for branch 'feature/add-auth'
-[nx-cloud-ci-monitor] Config: max-cycles=5, timeout=120m, verbosity=medium
+[ci-monitor] Starting CI monitor for branch 'feature/add-auth'
+[ci-monitor] Config: max-cycles=5, timeout=120m, verbosity=medium
 
-[nx-cloud-ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] CIPE: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
-[CI Monitor] CIPE: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
-[CI Monitor] CIPE: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
+[ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
+[CI Monitor] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
+[CI Monitor] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
 
-[nx-cloud-ci-monitor] Fix available! Verification: COMPLETED
-[nx-cloud-ci-monitor] Applying fix via MCP...
-[nx-cloud-ci-monitor] Fix applied in CI. Waiting for new CIPE...
+[ci-monitor] Fix available! Verification: COMPLETED
+[ci-monitor] Applying fix via MCP...
+[ci-monitor] Fix applied in CI. Waiting for new CI attempt...
 
-[nx-cloud-ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] New CIPE detected!
-[CI Monitor] CIPE: SUCCEEDED | Elapsed: 8m
+[ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] New CI attempt detected!
+[CI Monitor] CI attempt: SUCCEEDED | Elapsed: 8m
 
-[nx-cloud-ci-monitor] CI passed successfully!
+[ci-monitor] CI passed successfully!
 
-[nx-cloud-ci-monitor] Summary:
+[ci-monitor] Summary:
   - Total cycles: 2
   - Total time: 12m 34s
   - Fixes applied: 1
   - Result: SUCCESS
 ```
 
-### Example 2: Pre-CIPE Failure (medium verbosity)
+### Example 2: Pre-CI Failure (medium verbosity)
 
 ```
-[nx-cloud-ci-monitor] Starting CI monitor for branch 'feature/add-products'
-[nx-cloud-ci-monitor] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
+[ci-monitor] Starting CI monitor for branch 'feature/add-products'
+[ci-monitor] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
 
-[nx-cloud-ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] CIPE: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
+[ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
 
-[nx-cloud-ci-monitor] Applying fix locally, enhancing, and pushing...
-[nx-cloud-ci-monitor] Committed: abc1234
+[ci-monitor] Applying fix locally, enhancing, and pushing...
+[ci-monitor] Committed: abc1234
 
-[nx-cloud-ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] Waiting for new CIPE... (expected SHA: abc1234)
-[CI Monitor] ⚠️  New-CIPE timeout (30 min). Returning no_new_cipe.
+[ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] Waiting for new CI attempt... (expected SHA: abc1234)
+[CI Monitor] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
 
-[nx-cloud-ci-monitor] Status: no_new_cipe
-[nx-cloud-ci-monitor] --auto-fix-workflow enabled. Attempting lockfile update...
-[nx-cloud-ci-monitor] Lockfile updated. Committed: def5678
+[ci-monitor] Status: no_new_cipe
+[ci-monitor] --auto-fix-workflow enabled. Attempting lockfile update...
+[ci-monitor] Lockfile updated. Committed: def5678
 
-[nx-cloud-ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] New CIPE detected!
-[CI Monitor] CIPE: SUCCEEDED | Elapsed: 18m
+[ci-monitor] Spawning subagent to poll CI status...
+[CI Monitor] New CI attempt detected!
+[CI Monitor] CI attempt: SUCCEEDED | Elapsed: 18m
 
-[nx-cloud-ci-monitor] CI passed successfully!
+[ci-monitor] CI passed successfully!
 
-[nx-cloud-ci-monitor] Summary:
+[ci-monitor] Summary:
   - Total cycles: 3
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
