@@ -1,6 +1,6 @@
 ---
 name: nx-plugins
-description: When you need find or add new plugins
+description: Find and add Nx plugins. USE WHEN user wants to discover available plugins, install a new plugin, or add support for a specific framework or technology to the workspace.
 ---
 
 ## Finding and Installing new plugins

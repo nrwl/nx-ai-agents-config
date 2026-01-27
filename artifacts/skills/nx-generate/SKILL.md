@@ -1,11 +1,10 @@
 # Run Nx Generator
 
-Nx generators are powerful tools that scaffold code, create projects, add components, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.
+Nx generators are powerful tools that scaffold projects, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.
 
 This skill applies when the user wants to:
 
-- Create new libraries, applications, or projects
-- Add components, services, modules, or other code artifacts
+- Create new projects like libraries or applications
 - Scaffold features or boilerplate code
 - Run workspace-specific or custom generators
 - Do anything else that an nx generator exists for
@@ -21,14 +20,14 @@ Use the Nx CLI to discover available generators:
 
 This includes:
 
-- Plugin generators (e.g., `@nx/react:component`, `@nx/js:library`)
+- Plugin generators (e.g., `@nx/react:library`, `@nx/js:library`)
 - Local workspace generators (defined in the repo's own plugins)
 
 ### Step 2: Match Generator to User Request
 
 Based on the user's request, identify which generator(s) could fulfill their needs. Consider:
 
-- What artifact type they want to create (library, component, service, etc.)
+- What artifact type they want to create (library, application, etc.)
 - Which framework or technology stack is relevant
 - Whether they mentioned specific generator names
 
@@ -45,7 +44,7 @@ Before running any generator, complete these steps:
 Use the `--help` flag to understand all available options:
 
 ```bash
-npx nx g @nx/react:component --help
+npx nx g @nx/react:library --help
 ```
 
 Pay attention to:
@@ -77,13 +76,13 @@ If not, it's okay to go back to the Generator Discovery Flow and select a differ
 
 Before generating, examine the target area of the codebase:
 
-- Look at similar existing artifacts (other components, libraries, etc.)
+- Look at similar existing artifacts (other libraries, applications, etc.)
 - Identify patterns and conventions used in the repo
 - Note naming conventions, file structures, and configuration patterns
 - Try to match these patterns when configuring the generator
 
 For example, if similar libraries are using a specific test runner, build tool or linter, try to match that if possible.
-If components or other artifacts are built with a specific naming convention, try to match it.
+If projects or other artifacts are organized with a specific naming convention, try to match it.
 
 ### 4. Validate Required Options
 
@@ -120,7 +119,7 @@ nx generate <generator-name> <options> --no-interactive
 Example:
 
 ```bash
-nx generate @nx/react:component --name=MyButton --no-interactive
+nx generate @nx/react:library --name=my-utils --no-interactive
 ```
 
 ### Handling Generator Failures
