@@ -22,6 +22,9 @@
     "packages/*"
   ],
   "nx": {
+    "nxCloudImplicitDependencies": [
+      "697890bce47a1e5245e880ad:nx-mcp"
+    ],
     "targets": {
       "sync-artifacts": {
         "command": "node scripts/sync-artifacts.mjs"
