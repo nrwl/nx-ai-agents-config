@@ -179,3 +179,22 @@ git diff --name-only main
 # See which project owns those files
 nx show project X --json | jq '.root'
 ```
+
+## Programmatic Answers
+
+When answering quantitative questions (counts, lists, filtering), use command-line tools to compute the answer programmatically rather than counting or parsing output manually:
+
+```bash
+# Counting: pipe to wc -l
+nx show projects | wc -l
+nx show projects --type lib | wc -l
+
+# Filtering/extracting: pipe to jq, grep, or awk
+nx show project my-app --json | jq '.tags'
+nx show projects --json | jq 'length'
+nx show projects | grep "shared-"
+
+# Sorting/uniqueness
+nx show projects | sort
+cat nx.json | jq '.plugins[].plugin' | sort -u
+```
