@@ -139,21 +139,21 @@ Once new CIPE is detected:
 While in wait mode, output clearly that you're waiting (not processing):
 
 ```
-[CI Monitor] ═══════════════════════════════════════════════════════
-[CI Monitor] WAIT MODE - Expecting new CI Attempt
-[CI Monitor] Expected SHA: <expectedCommitSha>
-[CI Monitor] Previous CI Attempt: <previousCipeUrl>
-[CI Monitor] ═══════════════════════════════════════════════════════
+[ci-watcher] ═══════════════════════════════════════════════════════
+[ci-watcher] WAIT MODE - Expecting new CI Attempt
+[ci-watcher] Expected SHA: <expectedCommitSha>
+[ci-watcher] Previous CI Attempt: <previousCipeUrl>
+[ci-watcher] ═══════════════════════════════════════════════════════
 
-[CI Monitor] Polling... (elapsed: 0m 30s)
-[CI Monitor] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
+[ci-watcher] Polling... (elapsed: 0m 30s)
+[ci-watcher] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
 
-[CI Monitor] Polling... (elapsed: 1m 30s)
-[CI Monitor] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
+[ci-watcher] Polling... (elapsed: 1m 30s)
+[ci-watcher] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
 
-[CI Monitor] Polling... (elapsed: 2m 30s)
-[CI Monitor] ✓ New CI Attempt detected! URL: <newCipeUrl>, SHA: <newCommitSha>
-[CI Monitor] Switching to normal polling mode...
+[ci-watcher] Polling... (elapsed: 2m 30s)
+[ci-watcher] ✓ New CI Attempt detected! URL: <newCipeUrl>, SHA: <newCommitSha>
+[ci-watcher] Switching to normal polling mode...
 ```
 
 ### Why This Matters (Context Preservation)
@@ -429,7 +429,7 @@ Output **only when state changes significantly** to save context tokens:
 Format: single line, no decorators:
 
 ```
-[CI Monitor] CI: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 4m
+[ci-watcher] CI: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 4m
 ```
 
 ### Verbose Verbosity
@@ -437,16 +437,16 @@ Format: single line, no decorators:
 Output detailed phase box after every poll:
 
 ```
-[CI Monitor] ─────────────────────────────────────────────────────
-[CI Monitor] Iteration <N> | Elapsed: <X>m <Y>s
-[CI Monitor]
-[CI Monitor] CI Status:          <cipeStatus>
-[CI Monitor] Self-Healing:       <selfHealingStatus>
-[CI Monitor] Verification:       <verificationStatus>
-[CI Monitor] Classification:     <failureClassification>
-[CI Monitor]
-[CI Monitor] → <human-readable phase description>
-[CI Monitor] ─────────────────────────────────────────────────────
+[ci-watcher] ─────────────────────────────────────────────────────
+[ci-watcher] Iteration <N> | Elapsed: <X>m <Y>s
+[ci-watcher]
+[ci-watcher] CI Status:          <cipeStatus>
+[ci-watcher] Self-Healing:       <selfHealingStatus>
+[ci-watcher] Verification:       <verificationStatus>
+[ci-watcher] Classification:     <failureClassification>
+[ci-watcher]
+[ci-watcher] → <human-readable phase description>
+[ci-watcher] ─────────────────────────────────────────────────────
 ```
 
 ### Phase Descriptions (for verbose output)

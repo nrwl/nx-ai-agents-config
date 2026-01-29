@@ -1,17 +1,9 @@
 ---
-name: ci-monitor
-description: Monitor Nx Cloud CI pipeline and handle self-healing fixes automatically. Checks for Nx Cloud connection before starting.
-user-invocable: true
-argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
-allowed-tools:
-  - Bash
-  - Read
-  - Task
-  - mcp__plugin_nx_nx-mcp__ci_information
-  - mcp__plugin_nx_nx-mcp__update_self_healing_fix
+name: monitor-ci
+description: Monitor Nx Cloud CI pipeline and handle self-healing fixes. USE WHEN user says "monitor ci", "watch ci", "ci monitor", wants to track CI status, or needs help with self-healing CI fixes
 ---
 
-# CI Monitor Command
+# Monitor CI Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `ci-watcher` subagent to poll CI status and make decisions based on the results.
 
@@ -52,16 +44,16 @@ Parse any overrides from `$ARGUMENTS` and merge with defaults.
 1. **Check `nx.json`** at workspace root for `nxCloudId` or `nxCloudAccessToken`
 2. **If `nx.json` missing OR neither property exists** → exit with:
    ```
-   [ci-monitor] Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https://nx.dev/nx-cloud
+   [monitor-ci] Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https://nx.dev/nx-cloud
    ```
 3. **If connected** → continue to main loop
 
 ## Session Context Behavior
 
-**Important:** Within a Claude Code session, conversation context persists. If you Ctrl+C to interrupt the monitor and re-run `/ci-monitor`, Claude remembers the previous state and may continue from where it left off.
+**Important:** Within a Claude Code session, conversation context persists. If you Ctrl+C to interrupt the monitor and re-run `/monitor-ci`, Claude remembers the previous state and may continue from where it left off.
 
-- **To continue monitoring:** Just re-run `/ci-monitor` (context is preserved)
-- **To start fresh:** Use `/ci-monitor --fresh` to ignore previous context
+- **To continue monitoring:** Just re-run `/monitor-ci` (context is preserved)
+- **To start fresh:** Use `/monitor-ci --fresh` to ignore previous context
 - **For a completely clean slate:** Exit Claude Code and restart `claude`
 
 ## Default Behaviors by Status
@@ -144,7 +136,7 @@ When verifiable (non-e2e) unverified tasks exist:
      - Commit and push with message indicating local verification failed
      - Report to user:
        ```
-       [ci-monitor] Local verification failed after <N> attempts. Pushed to CI for final validation. Failed: <taskIds>
+       [monitor-ci] Local verification failed after <N> attempts. Pushed to CI for final validation. Failed: <taskIds>
        ```
      - Record `expected_commit_sha`, spawn subagent in wait mode (let CI be final judge)
 
@@ -226,7 +218,7 @@ This means the expected CIPE was never created - CI likely failed before Nx task
 1. **Report to user:**
 
    ```
-   [ci-monitor] No CI attempt for <sha> after 10 min. Check CI provider for pre-Nx failures (install, checkout, auth). Last CI attempt: <previousCipeUrl>
+   [monitor-ci] No CI attempt for <sha> after 10 min. Check CI provider for pre-Nx failures (install, checkout, auth). Last CI attempt: <previousCipeUrl>
    ```
 
 2. **If user configured auto-fix attempts** (e.g., `--auto-fix-workflow`):
@@ -390,25 +382,25 @@ Users can override default behaviors:
 ### Example 1: Normal Flow with Self-Healing (medium verbosity)
 
 ```
-[ci-monitor] Starting CI monitor for branch 'feature/add-auth'
-[ci-monitor] Config: max-cycles=5, timeout=120m, verbosity=medium
+[monitor-ci] Starting CI monitor for branch 'feature/add-auth'
+[monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
 
-[ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
-[CI Monitor] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
-[CI Monitor] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-watcher] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
+[ci-watcher] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
+[ci-watcher] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
 
-[ci-monitor] Fix available! Verification: COMPLETED
-[ci-monitor] Applying fix via MCP...
-[ci-monitor] Fix applied in CI. Waiting for new CI attempt...
+[monitor-ci] Fix available! Verification: COMPLETED
+[monitor-ci] Applying fix via MCP...
+[monitor-ci] Fix applied in CI. Waiting for new CI attempt...
 
-[ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] New CI attempt detected!
-[CI Monitor] CI attempt: SUCCEEDED | Elapsed: 8m
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-watcher] New CI attempt detected!
+[ci-watcher] CI attempt: SUCCEEDED | Elapsed: 8m
 
-[ci-monitor] CI passed successfully!
+[monitor-ci] CI passed successfully!
 
-[ci-monitor] Summary:
+[monitor-ci] Summary:
   - Total cycles: 2
   - Total time: 12m 34s
   - Fixes applied: 1
@@ -418,30 +410,30 @@ Users can override default behaviors:
 ### Example 2: Pre-CI Failure (medium verbosity)
 
 ```
-[ci-monitor] Starting CI monitor for branch 'feature/add-products'
-[ci-monitor] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
+[monitor-ci] Starting CI monitor for branch 'feature/add-products'
+[monitor-ci] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
 
-[ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-watcher] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
 
-[ci-monitor] Applying fix locally, enhancing, and pushing...
-[ci-monitor] Committed: abc1234
+[monitor-ci] Applying fix locally, enhancing, and pushing...
+[monitor-ci] Committed: abc1234
 
-[ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] Waiting for new CI attempt... (expected SHA: abc1234)
-[CI Monitor] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-watcher] Waiting for new CI attempt... (expected SHA: abc1234)
+[ci-watcher] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
 
-[ci-monitor] Status: no_new_cipe
-[ci-monitor] --auto-fix-workflow enabled. Attempting lockfile update...
-[ci-monitor] Lockfile updated. Committed: def5678
+[monitor-ci] Status: no_new_cipe
+[monitor-ci] --auto-fix-workflow enabled. Attempting lockfile update...
+[monitor-ci] Lockfile updated. Committed: def5678
 
-[ci-monitor] Spawning subagent to poll CI status...
-[CI Monitor] New CI attempt detected!
-[CI Monitor] CI attempt: SUCCEEDED | Elapsed: 18m
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-watcher] New CI attempt detected!
+[ci-watcher] CI attempt: SUCCEEDED | Elapsed: 18m
 
-[ci-monitor] CI passed successfully!
+[monitor-ci] CI passed successfully!
 
-[ci-monitor] Summary:
+[monitor-ci] Summary:
   - Total cycles: 3
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
