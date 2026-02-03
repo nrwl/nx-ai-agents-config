@@ -8,6 +8,8 @@ Keep in mind that you might have to prefix commands with `npx`/`pnpx`/`yarn` if 
 
 Use `nx show projects` to list projects in the workspace.
 
+The project filtering syntax (`-p`/`--projects`) works across many Nx commands including `nx run-many`, `nx release`, `nx show projects`, and more. Filters support explicit names, glob patterns, tag references (`tag:name`), directories, and negation (`!`).
+
 ```bash
 # List all projects
 nx show projects
@@ -16,6 +18,9 @@ nx show projects
 nx show projects --projects "apps/*"
 nx show projects --projects "shared-*"
 
+# Filter by tag
+nx show projects --projects "tag:publishable"
+nx show projects -p "tag:publishable,!tag:internal"
 
 # Filter by target (projects that have a specific target)
 nx show projects --withTarget build
@@ -28,6 +33,11 @@ nx show projects --affected --type app
 # Combine filters
 nx show projects --type lib --withTarget test
 nx show projects --affected --exclude="*-e2e"
+nx show projects -p "tag:scope:client,packages/*"
+
+# Negate patterns
+nx show projects -p "!tag:private"
+nx show projects -p "!*-e2e"
 
 # Output as JSON
 nx show projects --json
