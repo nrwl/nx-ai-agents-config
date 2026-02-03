@@ -18,9 +18,8 @@ This skill applies when the user wants to:
 
 1. **Always use `--no-interactive`** - Prevents prompts that would hang execution
 2. **Read the generator source code** - The schema alone is not enough; understand what the generator actually does
-3. **Dry-run first** - Always verify file placement before running for real
-4. **Match existing repo patterns** - Study similar artifacts in the repo and follow their conventions
-5. **Verify with lint/test/build** - Generated code must pass verification
+3. **Match existing repo patterns** - Study similar artifacts in the repo and follow their conventions
+4. **Verify with lint/test/build** - Generated code must pass verification
 
 ## Steps
 
@@ -68,9 +67,18 @@ To find generator source code:
 
 After reading the source, reconsider: Is this the right generator? If not, go back to step 2.
 
-> **⚠️ COMMON MISCONCEPTION: `--directory` flag**
+> **⚠️ `--directory` flag behavior can be misleading.**
+> It should specify the full path of the generated library or component, not the parent path that it will be generated in.
 >
-> The `--directory` option behaves differently across generators. Do NOT assume you know how it works. Some generators use it as the full path where files should be created, others use it as a parent directory, and some combine it with `--name` in unexpected ways. **Always read the generator source code** to understand exactly how `--directory` is used before running the generator.
+> ```bash
+> # ✅ Correct - directory is the full path for the library
+> nx g @nx/react:library --directory=libs/my-lib
+> # generates libs/my-lib/package.json and more
+>
+> # ❌ Wrong - this will create files at libs and libs/src/...
+> nx g @nx/react:library --name=my-lib --directory=libs
+> # generates libs/package.json and more
+> ```
 
 ### 5. Examine Existing Patterns
 
@@ -100,12 +108,6 @@ Execute the generator:
 ```bash
 nx generate <generator-name> <options> --no-interactive
 ```
-
-If the generator fails:
-
-1. Read the error message carefully
-2. Adjust options or resolve conflicts
-3. Retry with corrected options
 
 ### 8. Modify Generated Code (If Needed)
 
