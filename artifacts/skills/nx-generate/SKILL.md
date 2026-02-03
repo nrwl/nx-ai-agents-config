@@ -45,6 +45,29 @@ npx nx g @nx/react:library --help
 
 Pay attention to required options, defaults that might need overriding, and options relevant to the user's request.
 
+### Library Buildability
+
+**Default to non-buildable libraries** unless there's a specific reason for buildable.
+
+| Type                        | When to use                                                       | Generator flags                     |
+| --------------------------- | ----------------------------------------------------------------- | ----------------------------------- |
+| **Non-buildable** (default) | Internal monorepo libs consumed by apps                           | No `--bundler` flag                 |
+| **Buildable**               | Publishing to npm, cross-repo sharing, stable libs for cache hits | `--bundler=vite` or `--bundler=swc` |
+
+Non-buildable libs:
+
+- Export `.ts`/`.tsx` source directly
+- Consumer's bundler compiles them
+- Faster dev experience, less config
+
+Buildable libs:
+
+- Have their own build target
+- Useful for stable libs that rarely change (cache hits)
+- Required for npm publishing
+
+**If unclear, ask the user:** "Should this library be buildable (own build step, better caching) or non-buildable (source consumed directly, simpler setup)?"
+
 ### 4. Read Generator Source Code
 
 **This step is critical.** The schema alone does not tell you everything. Reading the source code helps you:

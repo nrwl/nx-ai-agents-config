@@ -1,6 +1,6 @@
 ---
 name: nx-workspace
-description: "Explore and understand Nx workspaces. USE WHEN answering any questions about the nx workspace, the projects in it or tasks to run. EXAMPLES: 'What projects are in this workspace?', 'How is project X configured?', 'What targets can I run?', 'What's affected by my changes?', 'Which projects depend on library Y?', or any questions about Nx workspace structure, project configuration, or available tasks."
+description: "Explore and understand Nx workspaces. USE WHEN answering questions about the workspace, projects, or tasks. ALSO USE WHEN an nx command fails or you need to check available targets/configuration before running a task. EXAMPLES: 'What projects are in this workspace?', 'How is project X configured?', 'What depends on library Y?', 'What targets can I run?', 'Cannot find configuration for task', 'debug nx task failure'."
 ---
 
 # Nx Workspace Exploration
@@ -284,4 +284,23 @@ nx graph --print | jq '.graph.dependencies["my-app"]'
 
 # Find projects that depend on a library
 nx graph --print | jq '.graph.dependencies | to_entries[] | select(.value[].target == "shared-ui") | .key'
+```
+
+## Troubleshooting
+
+### "Cannot find configuration for task X:target"
+
+```bash
+# Check what targets exist on the project
+nx show project X --json | jq '.targets | keys'
+
+# Check if any projects have that target
+nx show projects --withTarget target
+```
+
+### "The workspace is out of sync"
+
+```bash
+nx sync
+nx reset  # if sync doesn't fix stale cache
 ```
