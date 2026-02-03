@@ -1,6 +1,6 @@
 ---
 name: nx-generate
-description: Generate code using nx generators. USE WHEN scaffolding code or transforming existing code - for example creating libraries or applications, or anything else that is boilerplate code or automates repetitive tasks. ALWAYS use this first when generating code with Nx instead of calling MCP tools or running nx generate immediately.
+description: Generate code using nx generators. INVOKE IMMEDIATELY when user mentions scaffolding, setup, structure, creating apps/libs, or setting up project structure. Trigger words - scaffold, setup, create a ... app, create a ... lib, project structure, generate, add a new project. ALWAYS use this BEFORE calling nx_docs or exploring - this skill handles discovery internally.
 subagent: general-purpose
 context: fork
 ---
@@ -51,6 +51,29 @@ npx nx g @nx/react:library --help
 ```
 
 Pay attention to required options, defaults that might need overriding, and options relevant to the user's request.
+
+### Library Buildability
+
+**Default to non-buildable libraries** unless there's a specific reason for buildable.
+
+| Type                        | When to use                                                       | Generator flags                     |
+| --------------------------- | ----------------------------------------------------------------- | ----------------------------------- |
+| **Non-buildable** (default) | Internal monorepo libs consumed by apps                           | No `--bundler` flag                 |
+| **Buildable**               | Publishing to npm, cross-repo sharing, stable libs for cache hits | `--bundler=vite` or `--bundler=swc` |
+
+Non-buildable libs:
+
+- Export `.ts`/`.tsx` source directly
+- Consumer's bundler compiles them
+- Faster dev experience, less config
+
+Buildable libs:
+
+- Have their own build target
+- Useful for stable libs that rarely change (cache hits)
+- Required for npm publishing
+
+**If unclear, ask the user:** "Should this library be buildable (own build step, better caching) or non-buildable (source consumed directly, simpler setup)?"
 
 ### 4. Read Generator Source Code
 

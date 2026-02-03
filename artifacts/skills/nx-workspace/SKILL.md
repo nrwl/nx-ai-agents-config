@@ -280,3 +280,22 @@ nx graph --print | jq '.graph.dependencies["my-app"]'
 # Find projects that depend on a library
 nx graph --print | jq '.graph.dependencies | to_entries[] | select(.value[].target == "shared-ui") | .key'
 ```
+
+## Troubleshooting
+
+### "Cannot find configuration for task X:target"
+
+```bash
+# Check what targets exist on the project
+nx show project X --json | jq '.targets | keys'
+
+# Check if any projects have that target
+nx show projects --withTarget target
+```
+
+### "The workspace is out of sync"
+
+```bash
+nx sync
+nx reset  # if sync doesn't fix stale cache
+```
