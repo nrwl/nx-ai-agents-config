@@ -95,6 +95,7 @@ The subagent returns with one of the following statuses. This table defines the 
 | `polling_timeout`   | Subagent polling timeout reached. Exit with timeout.                                                                                                              |
 | `cipe_canceled`     | CIPE was canceled. Exit with canceled status.                                                                                                                     |
 | `cipe_timed_out`    | CIPE timed out. Exit with timeout status.                                                                                                                         |
+| `cipe_no_tasks`     | CIPE exists but failed with no task data (likely infrastructure issue). Retry once with empty commit. If retry fails, exit with failure and guidance.             |
 | `error`             | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise wait 60s and loop.                                                                  |
 
 ### Fix Available Decision Logic
@@ -261,6 +262,47 @@ This means the expected CIPE was never created - CI likely failed before Nx task
 
 3. **Otherwise:** Exit with `no_new_cipe` status, providing guidance for user to investigate
 
+### CIPE-No-Tasks Handling
+
+When `status == 'cipe_no_tasks'`:
+
+This means the CIPE was created but no Nx tasks were recorded before it failed. Common causes:
+
+- CI timeout before tasks could run
+- Critical infrastructure error
+- Memory/resource exhaustion
+- Network issues connecting to Nx Cloud
+
+1. **Report to user:**
+
+   ```
+   [monitor-ci] CI failed but no Nx tasks were recorded.
+   [monitor-ci] CIPE URL: <cipeUrl>
+   [monitor-ci]
+   [monitor-ci] This usually indicates an infrastructure issue. Attempting retry...
+   ```
+
+2. **Create empty commit to retry CI:**
+
+   ```bash
+   git commit --allow-empty -m "chore: retry ci [monitor-ci]"
+   git push origin $(git branch --show-current)
+   ```
+
+3. **Record `expected_commit_sha`, spawn subagent in wait mode**
+
+4. **If retry also returns `cipe_no_tasks`:**
+
+   - Exit with failure
+   - Provide guidance:
+     ```
+     [monitor-ci] Retry failed. Please check:
+     [monitor-ci]   1. Nx Cloud UI: <cipeUrl>
+     [monitor-ci]   2. CI provider logs (GitHub Actions, GitLab CI, etc.)
+     [monitor-ci]   3. CI job timeout settings
+     [monitor-ci]   4. Memory/resource limits
+     ```
+
 ## Exit Conditions
 
 Exit the monitoring loop when ANY of these conditions are met:
@@ -346,6 +388,7 @@ After actions that should trigger a new CIPE, record state before looping:
 | No fix + local fix + push     | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
 | Environment rerun             | `last_cipe_url = current cipeUrl`             | Wait mode     |
 | No-new-CIPE + auto-fix + push | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| CIPE no tasks + retry push    | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
 
 **CRITICAL**: When passing `expectedCommitSha` or `last_cipe_url` to the subagent, it enters **wait mode**:
 

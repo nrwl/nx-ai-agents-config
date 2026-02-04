@@ -353,6 +353,7 @@ Before returning to main agent, fetch heavy fields if the status requires them:
 | `polling_timeout`   | None                                                                           |
 | `cipe_canceled`     | None                                                                           |
 | `cipe_timed_out`    | None                                                                           |
+| `cipe_no_tasks`     | None                                                                           |
 
 ```
 # Example: fetching heavy fields for fix_available
@@ -382,6 +383,7 @@ Return immediately with structured state if ANY of these conditions are true:
 | `polling_timeout`   | Subagent has been polling for > configured timeout (default 60 min)                                                                                       |
 | `cipe_canceled`     | `cipeStatus == 'CANCELED'`                                                                                                                                |
 | `cipe_timed_out`    | `cipeStatus == 'TIMED_OUT'`                                                                                                                               |
+| `cipe_no_tasks`     | `cipeStatus == 'FAILED'` AND `failedTaskIds.length == 0` AND `selfHealingStatus == null`                                                                  |
 
 ## Subagent Timeout
 
