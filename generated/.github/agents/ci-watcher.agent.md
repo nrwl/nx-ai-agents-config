@@ -105,6 +105,40 @@ Before first poll, wait based on context:
 sleep 60  # or 30 if expecting new CIPE (FOREGROUND, not background)
 ```
 
+## Stale Detection (CRITICAL)
+
+**Before EVERY poll iteration**, check if this subagent instance is stale:
+
+### Stale Check Protocol
+
+1. **Immediately after waking from sleep**, before calling `ci_information`:
+
+   ```
+   IF main agent has moved on (CI already passed or new cycle started):
+     → Output: "[ci-watcher] Stale instance detected. Exiting."
+     → Return immediately with status: stale_exit
+     → Do NOT continue polling
+   ```
+
+2. **After each `ci_information` call**, check for early exit:
+
+   ```
+   IF cipeStatus == 'SUCCEEDED':
+     → CI passed while we were sleeping
+     → Return immediately with status: ci_success
+     → Do NOT continue to next poll iteration
+   ```
+
+### Why Stale Instances Happen
+
+When main agent spawns a new subagent cycle, previous subagent instances may still be in a `sleep` call. Upon waking:
+
+- They have outdated context (old `expectedCommitSha`, old `previousCipeUrl`)
+- Main agent has already moved on
+- Continuing to poll wastes resources and causes confusing output
+
+**The subagent MUST self-terminate when detecting staleness rather than continuing.**
+
 ## Two-Phase Operation
 
 The subagent operates in one of two modes depending on input:
@@ -218,6 +252,28 @@ ci_information({
 
 Merge response into `accumulated_state` after each poll.
 
+### Stale Check After Each Poll
+
+**Immediately after receiving `ci_information` response, before any other processing:**
+
+1. **Check if CI already succeeded:**
+
+   ```
+   IF cipeStatus == 'SUCCEEDED':
+     → Return immediately with ci_success
+     → Do NOT sleep, do NOT continue polling
+   ```
+
+2. **If in wait mode, verify we're still relevant:**
+
+   ```
+   IF expectedCommitSha provided AND current commitSha matches AND cipeStatus == 'SUCCEEDED':
+     → Our expected CIPE ran and passed
+     → Return immediately with ci_success
+   ```
+
+This prevents continuing to poll after CI has already completed.
+
 ### Analyze Response
 
 **If in Wait Mode** (expecting new CIPE):
@@ -260,13 +316,24 @@ Between polls, wait with exponential backoff:
 
 Reset to 60 seconds when state changes significantly.
 
-**IMPORTANT:** Run sleep in foreground (NOT as background command). Background sleep causes "What should Claude do?" prompts when completed.
+### CRITICAL: Foreground-Only Sleep
+
+**NEVER run sleep as a background command.** This is the #1 cause of stale timer issues.
+
+| Pattern             | Result                                      |
+| ------------------- | ------------------------------------------- |
+| `sleep 60`          | ✅ CORRECT - blocks until complete          |
+| `sleep 60 &`        | ❌ WRONG - creates orphan timer             |
+| `(sleep 60 && ...)` | ❌ WRONG - subshell continues independently |
+| `nohup sleep ...`   | ❌ WRONG - survives agent termination       |
+
+**Why this matters**: Background sleep commands create timer processes that outlive the polling context. When they complete, they trigger actions in a stale context, causing "CI already passed" spam.
 
 ```bash
-# Example backoff - run in FOREGROUND
-sleep 60   # First wait
-sleep 90   # Second wait
-sleep 120  # Third and subsequent waits (capped)
+# Example backoff - run in FOREGROUND (blocking)
+sleep 60   # First wait - BLOCKS until complete
+sleep 90   # Second wait - BLOCKS until complete
+sleep 120  # Third and subsequent waits (capped) - BLOCKS until complete
 ```
 
 ### Fetch Heavy Fields on Actionable State
