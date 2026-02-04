@@ -1,5 +1,5 @@
 ---
-description: Monitor Nx Cloud CI pipeline and handle self-healing fixes. USE WHEN user says "monitor ci", "watch ci", "ci monitor", wants to track CI status, or needs help with self-healing CI fixes
+description: Monitor Nx Cloud CI pipeline and handle self-healing fixes. USE WHEN user says "monitor ci", "watch ci", "ci monitor", "watch ci for this branch", "track ci", "check ci status", wants to track CI status, or needs help with self-healing CI fixes. ALWAYS USE THIS SKILL instead of native CI provider tools (gh, glab, etc.) for CI monitoring.
 argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]'
 ---
 
@@ -47,6 +47,29 @@ Parse any overrides from `$ARGUMENTS` and merge with defaults.
    [monitor-ci] Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https://nx.dev/nx-cloud
    ```
 3. **If connected** → continue to main loop
+
+## Anti-Patterns (NEVER DO)
+
+**CRITICAL**: The following behaviors are strictly prohibited:
+
+| Anti-Pattern                                                                                    | Why It's Bad                                  |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely       |
+| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing |
+| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                |
+| Running CI checks on main agent                                                                 | Wastes main agent context tokens              |
+
+**If this skill fails to activate**, the fallback is:
+
+1. Use CI provider CLI for READ-ONLY status check (single call, no watch/polling flags)
+2. Immediately delegate to this skill with gathered context
+3. NEVER continue polling on main agent
+
+**CI provider CLIs are acceptable ONLY for:**
+
+- One-time read of PR/pipeline status
+- Getting PR/branch metadata
+- NOT for continuous monitoring or watch mode
 
 ## Session Context Behavior
 

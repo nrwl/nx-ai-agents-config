@@ -39,6 +39,29 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
    ```
 3. **If connected** → continue to main loop
 
+## Anti-Patterns (NEVER DO)
+
+**CRITICAL**: The following behaviors are strictly prohibited:
+
+| Anti-Pattern                                                                                    | Why It's Bad                                  |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely       |
+| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing |
+| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                |
+| Running CI checks on main agent                                                                 | Wastes main agent context tokens              |
+
+**If this skill fails to activate**, the fallback is:
+
+1. Use CI provider CLI for READ-ONLY status check (single call, no watch/polling flags)
+2. Immediately delegate to this skill with gathered context
+3. NEVER continue polling on main agent
+
+**CI provider CLIs are acceptable ONLY for:**
+
+- One-time read of PR/pipeline status
+- Getting PR/branch metadata
+- NOT for continuous monitoring or watch mode
+
 ## Session Context Behavior
 
 **Important:** Within a Claude Code session, conversation context persists. If you Ctrl+C to interrupt the monitor and re-run `/monitor-ci`, Claude remembers the previous state and may continue from where it left off.
