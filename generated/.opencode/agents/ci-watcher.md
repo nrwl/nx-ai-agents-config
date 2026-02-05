@@ -154,7 +154,7 @@ Normal polling - process whatever CIPE is returned by `ci_information`.
 
 #### Phase A: Wait Mode
 
-1. Start a **new-CIPE timeout** timer (default: 30 minutes)
+1. Start a **new-CIPE timeout** timer (default: 10 minutes, configurable via main agent)
 2. On each poll of `ci_information`:
    - Check if CIPE is NEW:
      - `cipeUrl` differs from `previousCipeUrl` → **new CIPE detected**
@@ -162,7 +162,7 @@ Normal polling - process whatever CIPE is returned by `ci_information`.
    - If still OLD CIPE: **ignore all status fields**, just wait and poll again
    - Do NOT return `fix_available`, `ci_success`, etc. based on old CIPE!
 3. Output wait status (see below)
-4. If timeout (30 min) reached → return `no_new_cipe`
+4. If timeout (10 min) reached → return `no_new_cipe`
 
 #### Phase B: Normal Polling (after new CIPE detected)
 
@@ -379,7 +379,7 @@ Return immediately with structured state if ANY of these conditions are true:
 | `fix_failed`        | `selfHealingStatus == 'FAILED'`                                                                                                                           |
 | `environment_issue` | `failureClassification == 'ENVIRONMENT_STATE'`                                                                                                            |
 | `no_fix`            | `cipeStatus == 'FAILED'` AND (`selfHealingEnabled == false` OR `selfHealingStatus == 'NOT_EXECUTABLE'`)                                                   |
-| `no_new_cipe`       | `expectedCommitSha` or `previousCipeUrl` provided, but no new CI Attempt detected after 30 min                                                            |
+| `no_new_cipe`       | `expectedCommitSha` or `previousCipeUrl` provided, but no new CI Attempt detected after 10 min                                                            |
 | `polling_timeout`   | Subagent has been polling for > configured timeout (default 60 min)                                                                                       |
 | `cipe_canceled`     | `cipeStatus == 'CANCELED'`                                                                                                                                |
 | `cipe_timed_out`    | `cipeStatus == 'TIMED_OUT'`                                                                                                                               |
@@ -467,7 +467,7 @@ When returning with `status: no_new_cipe`, include additional context:
 - **Previous CI Attempt URL:** <previousCipeUrl>
 - **Last Seen CI Attempt URL:** <cipeUrl>
 - **Last Seen Commit SHA:** <commitSha>
-- **New CI Attempt Timeout:** 30 minutes (exceeded)
+- **New CI Attempt Timeout:** 10 minutes (exceeded)
 
 ### Likely Cause
 CI workflow failed before Nx tasks could run (e.g., install step, checkout, auth).
