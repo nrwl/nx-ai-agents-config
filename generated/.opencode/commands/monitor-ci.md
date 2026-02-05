@@ -5,7 +5,7 @@ argument-hint: '[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity
 
 # Monitor CI Command
 
-You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `ci-watcher` subagent to poll CI status and make decisions based on the results.
+You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn the `ci-monitor-subagent` subagent to poll CI status and make decisions based on the results.
 
 ## Context
 
@@ -333,13 +333,13 @@ expected_commit_sha = null
 
 ### Step 2: Spawn Subagent
 
-Spawn the `ci-watcher` subagent to poll CI status:
+Spawn the `ci-monitor-subagent` subagent to poll CI status:
 
 **Fresh start (first spawn, no expected CIPE):**
 
 ```
 Task(
-  agent: "ci-watcher",
+  agent: "ci-monitor-subagent",
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CIPE timeout: <new-cipe-timeout> minutes.
@@ -351,7 +351,7 @@ Task(
 
 ```
 Task(
-  agent: "ci-watcher",
+  agent: "ci-monitor-subagent",
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CIPE timeout: <new-cipe-timeout> minutes.
@@ -452,17 +452,17 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-watcher] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
-[ci-watcher] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
-[ci-watcher] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
+[ci-monitor-subagent] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
 
 [monitor-ci] Fix available! Verification: COMPLETED
 [monitor-ci] Applying fix via MCP...
 [monitor-ci] Fix applied in CI. Waiting for new CI attempt...
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-watcher] New CI attempt detected!
-[ci-watcher] CI attempt: SUCCEEDED | Elapsed: 8m
+[ci-monitor-subagent] New CI attempt detected!
+[ci-monitor-subagent] CI attempt: SUCCEEDED | Elapsed: 8m
 
 [monitor-ci] CI passed successfully!
 
@@ -480,22 +480,22 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-watcher] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
 
 [monitor-ci] Applying fix locally, enhancing, and pushing...
 [monitor-ci] Committed: abc1234
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-watcher] Waiting for new CI attempt... (expected SHA: abc1234)
-[ci-watcher] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
+[ci-monitor-subagent] Waiting for new CI attempt... (expected SHA: abc1234)
+[ci-monitor-subagent] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
 
 [monitor-ci] Status: no_new_cipe
 [monitor-ci] --auto-fix-workflow enabled. Attempting lockfile update...
 [monitor-ci] Lockfile updated. Committed: def5678
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-watcher] New CI attempt detected!
-[ci-watcher] CI attempt: SUCCEEDED | Elapsed: 18m
+[ci-monitor-subagent] New CI attempt detected!
+[ci-monitor-subagent] CI attempt: SUCCEEDED | Elapsed: 18m
 
 [monitor-ci] CI passed successfully!
 

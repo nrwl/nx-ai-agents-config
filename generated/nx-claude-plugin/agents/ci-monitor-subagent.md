@@ -1,10 +1,13 @@
 ---
-name: ci-watcher
+name: ci-monitor-subagent
 description: Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /monitor-ci command to monitor CI Attempt status.
-model: fast
+model: haiku
+allowed-tools:
+  - mcp__plugin_nx_nx-mcp__ci_information
+  - mcp__plugin_nx_nx-mcp__update_self_healing_fix
 ---
 
-# CI Watcher Subagent
+# CI Monitor Subagent
 
 You are a CI monitoring subagent responsible for polling Nx Cloud CI Attempt status and self-healing state. You report status back to the main agent - you do NOT make apply/reject decisions.
 
@@ -117,7 +120,7 @@ sleep 60  # or 30 if expecting new CIPE (FOREGROUND, not background)
 
    ```
    IF main agent has moved on (CI already passed or new cycle started):
-     → Output: "[ci-watcher] Stale instance detected. Exiting."
+     → Output: "[ci-monitor-subagent] Stale instance detected. Exiting."
      → Return immediately with status: stale_exit
      → Do NOT continue polling
    ```
@@ -179,21 +182,21 @@ Once new CIPE is detected:
 While in wait mode, output clearly that you're waiting (not processing):
 
 ```
-[ci-watcher] ═══════════════════════════════════════════════════════
-[ci-watcher] WAIT MODE - Expecting new CI Attempt
-[ci-watcher] Expected SHA: <expectedCommitSha>
-[ci-watcher] Previous CI Attempt: <previousCipeUrl>
-[ci-watcher] ═══════════════════════════════════════════════════════
+[ci-monitor-subagent] ═══════════════════════════════════════════════════════
+[ci-monitor-subagent] WAIT MODE - Expecting new CI Attempt
+[ci-monitor-subagent] Expected SHA: <expectedCommitSha>
+[ci-monitor-subagent] Previous CI Attempt: <previousCipeUrl>
+[ci-monitor-subagent] ═══════════════════════════════════════════════════════
 
-[ci-watcher] Polling... (elapsed: 0m 30s)
-[ci-watcher] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
+[ci-monitor-subagent] Polling... (elapsed: 0m 30s)
+[ci-monitor-subagent] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
 
-[ci-watcher] Polling... (elapsed: 1m 30s)
-[ci-watcher] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
+[ci-monitor-subagent] Polling... (elapsed: 1m 30s)
+[ci-monitor-subagent] Still seeing previous CI Attempt (ignoring): <oldCipeUrl>
 
-[ci-watcher] Polling... (elapsed: 2m 30s)
-[ci-watcher] ✓ New CI Attempt detected! URL: <newCipeUrl>, SHA: <newCommitSha>
-[ci-watcher] Switching to normal polling mode...
+[ci-monitor-subagent] Polling... (elapsed: 2m 30s)
+[ci-monitor-subagent] ✓ New CI Attempt detected! URL: <newCipeUrl>, SHA: <newCommitSha>
+[ci-monitor-subagent] Switching to normal polling mode...
 ```
 
 ### Why This Matters (Context Preservation)
@@ -504,7 +507,7 @@ Output **only when state changes significantly** to save context tokens:
 Format: single line, no decorators:
 
 ```
-[ci-watcher] CI: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 4m
+[ci-monitor-subagent] CI: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 4m
 ```
 
 ### Verbose Verbosity
@@ -512,16 +515,16 @@ Format: single line, no decorators:
 Output detailed phase box after every poll:
 
 ```
-[ci-watcher] ─────────────────────────────────────────────────────
-[ci-watcher] Iteration <N> | Elapsed: <X>m <Y>s
-[ci-watcher]
-[ci-watcher] CI Status:          <cipeStatus>
-[ci-watcher] Self-Healing:       <selfHealingStatus>
-[ci-watcher] Verification:       <verificationStatus>
-[ci-watcher] Classification:     <failureClassification>
-[ci-watcher]
-[ci-watcher] → <human-readable phase description>
-[ci-watcher] ─────────────────────────────────────────────────────
+[ci-monitor-subagent] ─────────────────────────────────────────────────────
+[ci-monitor-subagent] Iteration <N> | Elapsed: <X>m <Y>s
+[ci-monitor-subagent]
+[ci-monitor-subagent] CI Status:          <cipeStatus>
+[ci-monitor-subagent] Self-Healing:       <selfHealingStatus>
+[ci-monitor-subagent] Verification:       <verificationStatus>
+[ci-monitor-subagent] Classification:     <failureClassification>
+[ci-monitor-subagent]
+[ci-monitor-subagent] → <human-readable phase description>
+[ci-monitor-subagent] ─────────────────────────────────────────────────────
 ```
 
 ### Phase Descriptions (for verbose output)
