@@ -19,7 +19,7 @@ The main agent may provide these optional parameters in the prompt:
 | `branch`            | Branch to monitor (auto-detected if not provided)        |
 | `expectedCommitSha` | Commit SHA that should trigger a new CI Attempt          |
 | `previousCipeUrl`   | CI Attempt URL before the action (to detect change)      |
-| `subagentTimeout`   | Polling timeout in minutes (default: 60)                 |
+| `subagentTimeout`   | Polling timeout in minutes (default: 30)                 |
 | `verbosity`         | Output level: minimal, medium, verbose (default: medium) |
 
 When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect whether a new CI Attempt has spawned.
@@ -375,14 +375,24 @@ Return immediately with structured state if ANY of these conditions are true:
 | `environment_issue` | `failureClassification == 'ENVIRONMENT_STATE'`                                                                                                            |
 | `no_fix`            | `cipeStatus == 'FAILED'` AND (`selfHealingEnabled == false` OR `selfHealingStatus == 'NOT_EXECUTABLE'`)                                                   |
 | `no_new_cipe`       | `expectedCommitSha` or `previousCipeUrl` provided, but no new CI Attempt detected after 10 min                                                            |
-| `polling_timeout`   | Subagent has been polling for > configured timeout (default 60 min)                                                                                       |
+| `polling_timeout`   | Subagent has been polling for > configured timeout (default 30 min)                                                                                       |
 | `cipe_canceled`     | `cipeStatus == 'CANCELED'`                                                                                                                                |
 | `cipe_timed_out`    | `cipeStatus == 'TIMED_OUT'`                                                                                                                               |
 | `cipe_no_tasks`     | `cipeStatus == 'FAILED'` AND `failedTaskIds.length == 0` AND `selfHealingStatus == null`                                                                  |
 
 ## Subagent Timeout
 
-Track elapsed time. If you have been polling for more than **60 minutes** (configurable via main agent), return with `status: polling_timeout`.
+Track elapsed time:
+
+### Normal Mode Timeout (Fresh Start)
+
+**Initial CIPE discovery timeout (normal mode only):** If no CIPE is found for the branch after **5 minutes** of polling, return `no_new_cipe` with actionable suggestions.
+
+**Main polling timeout:** If you have been polling for more than **30 minutes** (configurable via main agent), return with `status: polling_timeout`.
+
+### Wait Mode Timeout
+
+**New-CIPE timeout:** Track separately from main polling timeout. Default **10 minutes**. If no new CIPE detected within 10 minutes, return `no_new_cipe`.
 
 ## Return Format
 
@@ -456,49 +466,92 @@ When returning with `status: no_new_cipe`, include additional context:
 **Status:** no_new_cipe
 **Iterations:** <count>
 **Elapsed:** <minutes>m <seconds>s
+**Timeout:** 10-minute new-CIPE timeout exceeded
 
 ### Expected CI Attempt Not Found
 - **Expected Commit SHA:** <expectedCommitSha>
 - **Previous CI Attempt URL:** <previousCipeUrl>
 - **Last Seen CI Attempt URL:** <cipeUrl>
 - **Last Seen Commit SHA:** <commitSha>
-- **New CI Attempt Timeout:** 10 minutes (exceeded)
 
 ### Likely Cause
 CI workflow failed before Nx tasks could run (e.g., install step, checkout, auth).
 Check your CI provider logs for the commit <expectedCommitSha>.
 
+### Suggestions
+- Verify the push succeeded and CI workflow was triggered
+- Check CI provider configuration and logs
+- Ensure commit SHA matches expected value
+```
+
+### Return Format for `polling_timeout`
+
+When returning with `status: polling_timeout`, include additional context:
+
+```
+## CI Monitor Result
+
+**Status:** polling_timeout
+**Iterations:** <count>
+**Elapsed:** <minutes>m <seconds>s
+**Timeout:** 30-minute polling timeout exceeded
+
 ### Last Known CI Attempt State
 - **Status:** <cipeStatus>
+- **URL:** <cipeUrl>
 - **Branch:** <branch>
+- **Commit:** <commitSha>
+- **Self-Healing:** <selfHealingStatus>
+- **Verification:** <verificationStatus>
+
+### Suggestions
+- CI pipeline or self-healing may be stuck
+- Check Nx Cloud dashboard for the CI Attempt
+- Consider stopping this agent and starting fresh
 ```
 
 ## Status Reporting (Verbosity-Controlled)
 
 Output is controlled by the `verbosity` parameter from the main agent:
 
-| Level     | What to Output                                                    |
-| --------- | ----------------------------------------------------------------- |
-| `minimal` | No intermediate output. Only return final result when actionable. |
-| `medium`  | Output only on significant state changes (not every poll).        |
-| `verbose` | Output detailed phase information after every poll.               |
+| Level     | What to Output                                                           |
+| --------- | ----------------------------------------------------------------------- |
+| `minimal` | Only critical lifecycle transitions (always output, all verbosity levels)|
+| `medium`  | Compact status line on every poll (not just state changes).              |
+| `verbose` | Output detailed phase information after every poll.                      |
 
 ### Minimal Verbosity
 
-No output during polling. Poll silently and return when done.
+Output **ONLY significant lifecycle transitions** regardless of verbosity. These critical transitions are ALWAYS output at ALL verbosity levels:
+
+- CI pipeline failed (`cipeStatus` changed to FAILED)
+- Self-healing fix generation started (`selfHealingStatus` changed to IN_PROGRESS)
+- Self-healing fix generated (`selfHealingStatus` changed to COMPLETED)
+- Fix verification started (`verificationStatus` changed to IN_PROGRESS)
+- Fix verification completed (`verificationStatus` changed to COMPLETED or FAILED)
+
+Use a compact single-line format:
+
+```
+⚡ CI failed — self-healing fix generation started
+⚡ Self-healing fix generated — verification started
+⚡ Fix verification completed successfully
+⚡ Fix verification failed
+```
 
 ### Medium Verbosity (Default)
 
-Output **only when state changes significantly** to save context tokens:
-
-- `cipeStatus` changes (e.g., IN_PROGRESS → FAILED)
-- `selfHealingStatus` changes (e.g., IN_PROGRESS → COMPLETED)
-- New CI Attempt detected (in wait mode)
-
-Format: single line, no decorators:
+Output **compact status line on every poll** (not just state transitions). Format should be single-line:
 
 ```
-[ci-monitor-subagent] CI: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 4m
+[ci-monitor] Poll #N | CI: STATUS | Self-healing: STATUS | Verification: STATUS | Next poll: Xs
+```
+
+Example:
+```
+[ci-monitor] Poll #1 | CI: IN_PROGRESS | Self-healing: NOT_STARTED | Verification: NOT_STARTED | Next poll: 60s
+[ci-monitor] Poll #2 | CI: FAILED | Self-healing: IN_PROGRESS | Verification: NOT_STARTED | Next poll: 90s
+[ci-monitor] Poll #3 | CI: FAILED | Self-healing: COMPLETED | Verification: IN_PROGRESS | Next poll: 120s
 ```
 
 ### Verbose Verbosity
@@ -540,4 +593,5 @@ Output detailed phase box after every poll:
 - Respect the `verbosity` parameter for output (default: medium)
 - If `ci_information` returns an error, wait and retry (count as failed poll)
 - Track consecutive failures - if 5 consecutive failures, return with `status: error`
-- When expecting new CI Attempt, track the 30-minute new-CI-Attempt timeout separately from the main polling timeout
+- Track new-CIPE timeout (10 minutes) separately from main polling timeout
+- Ensure all timeout references are consistent: new-CIPE timeout is 10 minutes, initial CIPE discovery timeout is 5 minutes (normal mode only), main polling timeout is 30 minutes
