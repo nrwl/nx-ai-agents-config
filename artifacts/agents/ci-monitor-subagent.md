@@ -514,11 +514,11 @@ When returning with `status: polling_timeout`, include additional context:
 
 Output is controlled by the `verbosity` parameter from the main agent:
 
-| Level     | What to Output                                                           |
-| --------- | ----------------------------------------------------------------------- |
-| `minimal` | Only critical lifecycle transitions (always output, all verbosity levels)|
-| `medium`  | Compact status line on every poll (not just state changes).              |
-| `verbose` | Output detailed phase information after every poll.                      |
+| Level     | What to Output                                                            |
+| --------- | ------------------------------------------------------------------------- |
+| `minimal` | Only critical lifecycle transitions (always output, all verbosity levels) |
+| `medium`  | Compact status line on every poll (not just state changes).               |
+| `verbose` | Output detailed phase information after every poll.                       |
 
 ### Minimal Verbosity
 
@@ -548,6 +548,7 @@ Output **compact status line on every poll** (not just state transitions). Forma
 ```
 
 Example:
+
 ```
 [ci-monitor] Poll #1 | CI: IN_PROGRESS | Self-healing: NOT_STARTED | Verification: NOT_STARTED | Next poll: 60s
 [ci-monitor] Poll #2 | CI: FAILED | Self-healing: IN_PROGRESS | Verification: NOT_STARTED | Next poll: 90s
