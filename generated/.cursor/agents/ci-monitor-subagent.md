@@ -20,13 +20,14 @@ You are a CI monitoring subagent responsible for polling Nx Cloud CI Attempt sta
 
 The main agent may provide these optional parameters in the prompt:
 
-| Parameter           | Description                                              |
-| ------------------- | -------------------------------------------------------- |
-| `branch`            | Branch to monitor (auto-detected if not provided)        |
-| `expectedCommitSha` | Commit SHA that should trigger a new CI Attempt          |
-| `previousCipeUrl`   | CI Attempt URL before the action (to detect change)      |
-| `subagentTimeout`   | Polling timeout in minutes (default: 30)                 |
-| `verbosity`         | Output level: minimal, medium, verbose (default: medium) |
+| Parameter           | Description                                                           |
+| ------------------- | --------------------------------------------------------------------- |
+| `branch`            | Branch to monitor (auto-detected if not provided)                     |
+| `expectedCommitSha` | Commit SHA that should trigger a new CI Attempt                       |
+| `previousCipeUrl`   | CI Attempt URL before the action (to detect change)                   |
+| `subagentTimeout`   | Polling timeout in minutes (default: 30)                              |
+| `newCipeTimeout`    | Minutes to wait for CIPE before returning `no_new_cipe` (default: 10) |
+| `verbosity`         | Output level: minimal, medium, verbose (default: medium)              |
 
 When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect whether a new CI Attempt has spawned.
 
@@ -147,7 +148,7 @@ The subagent operates in one of two modes depending on input:
 
 ### Mode 1: Fresh Start (no `expectedCommitSha` or `previousCipeUrl`)
 
-Normal polling - process whatever CIPE is returned by `ci_information`.
+Normal polling - process whatever CIPE is returned by `ci_information`. If `ci_information` returns no CIPE for the branch after `newCipeTimeout` (default 10 min), return `no_new_cipe`.
 
 ### Mode 2: Wait-for-New-CIPE (when `expectedCommitSha` or `previousCipeUrl` provided)
 
@@ -163,7 +164,7 @@ Normal polling - process whatever CIPE is returned by `ci_information`.
    - If still OLD CIPE: **ignore all status fields**, just wait and poll again
    - Do NOT return `fix_available`, `ci_success`, etc. based on old CIPE!
 3. Output wait status (see below)
-4. If timeout (10 min) reached → return `no_new_cipe`
+4. If `newCipeTimeout` reached → return `no_new_cipe`
 
 #### Phase B: Normal Polling (after new CIPE detected)
 
@@ -380,7 +381,7 @@ Return immediately with structured state if ANY of these conditions are true:
 | `fix_failed`        | `selfHealingStatus == 'FAILED'`                                                                                                                           |
 | `environment_issue` | `failureClassification == 'ENVIRONMENT_STATE'`                                                                                                            |
 | `no_fix`            | `cipeStatus == 'FAILED'` AND (`selfHealingEnabled == false` OR `selfHealingStatus == 'NOT_EXECUTABLE'`)                                                   |
-| `no_new_cipe`       | `expectedCommitSha` or `previousCipeUrl` provided, but no new CI Attempt detected after 10 min                                                            |
+| `no_new_cipe`       | No CIPE found for branch (normal mode) or no new CI Attempt detected (wait mode) after `newCipeTimeout` (default 10 min)                                  |
 | `polling_timeout`   | Subagent has been polling for > configured timeout (default 30 min)                                                                                       |
 | `cipe_canceled`     | `cipeStatus == 'CANCELED'`                                                                                                                                |
 | `cipe_timed_out`    | `cipeStatus == 'TIMED_OUT'`                                                                                                                               |
@@ -390,15 +391,18 @@ Return immediately with structured state if ANY of these conditions are true:
 
 Track elapsed time:
 
-### Normal Mode Timeout (Fresh Start)
+### New-CIPE Timeout (both modes)
 
-**Initial CIPE discovery timeout (normal mode only):** If no CIPE is found for the branch after **5 minutes** of polling, return `no_new_cipe` with actionable suggestions.
+**`newCipeTimeout`** (default: 10 minutes, configurable via main agent). Applies to both normal mode and wait mode:
 
-**Main polling timeout:** If you have been polling for more than **30 minutes** (configurable via main agent), return with `status: polling_timeout`.
+- **Normal mode:** If no CIPE is found for the branch after `newCipeTimeout` minutes of polling, return `no_new_cipe` with actionable suggestions.
+- **Wait mode:** If no new CI Attempt is detected after `newCipeTimeout` minutes of polling, return `no_new_cipe`.
 
-### Wait Mode Timeout
+Track separately from main polling timeout.
 
-**New-CIPE timeout:** Track separately from main polling timeout. Default **10 minutes**. If no new CIPE detected within 10 minutes, return `no_new_cipe`.
+### Main Polling Timeout
+
+If you have been polling for more than **30 minutes** (configurable via `subagentTimeout`), return with `status: polling_timeout`.
 
 ## Return Format
 
@@ -472,17 +476,20 @@ When returning with `status: no_new_cipe`, include additional context:
 **Status:** no_new_cipe
 **Iterations:** <count>
 **Elapsed:** <minutes>m <seconds>s
-**Timeout:** 10-minute new-CIPE timeout exceeded
+**Timeout:** newCipeTimeout (<newCipeTimeout> min) exceeded
 
-### Expected CI Attempt Not Found
-- **Expected Commit SHA:** <expectedCommitSha>
-- **Previous CI Attempt URL:** <previousCipeUrl>
+### Context
+- **Mode:** <normal | wait>
+- **Expected Commit SHA:** <expectedCommitSha> (if wait mode)
+- **Previous CI Attempt URL:** <previousCipeUrl> (if wait mode)
 - **Last Seen CI Attempt URL:** <cipeUrl>
 - **Last Seen Commit SHA:** <commitSha>
 
 ### Likely Cause
-CI workflow failed before Nx tasks could run (e.g., install step, checkout, auth).
-Check your CI provider logs for the commit <expectedCommitSha>.
+No CI Attempt appeared within the newCipeTimeout window.
+If in wait mode: CI workflow likely failed before Nx tasks could run (e.g., install step, checkout, auth).
+If in normal mode: No CIPE exists for this branch yet.
+Check your CI provider logs for the branch or commit.
 
 ### Suggestions
 - Verify the push succeeded and CI workflow was triggered
@@ -600,5 +607,5 @@ Output detailed phase box after every poll:
 - Respect the `verbosity` parameter for output (default: medium)
 - If `ci_information` returns an error, wait and retry (count as failed poll)
 - Track consecutive failures - if 5 consecutive failures, return with `status: error`
-- Track new-CIPE timeout (10 minutes) separately from main polling timeout
-- Ensure all timeout references are consistent: new-CIPE timeout is 10 minutes, initial CIPE discovery timeout is 5 minutes (normal mode only), main polling timeout is 30 minutes
+- `newCipeTimeout` applies to both normal and wait mode — if no CIPE appears within this window, return `no_new_cipe`
+- Track `newCipeTimeout` (default 10 minutes) separately from main polling timeout (default 30 minutes)
