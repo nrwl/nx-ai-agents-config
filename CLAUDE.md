@@ -28,3 +28,40 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
   - `generated/.github/` - GitHub Copilot
   - `generated/.cursor/` - Cursor
   - `generated/.gemini/` - Gemini
+
+# Plugin Versioning
+
+Version is tracked in 3 files (kept in sync automatically):
+
+1. `artifacts/claude-config/.claude-plugin/plugin.json` — source of truth
+2. `.claude-plugin/marketplace.json` → `plugins[0].version`
+3. `generated/nx-claude-plugin/.claude-plugin/plugin.json` — auto-copied by `sync-artifacts`
+
+## How it works
+
+- **PR branches** get pre-release versions automatically (e.g., `0.2.1-pr.42`) via `.github/workflows/version-pr.yml`
+- **Main** gets release versions on merge (e.g., `0.2.1`) via `.github/workflows/version-release.yml`
+- Versioning is always patch-level; for minor/major bumps, manually run the bump script
+
+## Manual version bump
+
+```bash
+node scripts/bump-version.mjs --version X.Y.Z
+npx nx sync-artifacts
+```
+
+## Testing a PR plugin version
+
+Coworkers can test a PR's plugin version by creating `.claude/settings.local.json` (gitignored) with:
+
+```json
+{
+  "plugins": {
+    "nx": {
+      "ref": "pr-branch-name"
+    }
+  }
+}
+```
+
+Restart Claude Code, test, then remove the override when done.

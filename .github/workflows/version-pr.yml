@@ -1,0 +1,63 @@
+name: Version PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Compute and apply pre-release version
+        run: |
+          # Read main's version
+          MAIN_VERSION=$(node -e "console.log(JSON.parse(require('child_process').execSync('git show origin/main:artifacts/claude-config/.claude-plugin/plugin.json', {encoding:'utf-8'})).version)")
+
+          # Strip any pre-release suffix and bump patch
+          BASE=$(echo "$MAIN_VERSION" | sed 's/-.*//')
+          MAJOR=$(echo "$BASE" | cut -d. -f1)
+          MINOR=$(echo "$BASE" | cut -d. -f2)
+          PATCH=$(echo "$BASE" | cut -d. -f3)
+          NEXT_PATCH=$((PATCH + 1))
+          TARGET="${MAJOR}.${MINOR}.${NEXT_PATCH}-pr.${{ github.event.pull_request.number }}"
+
+          # Read current version
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/claude-config/.claude-plugin/plugin.json','utf-8')).version)")
+
+          echo "Main version: $MAIN_VERSION"
+          echo "Target version: $TARGET"
+          echo "Current version: $CURRENT"
+
+          if [ "$CURRENT" = "$TARGET" ]; then
+            echo "Version already matches target. Skipping."
+            exit 0
+          fi
+
+          node scripts/bump-version.mjs --version "$TARGET"
+          npx nx sync-artifacts
+
+      - name: Commit and push if changed
+        run: |
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: pre-release version for #${{ github.event.pull_request.number }} [skip ci]"
+          git push
