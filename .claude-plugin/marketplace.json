@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "nx",
-      "version": "0.2.1",
+      "version": "0.2.0",
       "source": "./generated/nx-claude-plugin",
       "description": "Claude Code plugin for Nx - helps with generators, documentation, and CI monitoring with self-healing integration"
     }
