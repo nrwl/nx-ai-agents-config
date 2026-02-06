@@ -15,8 +15,8 @@ const version =
   versionArg && versionArg.includes('=')
     ? versionArg.split('=')[1]
     : versionFlag !== -1
-      ? process.argv[versionFlag + 1]
-      : null;
+    ? process.argv[versionFlag + 1]
+    : null;
 
 if (!version) {
   console.error('Usage: node scripts/bump-version.mjs --version <semver>');
