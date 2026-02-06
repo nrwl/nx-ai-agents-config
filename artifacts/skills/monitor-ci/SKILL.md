@@ -18,7 +18,7 @@ $ARGUMENTS
 
 | Setting                   | Default       | Description                                                               |
 | ------------------------- | ------------- | ------------------------------------------------------------------------- |
-| `--max-cycles`            | 10            | Maximum CI Attempt cycles before timeout                                  |
+| `--max-cycles`            | 10            | Maximum **agent-initiated** CI Attempt cycles before timeout              |
 | `--timeout`               | 120           | Maximum duration in minutes                                               |
 | `--verbosity`             | medium        | Output level: minimal, medium, verbose                                    |
 | `--branch`                | (auto-detect) | Branch to monitor                                                         |
@@ -328,28 +328,29 @@ This means the CI Attempt was created but no Nx tasks were recorded before it fa
 
 Exit the monitoring loop when ANY of these conditions are met:
 
-| Condition                                     | Exit Type              |
-| --------------------------------------------- | ---------------------- |
-| CI passes (`cipeStatus == 'SUCCEEDED'`)       | Success                |
-| Max CI Attempt cycles reached                 | Timeout                |
-| Max duration reached                          | Timeout                |
-| 3 consecutive no-progress iterations          | Circuit breaker        |
-| No fix available and local fix not possible   | Failure                |
-| No new CI Attempt and auto-fix not configured | Pre-CI-Attempt failure |
-| User cancels                                  | Cancelled              |
+| Condition                                                    | Exit Type              |
+| ------------------------------------------------------------ | ---------------------- |
+| CI passes (`cipeStatus == 'SUCCEEDED'`)                      | Success                |
+| Max agent-initiated cycles reached (after user declines ext) | Timeout                |
+| Max duration reached                                         | Timeout                |
+| 3 consecutive no-progress iterations                         | Circuit breaker        |
+| No fix available and local fix not possible                  | Failure                |
+| No new CI Attempt and auto-fix not configured                | Pre-CI-Attempt failure |
+| User cancels                                                 | Cancelled              |
 
 ## Main Loop
 
 ### Step 1: Initialize Tracking
 
 ```
-cycle_count = 0
+cycle_count = 0            # Only incremented for agent-initiated cycles (counted against --max-cycles)
 start_time = now()
 no_progress_count = 0
 local_verify_count = 0
 last_state = null
 last_cipe_url = null
 expected_commit_sha = null
+agent_triggered = false    # Set true after monitor takes an action that triggers new CI Attempt
 ```
 
 ### Step 2: Spawn Subagent and Monitor Output
@@ -458,7 +459,41 @@ After actions that should trigger a new CI Attempt, record state before looping:
 
 **Why wait mode matters for context preservation**: Stale CI Attempt data can be very large (task output summaries, suggested fix patches, reasoning). If subagent returns this to main agent, it pollutes main agent's context with useless data since we already processed that CI Attempt. Wait mode keeps stale data in the subagent, never sending it to main agent.
 
-### Step 4: Progress Tracking
+### Step 4: Cycle Classification and Progress Tracking
+
+#### Cycle Classification
+
+Not all cycles are equal. Only count cycles the monitor itself triggered toward `--max-cycles`:
+
+1. **After subagent returns**, check `agent_triggered`:
+   - `agent_triggered == true` → this cycle was triggered by the monitor → `cycle_count++`
+   - `agent_triggered == false` → this cycle was human-initiated or a first observation → do NOT increment `cycle_count`
+2. **Reset** `agent_triggered = false`
+3. **After Step 3a** (when the monitor takes an action that triggers a new CI Attempt) → set `agent_triggered = true`
+
+**How detection works**: Step 3a is only called when the monitor explicitly pushes code, applies a fix via MCP, or triggers an environment rerun. If a human pushes on their own, the subagent detects a new CI Attempt but the monitor never went through Step 3a, so `agent_triggered` remains `false`.
+
+**When a human-initiated cycle is detected**, log it:
+
+```
+[monitor-ci] New CI Attempt detected (human-initiated push). Monitoring without incrementing cycle count. (agent cycles: N/max-cycles)
+```
+
+#### Approaching Limit Gate
+
+When `cycle_count >= max_cycles - 2`, pause and ask the user before continuing:
+
+```
+[monitor-ci] Approaching cycle limit (cycle_count/max_cycles agent-initiated cycles used).
+[monitor-ci] How would you like to proceed?
+  1. Continue with 5 more cycles
+  2. Continue with 10 more cycles
+  3. Stop monitoring
+```
+
+Increase `max_cycles` by the user's choice and continue.
+
+#### Progress Tracking
 
 After each action:
 
@@ -563,4 +598,36 @@ Users can override default behaviors:
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
   - Result: SUCCESS
+```
+
+### Example 3: Human-in-the-Loop (user pushes during monitoring)
+
+```
+[monitor-ci] Starting CI monitor for branch 'feature/refactor-api'
+[monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
+
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 4m
+
+[monitor-ci] Fix available! Applying fix via MCP... (agent cycles: 0/5)
+[monitor-ci] Fix applied in CI. Waiting for new CI attempt...
+
+[monitor-ci] Spawning subagent to poll CI status...
+[ci-monitor-subagent] New CI attempt detected!
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 8m
+
+[monitor-ci] Agent-initiated cycle. (agent cycles: 1/5)
+[monitor-ci] Fix available! Applying locally and enhancing...
+[monitor-ci] Committed: abc1234
+
+[monitor-ci] Spawning subagent to poll CI status...
+  ... (user pushes their own changes to the branch while monitor waits) ...
+[ci-monitor-subagent] New CI attempt detected!
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 12m
+
+[monitor-ci] New CI Attempt detected (human-initiated push). Monitoring without incrementing cycle count. (agent cycles: 2/5)
+[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 16m
+
+[monitor-ci] Fix available! Applying via MCP... (agent cycles: 2/5)
+  ... (continues, human cycles don't eat into the budget) ...
 ```
