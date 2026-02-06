@@ -523,6 +523,8 @@ When returning with `status: polling_timeout`, include additional context:
 
 ## Status Reporting (Verbosity-Controlled)
 
+**Important:** When running in background mode, your text output goes to an output file — it is NOT directly visible to users. The main agent is responsible for reading your output and relaying it to the user. Write your status lines clearly and consistently so the main agent can parse and forward them.
+
 Output is controlled by the `verbosity` parameter from the main agent:
 
 | Level     | What to Output                                                            |

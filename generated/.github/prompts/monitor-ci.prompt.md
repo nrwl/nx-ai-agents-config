@@ -357,15 +357,16 @@ last_cipe_url = null
 expected_commit_sha = null
 ```
 
-### Step 2: Spawn Subagent
+### Step 2: Spawn Subagent and Monitor Output
 
-Spawn the `ci-monitor-subagent` subagent to poll CI status:
+Spawn the `ci-monitor-subagent` subagent to poll CI status. **Run in background** so you can actively monitor and relay its output to the user.
 
 **Fresh start (first spawn, no expected CI Attempt):**
 
 ```
 Task(
   agent: "ci-monitor-subagent",
+  run_in_background: true,
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CI-Attempt timeout: <new-cipe-timeout> minutes.
@@ -378,6 +379,7 @@ Task(
 ```
 Task(
   agent: "ci-monitor-subagent",
+  run_in_background: true,
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
            New-CI-Attempt timeout: <new-cipe-timeout> minutes.
@@ -388,6 +390,42 @@ Task(
            Previous CI Attempt URL: <last_cipe_url>"
 )
 ```
+
+### Step 2a: Active Output Monitoring (CRITICAL)
+
+**The subagent's text output is NOT visible to users when running in background.** You MUST actively monitor and relay its output. Do NOT passively wait for completion.
+
+After spawning the background subagent, enter a monitoring loop:
+
+1. **Every 60 seconds**, check the subagent output using `TaskOutput(task_id, block=false)`
+2. **Parse new lines** since your last check — look for `[ci-monitor]` and `⚡` prefixed lines
+3. **Relay to user** based on verbosity:
+   - `minimal`: Only relay `⚡` critical transition lines
+   - `medium`: Relay all `[ci-monitor]` status lines
+   - `verbose`: Relay all subagent output
+4. **Continue** until `TaskOutput` returns a completed status
+5. When complete, proceed to Step 3 with the final subagent response
+
+**Example monitoring loop output:**
+
+```
+[monitor-ci] Checking subagent status... (elapsed: 1m)
+[ci-monitor-subagent] Poll #1 | CI: IN_PROGRESS | Self-healing: NOT_STARTED | Next poll: 60s
+
+[monitor-ci] Checking subagent status... (elapsed: 3m)
+[ci-monitor-subagent] Poll #2 | CI: FAILED | Self-healing: IN_PROGRESS | Next poll: 90s
+⚡ CI failed — self-healing fix generation started
+
+[monitor-ci] Checking subagent status... (elapsed: 5m)
+[ci-monitor-subagent] Poll #3 | CI: FAILED | Self-healing: COMPLETED | Next poll: 120s
+⚡ Self-healing fix generated — verification started
+```
+
+**NEVER do this:**
+
+- Spawn subagent and passively say "Waiting for results..."
+- Check once and say "Still working, I'll wait"
+- Only show output when the subagent finishes
 
 ### Step 3: Handle Subagent Response
 
