@@ -43,9 +43,11 @@ Parse any overrides from `$ARGUMENTS` and merge with defaults.
 
 1. **Check `nx.json`** at workspace root for `nxCloudId` or `nxCloudAccessToken`
 2. **If `nx.json` missing OR neither property exists** → exit with:
+
    ```
    [monitor-ci] Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https://nx.dev/nx-cloud
    ```
+
 3. **If connected** → continue to main loop
 
 ## Anti-Patterns (NEVER DO)
@@ -145,7 +147,7 @@ When verifiable (non-e2e) unverified tasks exist:
 | ALL verifiable tasks pass | Apply via MCP                |
 | ANY verifiable task fails | Apply-locally + enhance flow |
 
-4. **Apply-locally + enhance flow:**
+1. **Apply-locally + enhance flow:**
 
    - Run `nx apply-locally <shortLink>`
    - Enhance the code to fix failing tasks
@@ -153,15 +155,19 @@ When verifiable (non-e2e) unverified tasks exist:
    - If still failing → increment `local_verify_count`, loop back to enhance
    - If passing → commit and push, record `expected_commit_sha`, spawn subagent in wait mode
 
-5. **Track attempts** (wraps step 4):
+2. **Track attempts** (wraps step 4):
+
    - Increment `local_verify_count` after each enhance cycle
    - If `local_verify_count >= local_verify_attempts` (default: 3):
+
      - Get code in commit-able state
      - Commit and push with message indicating local verification failed
      - Report to user:
+
        ```
        [monitor-ci] Local verification failed after <N> attempts. Pushed to CI for final validation. Failed: <taskIds>
        ```
+
      - Record `expected_commit_sha`, spawn subagent in wait mode (let CI be final judge)
 
 #### Commit Message Format
@@ -173,7 +179,7 @@ Failed tasks: <taskId1>, <taskId2>
 Local verification: passed|enhanced|failed-pushing-to-ci"
 ```
 
-**Git Safety**: Only stage and commit files that were modified as part of the fix. Users may have concurrent local changes (local publish, WIP features, config tweaks) that must NOT be committed. Never use `git add -A` or `git add .` — always use targeted file staging as described in Apply Locally + Enhance and Reject + Fix From Scratch flows above.
+**Git Safety**: Only stage and commit files that were modified as part of the fix. Users may have concurrent local changes (local publish, WIP features, config tweaks) that must NOT be committed. NEVER use `git add -A` or `git add .` — always stage specific files by name.
 
 ### Unverified Fix Flow (No Verification Attempted)
 
@@ -205,25 +211,15 @@ When the fix needs enhancement (use `nx apply-locally`, NOT reject):
 
 1. Apply the patch locally: `nx apply-locally <shortLink>` (this also updates state to `APPLIED_LOCALLY`)
 2. Make additional changes as needed
-3. Capture current working state before staging changes:
-   ```bash
-   git diff --name-only > /tmp/unstaged_before.txt
-   git diff --name-only --staged > /tmp/staged_before.txt
-   ```
-4. After making all changes, identify only newly modified files:
-   ```bash
-   git diff --name-only > /tmp/files_to_stage.txt
-   # Filter out files that were already staged or unstaged before
-   comm -23 <(sort /tmp/files_to_stage.txt) <(sort /tmp/unstaged_before.txt /tmp/staged_before.txt | sort -u) > /tmp/new_files.txt
-   # Stage ONLY the newly modified files
-   cat /tmp/new_files.txt | xargs git add
-   ```
-5. Commit and push:
+3. Stage only the files you modified: `git add <file1> <file2> ...`
+4. Commit and push:
+
    ```bash
    git commit -m "fix: resolve <failedTaskIds>"
    git push origin $(git branch --show-current)
    ```
-6. Loop to poll for new CI Attempt
+
+5. Loop to poll for new CI Attempt
 
 ### Reject + Fix From Scratch Flow
 
@@ -231,25 +227,15 @@ When the fix is completely wrong:
 
 1. Call MCP to reject: `update_self_healing_fix({ shortLink, action: "REJECT" })`
 2. Fix the issue from scratch locally
-3. Capture current working state before staging changes:
-   ```bash
-   git diff --name-only > /tmp/unstaged_before.txt
-   git diff --name-only --staged > /tmp/staged_before.txt
-   ```
-4. After making all changes, identify only newly modified files:
-   ```bash
-   git diff --name-only > /tmp/files_to_stage.txt
-   # Filter out files that were already staged or unstaged before
-   comm -23 <(sort /tmp/files_to_stage.txt) <(sort /tmp/unstaged_before.txt /tmp/staged_before.txt | sort -u) > /tmp/new_files.txt
-   # Stage ONLY the newly modified files
-   cat /tmp/new_files.txt | xargs git add
-   ```
-5. Commit and push:
+3. Stage only the files you modified: `git add <file1> <file2> ...`
+4. Commit and push:
+
    ```bash
    git commit -m "fix: resolve <failedTaskIds>"
    git push origin $(git branch --show-current)
    ```
-6. Loop to poll for new CI Attempt
+
+5. Loop to poll for new CI Attempt
 
 ### Environment Issue Handling
 
@@ -275,15 +261,19 @@ This means the expected CI Attempt was never created - CI likely failed before N
 
    - Detect package manager: check for `pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`
    - Run install to update lockfile:
+
      ```bash
      pnpm install   # or npm install / yarn install
      ```
+
    - If lockfile changed:
+
      ```bash
      git add pnpm-lock.yaml  # or appropriate lockfile
      git commit -m "chore: update lockfile"
      git push origin $(git branch --show-current)
      ```
+
    - Record new commit SHA, loop to poll with `expectedCommitSha`
 
 3. **Otherwise:** Exit with `no_new_cipe` status, providing guidance for user to investigate
@@ -321,6 +311,7 @@ This means the CI Attempt was created but no Nx tasks were recorded before it fa
 
    - Exit with failure
    - Provide guidance:
+
      ```
      [monitor-ci] Retry failed. Please check:
      [monitor-ci]   1. Nx Cloud UI: <cipeUrl>
