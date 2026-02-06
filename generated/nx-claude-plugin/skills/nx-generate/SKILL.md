@@ -21,7 +21,7 @@ This skill applies when the user wants to:
 1. **Always use `--no-interactive`** - Prevents prompts that would hang execution
 2. **Read the generator source code** - The schema alone is not enough; understand what the generator actually does
 3. **Match existing repo patterns** - Study similar artifacts in the repo and follow their conventions
-4. **Verify with lint/test/build** - Generated code must pass verification
+4. **Verify with lint/test/build/typecheck etc.** - Generated code must pass verification. The listed targets are just an example, use what's appropriate for this workspace.
 
 ## Steps
 
@@ -154,12 +154,15 @@ Format all generated/modified files:
 nx format --fix
 ```
 
-Then verify the generated code works:
+This example is for built-in nx formatting with prettier. There might be other formatting tools for this workspace, use these when appropriate.
+
+Then verify the generated code works. Keep in mind that the changes you make with a generator or subsequent modifications might impact various projects so it's usually not enough to only run targets for the artifact you just created.
 
 ```bash
-nx lint <new-project>
-nx test <new-project>
-nx build <new-project>
+# these targets are just an example!
+nx run-many -t build,lint,test,typecheck
 ```
+
+These targets are common examples used across many workspaces. You should do research into other targets available for this workspace and its projects. CI configuration is usually a good guide for what the critical targets are that have to pass.
 
 If verification fails with manageable issues (a few lint errors, minor type issues), fix them. If issues are extensive, attempt obvious fixes first, then escalate to the user with details about what was generated, what's failing, and what you've attempted.
