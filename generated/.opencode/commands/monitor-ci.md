@@ -411,15 +411,15 @@ After spawning the background subagent, enter a monitoring loop:
 
 ```
 [monitor-ci] Checking subagent status... (elapsed: 1m)
-[ci-monitor-subagent] Poll #1 | CI: IN_PROGRESS | Self-healing: NOT_STARTED | Next poll: 60s
+[monitor-ci] CI: IN_PROGRESS | Self-healing: NOT_STARTED
 
 [monitor-ci] Checking subagent status... (elapsed: 3m)
-[ci-monitor-subagent] Poll #2 | CI: FAILED | Self-healing: IN_PROGRESS | Next poll: 90s
-⚡ CI failed — self-healing fix generation started
+[monitor-ci] CI: FAILED | Self-healing: IN_PROGRESS
+[monitor-ci] ⚡ CI failed — self-healing fix generation started
 
 [monitor-ci] Checking subagent status... (elapsed: 5m)
-[ci-monitor-subagent] Poll #3 | CI: FAILED | Self-healing: COMPLETED | Next poll: 120s
-⚡ Self-healing fix generated — verification started
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED | Verification: IN_PROGRESS
+[monitor-ci] ⚡ Self-healing fix generated — verification started
 ```
 
 **NEVER do this:**
@@ -551,22 +551,28 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
+[monitor-ci] Checking subagent status... (elapsed: 1m)
+[monitor-ci] CI: IN_PROGRESS | Self-healing: NOT_STARTED
+[monitor-ci] Checking subagent status... (elapsed: 3m)
+[monitor-ci] CI: FAILED | Self-healing: IN_PROGRESS
+[monitor-ci] ⚡ CI failed — self-healing fix generation started
+[monitor-ci] Checking subagent status... (elapsed: 5m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED | Verification: COMPLETED
 
 [monitor-ci] Fix available! Verification: COMPLETED
 [monitor-ci] Applying fix via MCP...
 [monitor-ci] Fix applied in CI. Waiting for new CI attempt...
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] New CI attempt detected!
-[ci-monitor-subagent] CI attempt: SUCCEEDED | Elapsed: 8m
+[monitor-ci] Checking subagent status... (elapsed: 7m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] Checking subagent status... (elapsed: 8m)
+[monitor-ci] CI: SUCCEEDED
 
 [monitor-ci] CI passed successfully!
 
 [monitor-ci] Summary:
-  - Total cycles: 2
+  - Agent cycles: 1/5
   - Total time: 12m 34s
   - Fixes applied: 1
   - Result: SUCCESS
@@ -579,27 +585,31 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
+[monitor-ci] Checking subagent status... (elapsed: 2m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
 
-[monitor-ci] Applying fix locally, enhancing, and pushing...
+[monitor-ci] Fix available! Applying locally, enhancing, and pushing...
 [monitor-ci] Committed: abc1234
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] Waiting for new CI attempt... (expected SHA: abc1234)
-[ci-monitor-subagent] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
+[monitor-ci] Checking subagent status... (elapsed: 6m)
+[monitor-ci] Waiting for new CI Attempt... (expected SHA: abc1234)
+[monitor-ci] Checking subagent status... (elapsed: 12m)
+[monitor-ci] ⚠️ CI Attempt timeout (10 min). Status: no_new_cipe
 
-[monitor-ci] Status: no_new_cipe
 [monitor-ci] --auto-fix-workflow enabled. Attempting lockfile update...
 [monitor-ci] Lockfile updated. Committed: def5678
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] New CI attempt detected!
-[ci-monitor-subagent] CI attempt: SUCCEEDED | Elapsed: 18m
+[monitor-ci] Checking subagent status... (elapsed: 16m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] Checking subagent status... (elapsed: 18m)
+[monitor-ci] CI: SUCCEEDED
 
 [monitor-ci] CI passed successfully!
 
 [monitor-ci] Summary:
-  - Total cycles: 3
+  - Agent cycles: 3/5
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
   - Result: SUCCESS
@@ -612,14 +622,16 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 4m
+[monitor-ci] Checking subagent status... (elapsed: 4m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
 
 [monitor-ci] Fix available! Applying fix via MCP... (agent cycles: 0/5)
 [monitor-ci] Fix applied in CI. Waiting for new CI attempt...
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] New CI attempt detected!
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 8m
+[monitor-ci] Checking subagent status... (elapsed: 8m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
 
 [monitor-ci] Agent-initiated cycle. (agent cycles: 1/5)
 [monitor-ci] Fix available! Applying locally and enhancing...
@@ -627,11 +639,13 @@ Users can override default behaviors:
 
 [monitor-ci] Spawning subagent to poll CI status...
   ... (user pushes their own changes to the branch while monitor waits) ...
-[ci-monitor-subagent] New CI attempt detected!
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 12m
+[monitor-ci] Checking subagent status... (elapsed: 12m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] CI: FAILED | Self-healing: IN_PROGRESS
 
 [monitor-ci] New CI Attempt detected (human-initiated push). Monitoring without incrementing cycle count. (agent cycles: 2/5)
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 16m
+[monitor-ci] Checking subagent status... (elapsed: 16m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
 
 [monitor-ci] Fix available! Applying via MCP... (agent cycles: 2/5)
   ... (continues, human cycles don't eat into the budget) ...
