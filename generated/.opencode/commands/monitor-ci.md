@@ -21,17 +21,17 @@ $ARGUMENTS
 
 ## Configuration Defaults
 
-| Setting                   | Default       | Description                                                         |
-| ------------------------- | ------------- | ------------------------------------------------------------------- |
-| `--max-cycles`            | 10            | Maximum CIPE cycles before timeout                                  |
-| `--timeout`               | 120           | Maximum duration in minutes                                         |
-| `--verbosity`             | medium        | Output level: minimal, medium, verbose                              |
-| `--branch`                | (auto-detect) | Branch to monitor                                                   |
-| `--subagent-timeout`      | 60            | Subagent polling timeout in minutes                                 |
-| `--fresh`                 | false         | Ignore previous context, start fresh                                |
-| `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CIPE failures (e.g., lockfile updates) |
-| `--new-cipe-timeout`      | 10            | Minutes to wait for new CIPE after action                           |
-| `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI        |
+| Setting                   | Default       | Description                                                               |
+| ------------------------- | ------------- | ------------------------------------------------------------------------- |
+| `--max-cycles`            | 10            | Maximum **agent-initiated** CI Attempt cycles before timeout              |
+| `--timeout`               | 120           | Maximum duration in minutes                                               |
+| `--verbosity`             | medium        | Output level: minimal, medium, verbose                                    |
+| `--branch`                | (auto-detect) | Branch to monitor                                                         |
+| `--subagent-timeout`      | 30            | Subagent polling timeout in minutes                                       |
+| `--fresh`                 | false         | Ignore previous context, start fresh                                      |
+| `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CI-Attempt failures (e.g., lockfile updates) |
+| `--new-cipe-timeout`      | 10            | Minutes to wait for new CI Attempt after action                           |
+| `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI              |
 
 Parse any overrides from `$ARGUMENTS` and merge with defaults.
 
@@ -83,20 +83,20 @@ Parse any overrides from `$ARGUMENTS` and merge with defaults.
 
 The subagent returns with one of the following statuses. This table defines the **default behavior** for each status. User instructions can override any of these.
 
-| Status              | Default Behavior                                                                                                                                                  |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci_success`        | Exit with success. Log "CI passed successfully!"                                                                                                                  |
-| `fix_auto_applying` | Fix will be auto-applied by self-healing. Do NOT call MCP. Record `last_cipe_url`, spawn new subagent in wait mode to poll for new CIPE.                          |
-| `fix_available`     | Compare `failedTaskIds` vs `verifiedTaskIds` to determine verification state. See **Fix Available Decision Logic** section below.                                 |
-| `fix_failed`        | Self-healing failed to generate fix. Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.              |
-| `environment_issue` | Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. New CIPE spawns automatically. Loop to poll for new CIPE. |
-| `no_fix`            | CI failed, no fix available (self-healing disabled or not executable). Attempt local fix if possible. Otherwise exit with failure.                                |
-| `no_new_cipe`       | Expected CIPE never spawned (CI workflow likely failed before Nx tasks). Report to user, attempt common fixes if configured, or exit with guidance.               |
-| `polling_timeout`   | Subagent polling timeout reached. Exit with timeout.                                                                                                              |
-| `cipe_canceled`     | CIPE was canceled. Exit with canceled status.                                                                                                                     |
-| `cipe_timed_out`    | CIPE timed out. Exit with timeout status.                                                                                                                         |
-| `cipe_no_tasks`     | CIPE exists but failed with no task data (likely infrastructure issue). Retry once with empty commit. If retry fails, exit with failure and guidance.             |
-| `error`             | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise wait 60s and loop.                                                                  |
+| Status              | Default Behavior                                                                                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci_success`        | Exit with success. Log "CI passed successfully!"                                                                                                                              |
+| `fix_auto_applying` | Fix will be auto-applied by self-healing. Do NOT call MCP. Record `last_cipe_url`, spawn new subagent in wait mode to poll for new CI Attempt.                                |
+| `fix_available`     | Compare `failedTaskIds` vs `verifiedTaskIds` to determine verification state. See **Fix Available Decision Logic** section below.                                             |
+| `fix_failed`        | Self-healing failed to generate fix. Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.                          |
+| `environment_issue` | Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. New CI Attempt spawns automatically. Loop to poll for new CI Attempt. |
+| `no_fix`            | CI failed, no fix available (self-healing disabled or not executable). Attempt local fix if possible. Otherwise exit with failure.                                            |
+| `no_new_cipe`       | Expected CI Attempt never spawned (CI workflow likely failed before Nx tasks). Report to user, attempt common fixes if configured, or exit with guidance.                     |
+| `polling_timeout`   | Subagent polling timeout reached. Exit with timeout.                                                                                                                          |
+| `cipe_canceled`     | CI Attempt was canceled. Exit with canceled status.                                                                                                                           |
+| `cipe_timed_out`    | CI Attempt timed out. Exit with timeout status.                                                                                                                               |
+| `cipe_no_tasks`     | CI Attempt exists but failed with no task data (likely infrastructure issue). Retry once with empty commit. If retry fails, exit with failure and guidance.                   |
+| `error`             | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise wait 60s and loop.                                                                              |
 
 ### Fix Available Decision Logic
 
@@ -173,6 +173,8 @@ Failed tasks: <taskId1>, <taskId2>
 Local verification: passed|enhanced|failed-pushing-to-ci"
 ```
 
+**Git Safety**: Only stage and commit files that were modified as part of the fix. Users may have concurrent local changes (local publish, WIP features, config tweaks) that must NOT be committed. Never use `git add -A` or `git add .` — always use targeted file staging as described in Apply Locally + Enhance and Reject + Fix From Scratch flows above.
+
 ### Unverified Fix Flow (No Verification Attempted)
 
 When `verificationStatus` is `FAILED`, `NOT_EXECUTABLE`, or fix has `couldAutoApplyTasks != true` with no verification:
@@ -193,7 +195,7 @@ The `couldAutoApplyTasks` field indicates whether the fix is eligible for automa
 
 ### Apply vs Reject vs Apply Locally
 
-- **Apply via MCP**: Calls `update_self_healing_fix({ shortLink, action: "APPLY" })`. Self-healing agent applies the fix in CI and a new CIPE spawns automatically. No local git operations needed.
+- **Apply via MCP**: Calls `update_self_healing_fix({ shortLink, action: "APPLY" })`. Self-healing agent applies the fix in CI and a new CI Attempt spawns automatically. No local git operations needed.
 - **Apply Locally**: Runs `nx apply-locally <shortLink>`. Applies the patch to your local working directory and sets state to `APPLIED_LOCALLY`. Use this when you want to enhance the fix before pushing.
 - **Reject via MCP**: Calls `update_self_healing_fix({ shortLink, action: "REJECT" })`. Marks fix as rejected. Use only when the fix is completely wrong and you'll fix from scratch.
 
@@ -203,13 +205,25 @@ When the fix needs enhancement (use `nx apply-locally`, NOT reject):
 
 1. Apply the patch locally: `nx apply-locally <shortLink>` (this also updates state to `APPLIED_LOCALLY`)
 2. Make additional changes as needed
-3. Commit and push:
+3. Capture current working state before staging changes:
    ```bash
-   git add -A
+   git diff --name-only > /tmp/unstaged_before.txt
+   git diff --name-only --staged > /tmp/staged_before.txt
+   ```
+4. After making all changes, identify only newly modified files:
+   ```bash
+   git diff --name-only > /tmp/files_to_stage.txt
+   # Filter out files that were already staged or unstaged before
+   comm -23 <(sort /tmp/files_to_stage.txt) <(sort /tmp/unstaged_before.txt /tmp/staged_before.txt | sort -u) > /tmp/new_files.txt
+   # Stage ONLY the newly modified files
+   cat /tmp/new_files.txt | xargs git add
+   ```
+5. Commit and push:
+   ```bash
    git commit -m "fix: resolve <failedTaskIds>"
    git push origin $(git branch --show-current)
    ```
-4. Loop to poll for new CIPE
+6. Loop to poll for new CI Attempt
 
 ### Reject + Fix From Scratch Flow
 
@@ -217,27 +231,39 @@ When the fix is completely wrong:
 
 1. Call MCP to reject: `update_self_healing_fix({ shortLink, action: "REJECT" })`
 2. Fix the issue from scratch locally
-3. Commit and push:
+3. Capture current working state before staging changes:
    ```bash
-   git add -A
+   git diff --name-only > /tmp/unstaged_before.txt
+   git diff --name-only --staged > /tmp/staged_before.txt
+   ```
+4. After making all changes, identify only newly modified files:
+   ```bash
+   git diff --name-only > /tmp/files_to_stage.txt
+   # Filter out files that were already staged or unstaged before
+   comm -23 <(sort /tmp/files_to_stage.txt) <(sort /tmp/unstaged_before.txt /tmp/staged_before.txt | sort -u) > /tmp/new_files.txt
+   # Stage ONLY the newly modified files
+   cat /tmp/new_files.txt | xargs git add
+   ```
+5. Commit and push:
+   ```bash
    git commit -m "fix: resolve <failedTaskIds>"
    git push origin $(git branch --show-current)
    ```
-4. Loop to poll for new CIPE
+6. Loop to poll for new CI Attempt
 
 ### Environment Issue Handling
 
 When `failureClassification == 'ENVIRONMENT_STATE'`:
 
 1. Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`
-2. New CIPE spawns automatically (no local git operations needed)
-3. Loop to poll for new CIPE with `previousCipeUrl` set
+2. New CI Attempt spawns automatically (no local git operations needed)
+3. Loop to poll for new CI Attempt with `previousCipeUrl` set
 
-### No-New-CIPE Handling
+### No-New-CI-Attempt Handling
 
 When `status == 'no_new_cipe'`:
 
-This means the expected CIPE was never created - CI likely failed before Nx tasks could run.
+This means the expected CI Attempt was never created - CI likely failed before Nx tasks could run.
 
 1. **Report to user:**
 
@@ -262,11 +288,11 @@ This means the expected CIPE was never created - CI likely failed before Nx task
 
 3. **Otherwise:** Exit with `no_new_cipe` status, providing guidance for user to investigate
 
-### CIPE-No-Tasks Handling
+### CI-Attempt-No-Tasks Handling
 
 When `status == 'cipe_no_tasks'`:
 
-This means the CIPE was created but no Nx tasks were recorded before it failed. Common causes:
+This means the CI Attempt was created but no Nx tasks were recorded before it failed. Common causes:
 
 - CI timeout before tasks could run
 - Critical infrastructure error
@@ -277,7 +303,7 @@ This means the CIPE was created but no Nx tasks were recorded before it failed. 
 
    ```
    [monitor-ci] CI failed but no Nx tasks were recorded.
-   [monitor-ci] CIPE URL: <cipeUrl>
+   [monitor-ci] CI Attempt URL: <cipeUrl>
    [monitor-ci]
    [monitor-ci] This usually indicates an infrastructure issue. Attempting retry...
    ```
@@ -307,61 +333,100 @@ This means the CIPE was created but no Nx tasks were recorded before it failed. 
 
 Exit the monitoring loop when ANY of these conditions are met:
 
-| Condition                                   | Exit Type        |
-| ------------------------------------------- | ---------------- |
-| CI passes (`cipeStatus == 'SUCCEEDED'`)     | Success          |
-| Max CIPE cycles reached                     | Timeout          |
-| Max duration reached                        | Timeout          |
-| 3 consecutive no-progress iterations        | Circuit breaker  |
-| No fix available and local fix not possible | Failure          |
-| No new CIPE and auto-fix not configured     | Pre-CIPE failure |
-| User cancels                                | Cancelled        |
+| Condition                                                    | Exit Type              |
+| ------------------------------------------------------------ | ---------------------- |
+| CI passes (`cipeStatus == 'SUCCEEDED'`)                      | Success                |
+| Max agent-initiated cycles reached (after user declines ext) | Timeout                |
+| Max duration reached                                         | Timeout                |
+| 3 consecutive no-progress iterations                         | Circuit breaker        |
+| No fix available and local fix not possible                  | Failure                |
+| No new CI Attempt and auto-fix not configured                | Pre-CI-Attempt failure |
+| User cancels                                                 | Cancelled              |
 
 ## Main Loop
 
 ### Step 1: Initialize Tracking
 
 ```
-cycle_count = 0
+cycle_count = 0            # Only incremented for agent-initiated cycles (counted against --max-cycles)
 start_time = now()
 no_progress_count = 0
 local_verify_count = 0
 last_state = null
 last_cipe_url = null
 expected_commit_sha = null
+agent_triggered = false    # Set true after monitor takes an action that triggers new CI Attempt
 ```
 
-### Step 2: Spawn Subagent
+### Step 2: Spawn Subagent and Monitor Output
 
-Spawn the `ci-monitor-subagent` subagent to poll CI status:
+Spawn the `ci-monitor-subagent` subagent to poll CI status. **Run in background** so you can actively monitor and relay its output to the user.
 
-**Fresh start (first spawn, no expected CIPE):**
+**Fresh start (first spawn, no expected CI Attempt):**
 
 ```
 Task(
   agent: "ci-monitor-subagent",
+  run_in_background: true,
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
-           New-CIPE timeout: <new-cipe-timeout> minutes.
+           New-CI-Attempt timeout: <new-cipe-timeout> minutes.
            Verbosity: <verbosity>."
 )
 ```
 
-**After action that triggers new CIPE (wait mode):**
+**After action that triggers new CI Attempt (wait mode):**
 
 ```
 Task(
   agent: "ci-monitor-subagent",
+  run_in_background: true,
   prompt: "Monitor CI for branch '<branch>'.
            Subagent timeout: <subagent-timeout> minutes.
-           New-CIPE timeout: <new-cipe-timeout> minutes.
+           New-CI-Attempt timeout: <new-cipe-timeout> minutes.
            Verbosity: <verbosity>.
 
-           WAIT MODE: A new CIPE should spawn. Ignore old CIPE until new one appears.
+           WAIT MODE: A new CI Attempt should spawn. Ignore old CI Attempt until new one appears.
            Expected commit SHA: <expected_commit_sha>
-           Previous CIPE URL: <last_cipe_url>"
+           Previous CI Attempt URL: <last_cipe_url>"
 )
 ```
+
+### Step 2a: Active Output Monitoring (CRITICAL)
+
+**The subagent's text output is NOT visible to users when running in background.** You MUST actively monitor and relay its output. Do NOT passively wait for completion.
+
+After spawning the background subagent, enter a monitoring loop:
+
+1. **Every 60 seconds**, check the subagent output using `TaskOutput(task_id, block=false)`
+2. **Parse new lines** since your last check — look for `[ci-monitor]` and `⚡` prefixed lines
+3. **Relay to user** based on verbosity:
+   - `minimal`: Only relay `⚡` critical transition lines
+   - `medium`: Relay all `[ci-monitor]` status lines
+   - `verbose`: Relay all subagent output
+4. **Continue** until `TaskOutput` returns a completed status
+5. When complete, proceed to Step 3 with the final subagent response
+
+**Example monitoring loop output:**
+
+```
+[monitor-ci] Checking subagent status... (elapsed: 1m)
+[monitor-ci] CI: IN_PROGRESS | Self-healing: NOT_STARTED
+
+[monitor-ci] Checking subagent status... (elapsed: 3m)
+[monitor-ci] CI: FAILED | Self-healing: IN_PROGRESS
+[monitor-ci] ⚡ CI failed — self-healing fix generation started
+
+[monitor-ci] Checking subagent status... (elapsed: 5m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED | Verification: IN_PROGRESS
+[monitor-ci] ⚡ Self-healing fix generated — verification started
+```
+
+**NEVER do this:**
+
+- Spawn subagent and passively say "Waiting for results..."
+- Check once and say "Still working, I'll wait"
+- Only show output when the subagent finishes
 
 ### Step 3: Handle Subagent Response
 
@@ -371,35 +436,69 @@ When subagent returns:
 2. Look up default behavior in the table above
 3. Check if user instructions override the default
 4. Execute the appropriate action
-5. **If action expects new CIPE**, update tracking (see Step 3a)
+5. **If action expects new CI Attempt**, update tracking (see Step 3a)
 6. If action results in looping, go to Step 2
 
-### Step 3a: Track State for New-CIPE Detection
+### Step 3a: Track State for New-CI-Attempt Detection
 
-After actions that should trigger a new CIPE, record state before looping:
+After actions that should trigger a new CI Attempt, record state before looping:
 
-| Action                        | What to Track                                 | Subagent Mode |
-| ----------------------------- | --------------------------------------------- | ------------- |
-| Fix auto-applying             | `last_cipe_url = current cipeUrl`             | Wait mode     |
-| Apply via MCP                 | `last_cipe_url = current cipeUrl`             | Wait mode     |
-| Apply locally + push          | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
-| Reject + fix + push           | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
-| Fix failed + local fix + push | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
-| No fix + local fix + push     | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
-| Environment rerun             | `last_cipe_url = current cipeUrl`             | Wait mode     |
-| No-new-CIPE + auto-fix + push | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
-| CIPE no tasks + retry push    | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| Action                              | What to Track                                 | Subagent Mode |
+| ----------------------------------- | --------------------------------------------- | ------------- |
+| Fix auto-applying                   | `last_cipe_url = current cipeUrl`             | Wait mode     |
+| Apply via MCP                       | `last_cipe_url = current cipeUrl`             | Wait mode     |
+| Apply locally + push                | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| Reject + fix + push                 | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| Fix failed + local fix + push       | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| No fix + local fix + push           | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| Environment rerun                   | `last_cipe_url = current cipeUrl`             | Wait mode     |
+| No-new-CI-Attempt + auto-fix + push | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
+| CI Attempt no tasks + retry push    | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode     |
 
 **CRITICAL**: When passing `expectedCommitSha` or `last_cipe_url` to the subagent, it enters **wait mode**:
 
-- Subagent will **completely ignore** the old/stale CIPE
-- Subagent will only wait for new CIPE to appear
-- Subagent will NOT return to main agent with stale CIPE data
-- Once new CIPE detected, subagent switches to normal polling
+- Subagent will **completely ignore** the old/stale CI Attempt
+- Subagent will only wait for new CI Attempt to appear
+- Subagent will NOT return to main agent with stale CI Attempt data
+- Once new CI Attempt detected, subagent switches to normal polling
 
-**Why wait mode matters for context preservation**: Stale CIPE data can be very large (task output summaries, suggested fix patches, reasoning). If subagent returns this to main agent, it pollutes main agent's context with useless data since we already processed that CIPE. Wait mode keeps stale data in the subagent, never sending it to main agent.
+**Why wait mode matters for context preservation**: Stale CI Attempt data can be very large (task output summaries, suggested fix patches, reasoning). If subagent returns this to main agent, it pollutes main agent's context with useless data since we already processed that CI Attempt. Wait mode keeps stale data in the subagent, never sending it to main agent.
 
-### Step 4: Progress Tracking
+### Step 4: Cycle Classification and Progress Tracking
+
+#### Cycle Classification
+
+Not all cycles are equal. Only count cycles the monitor itself triggered toward `--max-cycles`:
+
+1. **After subagent returns**, check `agent_triggered`:
+   - `agent_triggered == true` → this cycle was triggered by the monitor → `cycle_count++`
+   - `agent_triggered == false` → this cycle was human-initiated or a first observation → do NOT increment `cycle_count`
+2. **Reset** `agent_triggered = false`
+3. **After Step 3a** (when the monitor takes an action that triggers a new CI Attempt) → set `agent_triggered = true`
+
+**How detection works**: Step 3a is only called when the monitor explicitly pushes code, applies a fix via MCP, or triggers an environment rerun. If a human pushes on their own, the subagent detects a new CI Attempt but the monitor never went through Step 3a, so `agent_triggered` remains `false`.
+
+**When a human-initiated cycle is detected**, log it:
+
+```
+[monitor-ci] New CI Attempt detected (human-initiated push). Monitoring without incrementing cycle count. (agent cycles: N/max-cycles)
+```
+
+#### Approaching Limit Gate
+
+When `cycle_count >= max_cycles - 2`, pause and ask the user before continuing:
+
+```
+[monitor-ci] Approaching cycle limit (cycle_count/max_cycles agent-initiated cycles used).
+[monitor-ci] How would you like to proceed?
+  1. Continue with 5 more cycles
+  2. Continue with 10 more cycles
+  3. Stop monitoring
+```
+
+Increase `max_cycles` by the user's choice and continue.
+
+#### Progress Tracking
 
 After each action:
 
@@ -421,27 +520,27 @@ Based on verbosity level:
 
 Users can override default behaviors:
 
-| Instruction                                      | Effect                                        |
-| ------------------------------------------------ | --------------------------------------------- |
-| "never auto-apply"                               | Always prompt before applying any fix         |
-| "always ask before git push"                     | Prompt before each push                       |
-| "reject any fix for e2e tasks"                   | Auto-reject if `failedTaskIds` contains e2e   |
-| "apply all fixes regardless of verification"     | Skip verification check, apply everything     |
-| "if confidence < 70, reject"                     | Check confidence field before applying        |
-| "run 'nx affected -t typecheck' before applying" | Add local verification step                   |
-| "auto-fix workflow failures"                     | Attempt lockfile updates on pre-CIPE failures |
-| "wait 45 min for new CIPE"                       | Override new-CIPE timeout (default: 10 min)   |
+| Instruction                                      | Effect                                              |
+| ------------------------------------------------ | --------------------------------------------------- |
+| "never auto-apply"                               | Always prompt before applying any fix               |
+| "always ask before git push"                     | Prompt before each push                             |
+| "reject any fix for e2e tasks"                   | Auto-reject if `failedTaskIds` contains e2e         |
+| "apply all fixes regardless of verification"     | Skip verification check, apply everything           |
+| "if confidence < 70, reject"                     | Check confidence field before applying              |
+| "run 'nx affected -t typecheck' before applying" | Add local verification step                         |
+| "auto-fix workflow failures"                     | Attempt lockfile updates on pre-CI-Attempt failures |
+| "wait 45 min for new CI Attempt"                 | Override new-CI-Attempt timeout (default: 10 min)   |
 
 ## Error Handling
 
-| Error                    | Action                                                                                |
-| ------------------------ | ------------------------------------------------------------------------------------- |
-| Git rebase conflict      | Report to user, exit                                                                  |
-| `nx apply-locally` fails | Report to user, attempt manual patch or exit                                          |
-| MCP tool error           | Retry once, if fails report to user                                                   |
-| Subagent spawn failure   | Retry once, if fails exit with error                                                  |
-| No new CIPE detected     | If `--auto-fix-workflow`, try lockfile update; otherwise report to user with guidance |
-| Lockfile auto-fix fails  | Report to user, exit with guidance to check CI logs                                   |
+| Error                      | Action                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| Git rebase conflict        | Report to user, exit                                                                  |
+| `nx apply-locally` fails   | Report to user, attempt manual patch or exit                                          |
+| MCP tool error             | Retry once, if fails report to user                                                   |
+| Subagent spawn failure     | Retry once, if fails exit with error                                                  |
+| No new CI Attempt detected | If `--auto-fix-workflow`, try lockfile update; otherwise report to user with guidance |
+| Lockfile auto-fix fails    | Report to user, exit with guidance to check CI logs                                   |
 
 ## Example Session
 
@@ -452,22 +551,28 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] CI attempt: IN_PROGRESS | Self-Healing: NOT_STARTED | Elapsed: 1m
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: IN_PROGRESS | Elapsed: 3m
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 5m
+[monitor-ci] Checking subagent status... (elapsed: 1m)
+[monitor-ci] CI: IN_PROGRESS | Self-healing: NOT_STARTED
+[monitor-ci] Checking subagent status... (elapsed: 3m)
+[monitor-ci] CI: FAILED | Self-healing: IN_PROGRESS
+[monitor-ci] ⚡ CI failed — self-healing fix generation started
+[monitor-ci] Checking subagent status... (elapsed: 5m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED | Verification: COMPLETED
 
 [monitor-ci] Fix available! Verification: COMPLETED
 [monitor-ci] Applying fix via MCP...
 [monitor-ci] Fix applied in CI. Waiting for new CI attempt...
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] New CI attempt detected!
-[ci-monitor-subagent] CI attempt: SUCCEEDED | Elapsed: 8m
+[monitor-ci] Checking subagent status... (elapsed: 7m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] Checking subagent status... (elapsed: 8m)
+[monitor-ci] CI: SUCCEEDED
 
 [monitor-ci] CI passed successfully!
 
 [monitor-ci] Summary:
-  - Total cycles: 2
+  - Agent cycles: 1/5
   - Total time: 12m 34s
   - Fixes applied: 1
   - Result: SUCCESS
@@ -480,28 +585,68 @@ Users can override default behaviors:
 [monitor-ci] Config: max-cycles=5, timeout=120m, auto-fix-workflow=true
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] CI attempt: FAILED | Self-Healing: COMPLETED | Elapsed: 2m
+[monitor-ci] Checking subagent status... (elapsed: 2m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
 
-[monitor-ci] Applying fix locally, enhancing, and pushing...
+[monitor-ci] Fix available! Applying locally, enhancing, and pushing...
 [monitor-ci] Committed: abc1234
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] Waiting for new CI attempt... (expected SHA: abc1234)
-[ci-monitor-subagent] ⚠️  CI attempt timeout (10 min). Returning no_new_cipe.
+[monitor-ci] Checking subagent status... (elapsed: 6m)
+[monitor-ci] Waiting for new CI Attempt... (expected SHA: abc1234)
+[monitor-ci] Checking subagent status... (elapsed: 12m)
+[monitor-ci] ⚠️ CI Attempt timeout (10 min). Status: no_new_cipe
 
-[monitor-ci] Status: no_new_cipe
 [monitor-ci] --auto-fix-workflow enabled. Attempting lockfile update...
 [monitor-ci] Lockfile updated. Committed: def5678
 
 [monitor-ci] Spawning subagent to poll CI status...
-[ci-monitor-subagent] New CI attempt detected!
-[ci-monitor-subagent] CI attempt: SUCCEEDED | Elapsed: 18m
+[monitor-ci] Checking subagent status... (elapsed: 16m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] Checking subagent status... (elapsed: 18m)
+[monitor-ci] CI: SUCCEEDED
 
 [monitor-ci] CI passed successfully!
 
 [monitor-ci] Summary:
-  - Total cycles: 3
+  - Agent cycles: 3/5
   - Total time: 22m 15s
   - Fixes applied: 1 (self-healing) + 1 (lockfile)
   - Result: SUCCESS
+```
+
+### Example 3: Human-in-the-Loop (user pushes during monitoring)
+
+```
+[monitor-ci] Starting CI monitor for branch 'feature/refactor-api'
+[monitor-ci] Config: max-cycles=5, timeout=120m, verbosity=medium
+
+[monitor-ci] Spawning subagent to poll CI status...
+[monitor-ci] Checking subagent status... (elapsed: 4m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
+
+[monitor-ci] Fix available! Applying fix via MCP... (agent cycles: 0/5)
+[monitor-ci] Fix applied in CI. Waiting for new CI attempt...
+
+[monitor-ci] Spawning subagent to poll CI status...
+[monitor-ci] Checking subagent status... (elapsed: 8m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
+
+[monitor-ci] Agent-initiated cycle. (agent cycles: 1/5)
+[monitor-ci] Fix available! Applying locally and enhancing...
+[monitor-ci] Committed: abc1234
+
+[monitor-ci] Spawning subagent to poll CI status...
+  ... (user pushes their own changes to the branch while monitor waits) ...
+[monitor-ci] Checking subagent status... (elapsed: 12m)
+[monitor-ci] ⚡ New CI Attempt detected!
+[monitor-ci] CI: FAILED | Self-healing: IN_PROGRESS
+
+[monitor-ci] New CI Attempt detected (human-initiated push). Monitoring without incrementing cycle count. (agent cycles: 2/5)
+[monitor-ci] Checking subagent status... (elapsed: 16m)
+[monitor-ci] CI: FAILED | Self-healing: COMPLETED
+
+[monitor-ci] Fix available! Applying via MCP... (agent cycles: 2/5)
+  ... (continues, human cycles don't eat into the budget) ...
 ```
