@@ -127,6 +127,8 @@ Execute the generator:
 nx generate <generator-name> <options> --no-interactive
 ```
 
+> **Tip:** New packages often need workspace dependencies wired up (e.g., importing shared types, being consumed by apps). The `link-workspace-packages` skill can help add these correctly.
+
 ### 8. Modify Generated Code (If Needed)
 
 Generators provide a starting point. Modify the output as needed to:
@@ -134,6 +136,8 @@ Generators provide a starting point. Modify the output as needed to:
 - Add or modify functionality as requested
 - Adjust imports, exports, or configurations
 - Integrate with existing code patterns
+
+**Important:** If you replace or delete generated test files (e.g., `*.spec.ts`), either write meaningful replacement tests or remove the `test` target from the project configuration. Empty test suites will cause `nx test` to fail.
 
 ### 9. Format and Verify
 
