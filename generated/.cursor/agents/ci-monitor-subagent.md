@@ -95,18 +95,11 @@ HEAVY_FIELDS:
   # Large content fields - fetch only when returning to main agent
 ```
 
-## Initial Wait
+## Initial Poll
 
-Before first poll, wait based on context:
-
-- **Fresh start (no expected CI Attempt):** Wait 60 seconds to allow CI to start
-- **Expecting new CI Attempt:** Wait 30 seconds (action already triggered)
-
-**IMPORTANT:** Always run sleep in foreground, NOT as background command.
-
-```bash
-sleep 60  # or 30 if expecting new CI Attempt (FOREGROUND, not background)
-```
+Start polling immediately — no initial wait. The exponential backoff between polls
+(60s → 90s → 120s cap) handles pacing naturally. The first poll provides immediate
+feedback on CI state, even if it's NOT_STARTED.
 
 ## Stale Detection (CRITICAL)
 
