@@ -221,6 +221,8 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
 - `session.ciStatus`: CI pipeline status keyed by PR ID, each containing:
   - `status`: One of `SUCCEEDED`, `FAILED`, `IN_PROGRESS`, `NOT_STARTED` (null if no CIPE)
   - `cipeUrl`: URL to the CI pipeline execution details (null if no CIPE)
+  - `completedAt`: Epoch millis timestamp, set only when the CIPE has completed (null otherwise)
+  - `selfHealingStatus`: The self-healing fix status string from Nx Cloud's AI fix feature (null if no AI fix exists)
 
 ```
 cloud_polygraph_get_session(sessionId: "<session-id>")
@@ -253,9 +255,9 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 
 **Session:** POLYGRAPH_SESSION_URL
 
-| Repo           | PR                 | PR Status | CI Status | CI Link          |
-| -------------- | ------------------ | --------- | --------- | ---------------- |
-| REPO_FULL_NAME | [PR_TITLE](PR_URL) | PR_STATUS | CI_STATUS | [View](CIPE_URL) |
+| Repo           | PR                 | PR Status | CI Status | Self-Healing        | CI Link          |
+| -------------- | ------------------ | --------- | --------- | ------------------- | ---------------- |
+| REPO_FULL_NAME | [PR_TITLE](PR_URL) | PR_STATUS | CI_STATUS | SELF_HEALING_STATUS | [View](CIPE_URL) |
 
 **Local paths:**
 
@@ -265,6 +267,7 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 - LOCAL_PATH: the absolute path to the local clone of the repo. For the initiator workspace, this is the current working directory. For delegated workspaces, the path is returned by `cloud_polygraph_delegate`.
 - PR_URL, PR_TITLE, PR_STATUS: from `pullRequests[]`
 - CI_STATUS: from `ciStatus[prId].status`
+- SELF_HEALING_STATUS: from `ciStatus[prId].selfHealingStatus` (omit or show `-` if null)
 - CIPE_URL: from `ciStatus[prId].cipeUrl`
 - POLYGRAPH_SESSION_URL: from `polygraphSessionUrl`
 
