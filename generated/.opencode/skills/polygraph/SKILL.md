@@ -262,8 +262,8 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 
 **Session:** POLYGRAPH_SESSION_URL
 
-| Repo           | PR                 | PR Status | CI Status | Self-Healing     | CI Link          |
-| -------------- | ------------------ | --------- | --------- | ---------------- | ---------------- |
+| Repo           | PR                 | PR Status | CI Status | Self-Healing        | CI Link          |
+| -------------- | ------------------ | --------- | --------- | ------------------- | ---------------- |
 | REPO_FULL_NAME | [PR_TITLE](PR_URL) | PR_STATUS | CI_STATUS | SELF_HEALING_STATUS | [View](CIPE_URL) |
 
 **Local paths:**
