@@ -36,6 +36,7 @@ Wait for all CI pipelines in a Polygraph session to reach a stable state (succee
 ## Phase 2: Polling Loop
 
 **Configuration:**
+
 - Timeout: 30 minutes total
 - Backoff: 60s → 90s → 120s (cap)
 - Circuit breaker: exit after 5 consecutive polls with no status change
@@ -68,6 +69,7 @@ Wait for all CI pipelines in a Polygraph session to reach a stable state (succee
 Categorize repos into: succeeded, failed, canceled, timed_out, excluded, in_progress (if timed out).
 
 Display final summary table. When showing self-healing status, distinguish clearly between these states:
+
 - `COMPLETED` = a fix was **generated and verified**, but **NOT yet applied**. Display as `fix available`.
 - `APPLIED` = the fix was **applied** by the user or agent. Display as `fix applied, awaiting re-run`.
 - `IN_PROGRESS` / `PENDING` = the fix is still being generated. Display as `in progress`.
@@ -93,6 +95,7 @@ Include self-healing status for any repo that has one.
 For each repo with `ciStatus: FAILED`:
 
 1. Display known info from the session data before delegating:
+
    ```
    Repository: frontend
    CI Pipeline: <cipeUrl from session>
@@ -101,6 +104,7 @@ For each repo with `ciStatus: FAILED`:
    ```
 
 2. Call `cloud_polygraph_delegate` with:
+
    - `sessionId`: the session ID
    - `target`: the repository name
    - `instruction`: Use the `ci_information` MCP tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other).
