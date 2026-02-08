@@ -103,16 +103,26 @@ For each repo with `ciStatus: FAILED`:
    Investigating failure details...
    ```
 
-2. Call `cloud_polygraph_delegate` with:
+2. **Delegate investigation** (non-blocking) — call `cloud_polygraph_delegate` for each failed repo:
 
    - `sessionId`: the session ID
    - `target`: the repository name
    - `instruction`: Use the `ci_information` MCP tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other).
    - `context`: Polygraph session monitoring — investigating CI failure for unified summary.
 
-3. Collect the child agent's response. If the delegation fails or times out, log the error and skip that repo.
+   Since `cloud_polygraph_delegate` is non-blocking, you can delegate to multiple failed repos in parallel.
 
-4. Display failure summary for each repo:
+3. **Monitor investigation progress** — poll `cloud_polygraph_child_status` to wait for each child agent to complete:
+
+   ```
+   cloud_polygraph_child_status(sessionId: "<session-id>", target: "frontend")
+   ```
+
+   Poll until the child agent's status indicates completion. Use the `tail` parameter to retrieve recent output lines containing the investigation results.
+
+4. Collect each child agent's response from the status output. If a child agent fails or gets stuck, use `cloud_polygraph_stop_child` to terminate it and skip that repo.
+
+5. Display failure summary for each repo:
    ```
    Repository: frontend
    CI Pipeline: <cipeUrl>
@@ -139,4 +149,5 @@ For each repo with `ciStatus: FAILED`:
 
 - This skill does NOT push code directly. The only write action it may take is applying/rejecting a self-healing fix via `update_self_healing_fix`, which is an Nx Cloud operation (not a local code change).
 - All heavy CI data inspection happens in child agents via `cloud_polygraph_delegate` to keep this context window clean.
+- `cloud_polygraph_delegate` is **non-blocking** — it starts the child agent and returns immediately. Use `cloud_polygraph_child_status` to poll for results and `cloud_polygraph_stop_child` to terminate stuck agents.
 - The `cloud_polygraph_get_session` response is compact and safe to poll from the main agent."""
