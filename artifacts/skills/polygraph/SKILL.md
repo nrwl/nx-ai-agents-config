@@ -110,8 +110,8 @@ The session ID is provided by the user:
 
 **Repositories in this session:**
 
-| Repo | Local Path |
-| ---- | ---------- |
+| Repo           | Local Path |
+| -------------- | ---------- |
 | REPO_FULL_NAME | LOCAL_PATH |
 
 - REPO_FULL_NAME: from `workspaces[].vcsConfiguration.repositoryFullName`
@@ -202,12 +202,12 @@ The `cloud_polygraph_child_status` response includes logs as newline-delimited J
 
 Key log entry types:
 
-| `type` | Meaning | Useful fields |
-|---|---|---|
-| `system` (subtype: `init`) | Child agent started | `cwd` — working directory |
-| `assistant` | Agent action — tool call or text output | `message.content[]` — array of `tool_use` or `text` blocks |
-| `user` | Tool result returned to agent | `tool_use_result.stdout`, `tool_use_result.stderr` |
-| `result` (subtype: `success` or `error`) | **Agent finished** | `result` — final text summary, `is_error` — whether it failed, `num_turns` — total turns taken |
+| `type`                                   | Meaning                                 | Useful fields                                                                                  |
+| ---------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `system` (subtype: `init`)               | Child agent started                     | `cwd` — working directory                                                                      |
+| `assistant`                              | Agent action — tool call or text output | `message.content[]` — array of `tool_use` or `text` blocks                                     |
+| `user`                                   | Tool result returned to agent           | `tool_use_result.stdout`, `tool_use_result.stderr`                                             |
+| `result` (subtype: `success` or `error`) | **Agent finished**                      | `result` — final text summary, `is_error` — whether it failed, `num_turns` — total turns taken |
 
 **How to determine child status from logs:**
 
@@ -224,6 +224,7 @@ On each poll, display a one-line summary per child agent:
 ```
 
 Where:
+
 - `<status>`: `running`, `completed`, or `failed`
 - `<last activity>`: derived from the last `assistant` log entry:
   - If `tool_use`: show the tool name and a short description (e.g., `Bash("npm install")`, `Edit("src/app.ts")`, `Read("package.json")`)
