@@ -183,7 +183,60 @@ cloud_polygraph_child_status(sessionId: "<session-id>", target: "org/repo-name")
 cloud_polygraph_child_status(sessionId: "<session-id>", target: "org/repo-name", tail: 50)
 ```
 
-Use this in a polling loop to wait for child agents to complete before proceeding to push branches and create PRs.
+**Polling strategy:**
+
+Poll child agent status using the following backoff schedule:
+
+1. **Immediately** — first check right after delegating
+2. **10s** wait before second check
+3. **30s** wait before third check
+4. **60s** wait before fourth check and all subsequent checks
+
+Use `sleep` in Bash between polls to enforce the wait intervals. Do NOT poll on every turn without waiting.
+
+Always verify child agents have completed before proceeding to push branches and create PRs.
+
+**Interpreting the logs:**
+
+The `cloud_polygraph_child_status` response includes logs as newline-delimited JSON (NDJSON). Each line has a `type` field. Parse the last few lines to determine status and display a summary.
+
+Key log entry types:
+
+| `type` | Meaning | Useful fields |
+|---|---|---|
+| `system` (subtype: `init`) | Child agent started | `cwd` — working directory |
+| `assistant` | Agent action — tool call or text output | `message.content[]` — array of `tool_use` or `text` blocks |
+| `user` | Tool result returned to agent | `tool_use_result.stdout`, `tool_use_result.stderr` |
+| `result` (subtype: `success` or `error`) | **Agent finished** | `result` — final text summary, `is_error` — whether it failed, `num_turns` — total turns taken |
+
+**How to determine child status from logs:**
+
+- **Completed successfully:** Last line has `type: "result"` with `subtype: "success"` and `is_error: false`
+- **Completed with error:** Last line has `type: "result"` with `is_error: true`
+- **Still running:** No `type: "result"` entry in the logs
+
+**Display format for each poll:**
+
+On each poll, display a one-line summary per child agent:
+
+```
+[polygraph] Poll #N | <repo>: <status> | <last activity>
+```
+
+Where:
+- `<status>`: `running`, `completed`, or `failed`
+- `<last activity>`: derived from the last `assistant` log entry:
+  - If `tool_use`: show the tool name and a short description (e.g., `Bash("npm install")`, `Edit("src/app.ts")`, `Read("package.json")`)
+  - If `text`: show a truncated snippet of the text (first 80 chars)
+- When completed, show the `result` field from the final `type: "result"` entry instead of last activity
+
+Examples:
+
+```
+[polygraph] Poll #1 | frontend: running | Read("src/components/App.tsx")
+[polygraph] Poll #2 | frontend: running | Bash("nx run frontend:build")
+[polygraph] Poll #3 | frontend: completed | "Added user preferences component and updated routing"
+```
 
 ### 2b. Stop a Running Child Agent
 
@@ -197,6 +250,19 @@ Use `cloud_polygraph_stop_child` to terminate a running child agent. Use this if
 ```
 cloud_polygraph_stop_child(sessionId: "<session-id>", target: "org/repo-name")
 ```
+
+**After stopping a child agent**, always print instructions for the user to continue work manually in the child repo. Get the repo path from the `cwd` field in the `system` init log entry (available via `cloud_polygraph_child_status`).
+
+Display:
+
+```
+Child agent for <repo> has been stopped.
+
+To continue the work manually, run:
+  cd <path> && claude --continue
+```
+
+Where `<path>` is the absolute path to the child repo clone (e.g., `/var/folders/.../polygraph/<session-id>/<repo>`).
 
 ### 3. Create Branches with Session ID — MANDATORY
 
