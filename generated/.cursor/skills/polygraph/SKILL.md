@@ -127,9 +127,23 @@ cloud_polygraph_delegate(
 
 ALWAYS USE `cloud_polygraph_delegate`. Don't interact with child repositories directly.
 
-### 3. Create Branches with Session ID
+**CRITICAL — Branch Creation Requirement:** Every delegation instruction MUST explicitly tell the child agent to create and check out a new branch named `polygraph/<session-id>` as the VERY FIRST step before making any changes. If you omit this from the instruction, the child agent will commit directly to the default branch, which breaks the entire Polygraph workflow. Always include branch creation in your `instruction` parameter — do NOT rely on the child agent to do this on its own.
 
-When beginning work in each repo, ask the child to create a branch that matches the session id of the parent.
+Example instruction that includes branch creation:
+
+```
+"First, create and check out a new branch named 'polygraph/<session-id>'. Then, <your actual task here>."
+```
+
+### 3. Create Branches with Session ID — MANDATORY
+
+**THIS IS THE MOST CRITICAL STEP IN THE ENTIRE WORKFLOW.** Every child repo MUST have a branch created that matches the session ID. Without this, commits land on the default branch, PRs cannot be created, and the entire multi-repo coordination fails.
+
+**YOU MUST:**
+
+1. **Create the branch IMMEDIATELY after cloning** — before making ANY code changes
+2. **Include branch creation in EVERY `cloud_polygraph_delegate` instruction** — never assume the child agent will do it automatically
+3. **Use the exact naming convention** shown below
 
 Branch naming convention:
 
@@ -142,6 +156,8 @@ Example:
 ```
 polygraph/add-user-preferences
 ```
+
+**FAILURE TO CREATE BRANCHES IS THE #1 CAUSE OF POLYGRAPH SESSION FAILURES.** Always verify that branch creation is part of every delegation instruction you send.
 
 ### 4. Push Branches
 
@@ -280,9 +296,10 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 
 ## Best Practices
 
-1. **Use consistent branch names** across all repos with the session ID
-2. **Link PRs in descriptions** - Reference related PRs in each PR body
-3. **Keep PRs as drafts** until all repos are ready
-4. **Test integration** before marking PRs ready
-5. **Coordinate merge order** if there are deployment dependencies
-6. **Always use `cloud_polygraph_delegate`**. Never try to interact with child repos directly.
+1. **ALWAYS create branches before any changes** — Include `polygraph/<session-id>` branch creation as the first instruction in every delegation. This is non-negotiable.
+2. **Use consistent branch names** across all repos with the session ID
+3. **Link PRs in descriptions** - Reference related PRs in each PR body
+4. **Keep PRs as drafts** until all repos are ready
+5. **Test integration** before marking PRs ready
+6. **Coordinate merge order** if there are deployment dependencies
+7. **Always use `cloud_polygraph_delegate`**. Never try to interact with child repos directly.
