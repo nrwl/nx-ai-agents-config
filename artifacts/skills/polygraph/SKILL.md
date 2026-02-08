@@ -104,6 +104,20 @@ The session ID is provided by the user:
 
 1. The `setSessionId` parameter if provided AND it should be equal to the local branch name. If the branch is main, master, dev, ask the user to provide a Polygraph session id and use it during the session.
 
+**After initialization, immediately print the session details.** Call `cloud_polygraph_get_session` and display:
+
+**Session:** POLYGRAPH_SESSION_URL
+
+**Repositories in this session:**
+
+| Repo | Local Path |
+| ---- | ---------- |
+| REPO_FULL_NAME | LOCAL_PATH |
+
+- REPO_FULL_NAME: from `workspaces[].vcsConfiguration.repositoryFullName`
+- LOCAL_PATH: the absolute path to the local clone of the repo. For the initiator workspace, this is the current working directory. For other workspaces, the path is available from `cloud_polygraph_child_status`.
+- POLYGRAPH_SESSION_URL: from `polygraphSessionUrl`
+
 ### 2. Delegate Work to Each Repository
 
 Use `cloud_polygraph_delegate` to start a child Claude agent in another repository. **This call is non-blocking** — it starts the child agent and returns immediately with a confirmation message. The child agent runs in the background.
