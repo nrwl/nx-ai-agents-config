@@ -463,6 +463,9 @@ function processAgents(agentName, config) {
 
     const { content, meta } = readArtifact(srcPath);
     validateAgentMeta(meta, srcPath);
+    if (meta.experimental && !includeExperimental) {
+      continue;
+    }
     config.writeAgent(destPath, content, meta);
   }
 
@@ -495,6 +498,9 @@ function processSkills(agentName, config) {
 
     const { content, meta } = readArtifact(srcSkillFile);
     validateSkillMeta(meta, srcSkillFile);
+    if (meta.experimental && !includeExperimental) {
+      continue;
+    }
 
     // Always write as skill
     const destDir = join(config.outputDir, config.skillsDir);
@@ -527,6 +533,7 @@ function processSkills(agentName, config) {
 // ============== Main Execution ==============
 
 const isCheckMode = process.argv.includes('--check');
+const includeExperimental = process.argv.includes('--include-experimental');
 
 function runSync() {
   console.log('Syncing artifacts to generated/ folders...\n');

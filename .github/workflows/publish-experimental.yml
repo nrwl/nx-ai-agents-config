@@ -1,0 +1,35 @@
+name: Publish Experimental
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - name: Set experimental version
+        run: |
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/claude-config/.claude-plugin/plugin.json','utf-8')).version)")
+          BASE=$(echo "$CURRENT" | sed 's/-.*//')
+          node scripts/bump-version.mjs --version "${BASE}-experimental"
+      - run: npx nx sync-artifacts --include-experimental
+      - name: Push to experimental branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && echo "No changes" && exit 0
+          git commit -m "chore: publish experimental artifacts from ${{ github.sha }}"
+          git push origin HEAD:experimental --force
