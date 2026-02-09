@@ -27,7 +27,21 @@ jobs:
 
       - run: npm ci
 
+      - name: Check for plugin changes
+        id: check
+        run: |
+          # Check if there are changes to the Claude plugin beyond just version bumps
+          PLUGIN_DIFF=$(git diff origin/main...HEAD -- 'generated/nx-claude-plugin/' ':!generated/nx-claude-plugin/.claude-plugin/plugin.json')
+          if [ -z "$PLUGIN_DIFF" ]; then
+            echo "No plugin content changes detected. Skipping version bump."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Plugin content changes detected."
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compute and apply pre-release version
+        if: steps.check.outputs.has_changes == 'true'
         run: |
           # Read main's version
           MAIN_VERSION=$(node -e "console.log(JSON.parse(require('child_process').execSync('git show origin/main:artifacts/claude-config/.claude-plugin/plugin.json', {encoding:'utf-8'})).version)")
@@ -56,6 +70,7 @@ jobs:
           npx nx sync-artifacts
 
       - name: Commit and push if changed
+        if: steps.check.outputs.has_changes == 'true'
         run: |
           git diff --quiet && exit 0
           git config user.name "github-actions[bot]"
