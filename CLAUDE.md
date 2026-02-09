@@ -12,6 +12,10 @@
 
 <!-- nx configuration end-->
 
+When writing regular skills and agents in this repo (in /artifacts), always use agent-agnostic language. There are many different ways of representing MCP tool formats, different default subagents et cetera. Since we generally support all these subagents from the same source files, always use descriptions that will make sense for different coding agents.
+Don't do this: "Use the mcp\_\_nx-mcp\_\_ci_information MCP tool"
+Do this instead: "Use the ci-information tool from the nx MCP server" (you don't always have to mention the mcp server if it's obvious)
+
 # Self-healing CI
 
 - If the artifact sync verification task fails, fix it by running the sync artifacts script (`npx nx sync-artifacts`)
