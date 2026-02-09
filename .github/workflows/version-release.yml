@@ -1,0 +1,87 @@
+name: Version Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Compute and apply release version
+        id: compute
+        run: |
+          # Read current version from merge commit
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/claude-config/.claude-plugin/plugin.json','utf-8')).version)")
+
+          echo "Current version: $CURRENT"
+
+          # Check if it has a pre-release suffix
+          if [[ "$CURRENT" != *-* ]]; then
+            echo "No pre-release suffix found. Skipping (direct push to main)."
+            exit 0
+          fi
+
+          # Extract PR number from suffix (e.g., 0.2.1-pr.42 → 42)
+          PR_NUMBER=$(echo "$CURRENT" | sed 's/.*-pr\.//')
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+          # Strip suffix: 0.2.1-pr.42 → 0.2.1
+          STRIPPED=$(echo "$CURRENT" | sed 's/-.*//')
+
+          # Read previous main version via HEAD~1
+          PREVIOUS=$(node -e "
+            try {
+              console.log(JSON.parse(require('child_process').execSync('git show HEAD~1:artifacts/claude-config/.claude-plugin/plugin.json', {encoding:'utf-8'})).version);
+            } catch {
+              console.log('0.0.0');
+            }
+          ")
+          # Strip any suffix from previous too
+          PREV_BASE=$(echo "$PREVIOUS" | sed 's/-.*//')
+
+          echo "Stripped version: $STRIPPED"
+          echo "Previous main version: $PREV_BASE"
+
+          # Compare: if stripped <= previous, bump patch from previous
+          RELEASE="$STRIPPED"
+          if [ "$(printf '%s\n' "$PREV_BASE" "$STRIPPED" | sort -V | tail -n1)" = "$PREV_BASE" ] && [ "$PREV_BASE" != "0.0.0" ]; then
+            # stripped <= previous, need to bump
+            MAJOR=$(echo "$PREV_BASE" | cut -d. -f1)
+            MINOR=$(echo "$PREV_BASE" | cut -d. -f2)
+            PATCH=$(echo "$PREV_BASE" | cut -d. -f3)
+            NEXT_PATCH=$((PATCH + 1))
+            RELEASE="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+            echo "Collision detected. Bumping to: $RELEASE"
+          fi
+
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "Release version: $RELEASE"
+
+          node scripts/bump-version.mjs --version "$RELEASE"
+          npx nx sync-artifacts
+
+      - name: Commit and push if changed
+        run: |
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: release ${{ steps.compute.outputs.release }} for #${{ steps.compute.outputs.pr_number }}"
+          git push
