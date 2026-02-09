@@ -104,6 +104,8 @@ The session ID is provided by the user:
 
 1. The `setSessionId` parameter if provided AND it should be equal to the local branch name. If the branch is main, master, dev, ask the user to provide a Polygraph session id and use it during the session.
 
+After calling `cloud_polygraph_init`, print the list of cloned repositories and their local paths so the user can see where each repo was cloned to.
+
 **After initialization, immediately print the session details.** Call `cloud_polygraph_get_session` and display:
 
 **Session:** POLYGRAPH_SESSION_URL
@@ -153,14 +155,6 @@ cloud_polygraph_child_status(sessionId: "...")
 ```
 
 ALWAYS USE `cloud_polygraph_delegate`. Don't interact with child repositories directly.
-
-**CRITICAL — Branch Creation Requirement:** Every delegation instruction MUST explicitly tell the child agent to create and check out a new branch named `polygraph/<session-id>` as the VERY FIRST step before making any changes. If you omit this from the instruction, the child agent will commit directly to the default branch, which breaks the entire Polygraph workflow. Always include branch creation in your `instruction` parameter — do NOT rely on the child agent to do this on its own.
-
-Example instruction that includes branch creation:
-
-```
-"First, create and check out a new branch named 'polygraph/<session-id>'. Then, <your actual task here>."
-```
 
 ### 2a. Monitor Child Agent Progress
 
@@ -265,31 +259,7 @@ To continue the work manually, run:
 
 Where `<path>` is the absolute path to the child repo clone (e.g., `/var/folders/.../polygraph/<session-id>/<repo>`).
 
-### 3. Create Branches with Session ID — MANDATORY
-
-**THIS IS THE MOST CRITICAL STEP IN THE ENTIRE WORKFLOW.** Every child repo MUST have a branch created that matches the session ID. Without this, commits land on the default branch, PRs cannot be created, and the entire multi-repo coordination fails.
-
-**YOU MUST:**
-
-1. **Create the branch IMMEDIATELY after cloning** — before making ANY code changes
-2. **Include branch creation in EVERY `cloud_polygraph_delegate` instruction** — never assume the child agent will do it automatically
-3. **Use the exact naming convention** shown below
-
-Branch naming convention:
-
-```
-polygraph/<session-id>
-```
-
-Example:
-
-```
-polygraph/add-user-preferences
-```
-
-**FAILURE TO CREATE BRANCHES IS THE #1 CAUSE OF POLYGRAPH SESSION FAILURES.** Always verify that branch creation is part of every delegation instruction you send.
-
-### 4. Push Branches
+### 3. Push Branches
 
 Once work is complete in a repository, push the branch using `cloud_polygraph_push_branch`. This must be done before creating a PR.
 
@@ -307,7 +277,7 @@ cloud_polygraph_push_branch(
 )
 ```
 
-### 5. Create Draft PRs
+### 4. Create Draft PRs
 
 Create PRs for all repositories at once using `cloud_polygraph_create_prs`. PRs are created as drafts with session metadata that links related PRs across repos. Branches must be pushed first.
 
@@ -343,7 +313,7 @@ cloud_polygraph_create_prs(
 )
 ```
 
-### 6. Get Current Polygraph Session
+### 5. Get Current Polygraph Session
 
 Check the status of a session using `cloud_polygraph_get_session`. Returns the full session state including workspaces, PRs, CI status, and the Polygraph session URL.
 
@@ -381,7 +351,7 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
 cloud_polygraph_get_session(sessionId: "<session-id>")
 ```
 
-### 7. Mark PRs Ready
+### 6. Mark PRs Ready
 
 Once all changes are verified and ready to merge, use `cloud_polygraph_mark_ready` to transition PRs from DRAFT to OPEN status.
 
@@ -426,13 +396,11 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 
 ## Best Practices
 
-1. **ALWAYS create branches before any changes** — Include `polygraph/<session-id>` branch creation as the first instruction in every delegation. This is non-negotiable.
-2. **Use consistent branch names** across all repos with the session ID
-3. **Delegate in parallel** — Since `cloud_polygraph_delegate` is non-blocking, delegate to multiple repos at once, then monitor all with `cloud_polygraph_child_status`
-4. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
-5. **Link PRs in descriptions** - Reference related PRs in each PR body
-6. **Keep PRs as drafts** until all repos are ready
-7. **Test integration** before marking PRs ready
-8. **Coordinate merge order** if there are deployment dependencies
-9. **Always use `cloud_polygraph_delegate`**. Never try to interact with child repos directly.
-10. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
+1. **Delegate in parallel** — Since `cloud_polygraph_delegate` is non-blocking, delegate to multiple repos at once, then monitor all with `cloud_polygraph_child_status`
+2. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
+3. **Link PRs in descriptions** - Reference related PRs in each PR body
+4. **Keep PRs as drafts** until all repos are ready
+5. **Test integration** before marking PRs ready
+6. **Coordinate merge order** if there are deployment dependencies
+7. **Always use `cloud_polygraph_delegate`**. Never try to interact with child repos directly.
+8. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
