@@ -18,6 +18,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
+          token: ${{ secrets.PR_VERSION_PUSH_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
