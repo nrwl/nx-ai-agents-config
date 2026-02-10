@@ -510,6 +510,15 @@ function processSkills(agentName, config) {
     config.writeSkill(destSkillFile, content, meta, config);
     skillCount++;
 
+    // Copy supplementary directories (references/, scripts/, assets/) for on-demand loading
+    const srcSkillDir = join(srcDir, skillDir);
+    for (const entry of readdirSync(srcSkillDir)) {
+      const srcPath = join(srcSkillDir, entry);
+      if (statSync(srcPath).isDirectory()) {
+        cpSync(srcPath, join(destSkillDir, entry), { recursive: true });
+      }
+    }
+
     // For non-Claude agents, also write command skills to commands folder
     if (meta.command && agentName !== 'claude') {
       const cmdDestDir = join(config.outputDir, config.commandsDir);
