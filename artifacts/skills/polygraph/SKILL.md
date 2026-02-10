@@ -285,6 +285,12 @@ cloud_polygraph_create_prs(
 )
 ```
 
+**After creating PRs**, always print the Polygraph session URL:
+
+```
+**Polygraph session:** POLYGRAPH_SESSION_URL
+```
+
 ### 5. Get Current Polygraph Session
 
 Check the status of a session using `cloud_polygraph_get_session`. Returns the full session state including workspaces, PRs, CI status, and the Polygraph session URL.
@@ -341,6 +347,14 @@ cloud_polygraph_mark_ready(
   ]
 )
 ```
+
+**After marking PRs as ready**, always print the Polygraph session URL so the user can easily access the session overview. Call `cloud_polygraph_get_session` and display:
+
+```
+**Polygraph session:** POLYGRAPH_SESSION_URL
+```
+
+Where `POLYGRAPH_SESSION_URL` is from `polygraphSessionUrl` in the response.
 
 ## Other Capabilities
 
