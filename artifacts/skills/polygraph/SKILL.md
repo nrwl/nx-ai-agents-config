@@ -45,6 +45,7 @@ The tools have one of two MCP prefixes. Try the first prefix, and if it fails, u
 | `cloud_polygraph_create_prs`      | Create draft pull requests with session metadata linking related PRs    |
 | `cloud_polygraph_get_session`     | Query status of the current polygraph session                           |
 | `cloud_polygraph_mark_ready`      | Mark draft PRs as ready for review                                      |
+| `cloud_polygraph_associate_pr`    | Associate an existing PR with a Polygraph session                       |
 
 ### How to invoke these tools
 
@@ -68,7 +69,7 @@ nx run cloud_polygraph_init
 bash: mcp__nx-mcp__cloud_polygraph_init
 ```
 
-**Note:** `cloud_polygraph_init`, `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, and `cloud_polygraph_mark_ready` should be called directly as MCP tools (not wrapped in Task). However, `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via a background Task subagent as described in section 2.
+**Note:** `cloud_polygraph_init`, `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr` should be called directly as MCP tools (not wrapped in Task). However, `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via a background Task subagent as described in section 2.
 
 If the first prefix fails, retry with the second prefix:
 
@@ -84,8 +85,9 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 4. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to terminate a running child agent.
 5. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
 6. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs.
-7. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
-8. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
+7. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
+8. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
+9. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
 
 ## Step-by-Step Guide
 
@@ -355,6 +357,36 @@ cloud_polygraph_mark_ready(
 ```
 
 Where `POLYGRAPH_SESSION_URL` is from `polygraphSessionUrl` in the response.
+
+### 7. Associate Existing PRs
+
+Use `cloud_polygraph_associate_pr` to link pull requests that were created outside of Polygraph (e.g., manually or by CI) to the current session. This is useful when PRs already exist for the branches in the session and you want Polygraph to track them.
+
+Provide either a `prUrl` to associate a specific PR, or a `branch` name to find and associate PRs matching that branch across session workspaces.
+
+**Parameters:**
+
+- `sessionId` (required): The Polygraph session ID
+- `prUrl` (optional): URL of an existing pull request to associate
+- `branch` (optional): Branch name to find and associate PRs for
+
+```
+cloud_polygraph_associate_pr(
+  sessionId: "<session-id>",
+  prUrl: "https://github.com/org/repo/pull/123"
+)
+```
+
+Or by branch:
+
+```
+cloud_polygraph_associate_pr(
+  sessionId: "<session-id>",
+  branch: "feature/my-changes"
+)
+```
+
+**Returns** the list of PRs now associated with the session.
 
 ## Other Capabilities
 
