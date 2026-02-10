@@ -5,6 +5,8 @@ description: ALWAYS use this skill whenever the user mentions "polygraph" in any
 
 # Multi-Repo Coordination with Polygraph
 
+**IMPORTANT:** NEVER `cd` into cloned repositories or access their files directly. ALWAYS use the `cloud_polygraph_delegate` tool to perform work in other repositories.
+
 This skill provides guidance for working on features that span multiple repositories using Polygraph for coordination.
 
 ## When to Use This Skill
