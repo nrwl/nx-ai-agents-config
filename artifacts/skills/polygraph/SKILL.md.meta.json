@@ -1,12 +1,5 @@
 {
   "name": "polygraph",
   "description": "Guidance for coordinating changes across multiple repositories using Polygraph. When the request implies that some information from another repo has to be read, another repo has to be updated, or the user asks about what other repos are doing with shared code/APIs/endpoints, use this skill.",
-  "experimental": true,
-  "allowed-tools": [
-    "mcp__plugin_nx_nx-mcp__cloud_polygraph_init",
-    "mcp__plugin_nx_nx-mcp__cloud_polygraph_get_session",
-    "mcp__plugin_nx_nx-mcp__cloud_polygraph_delegate",
-    "mcp__plugin_nx_nx-mcp__cloud_polygraph_child_status",
-    "mcp__plugin_nx_nx-mcp__cloud_polygraph_stop_child"
-  ]
+  "experimental": true
 }
