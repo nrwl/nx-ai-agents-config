@@ -70,7 +70,8 @@ When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect wheth
   "shortLink": "string | null",
   "couldAutoApplyTasks": "boolean | null",
   "confidence": "number | null",
-  "confidenceReasoning": "string | null"
+  "confidenceReasoning": "string | null",
+  "hints": "string[]"
 }
 ```
 
@@ -90,8 +91,8 @@ WAIT_FIELDS:
   # Minimal fields for detecting new CI Attempt
 
 LIGHT_FIELDS:
-  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning'
-  # Status fields for determining actionable state
+  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
+  # Status fields for determining actionable state (includes hints for contextual guidance)
 
 HEAVY_FIELDS:
   'taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription'
@@ -245,7 +246,7 @@ Only fetch minimal fields needed to detect CI Attempt change. Do NOT fetch heavy
 ```
 ci_information({
   branch: "<branch_name>",
-  select: "cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning"
+  select: "cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints"
 })
 ```
 
@@ -433,6 +434,9 @@ When returning to the main agent, provide a structured response with accumulated
 - **Description:** <suggestedFixDescription>
 - **Reasoning:** <suggestedFixReasoning>
 
+### Hints (if any)
+<list each hint from the hints array on its own line>
+
 ### Task Output Summary (first page)
 <taskOutputSummary>
 [MORE_CONTENT_AVAILABLE: taskOutputSummary, pageToken: 1]
@@ -607,3 +611,4 @@ Output detailed phase box after every poll:
 - Track consecutive failures - if 5 consecutive failures, return with `status: error`
 - `newCipeTimeout` applies to both normal and wait mode — if no CI Attempt appears within this window, return `no_new_cipe`
 - Track `newCipeTimeout` (default 10 minutes) separately from main polling timeout (default 30 minutes)
+- The `hints` array in `ci_information` responses contains contextual guidance from the MCP server (e.g., disclaimers about which CI Attempt was retrieved, context about task summary sources). Always include hints in your return format when they are non-empty so the main agent can act on them.

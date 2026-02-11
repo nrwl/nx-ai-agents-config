@@ -91,6 +91,39 @@ The subagent returns with one of the following statuses. This table defines the 
 | `cipe_no_tasks`     | CI Attempt exists but failed with no task data (likely infrastructure issue). Retry once with empty commit. If retry fails, exit with failure and guidance.                   |
 | `error`             | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise wait 60s and loop.                                                                              |
 
+### Handling Hints from CI Tools
+
+Both `ci_information` and `update_self_healing_fix` return a `hints` array containing contextual guidance from the MCP server. These hints provide important context such as:
+
+- Disclaimers when a different CI Attempt was retrieved than what was requested via URL
+- Context about task summary sources (e.g., which output came from CI machines vs the self-healing agent machine)
+- Guidance on how to apply a fix when using `update_self_healing_fix` with a non-APPLY action
+
+**Always check hints after every MCP call.** If hints are non-empty:
+
+1. Log them at `medium` and `verbose` verbosity levels
+2. Act on any actionable guidance they contain (e.g., if a hint says the retrieved CI Attempt differs from what was requested, verify you're looking at the right data)
+
+### `update_self_healing_fix` Output Reference
+
+When calling `update_self_healing_fix`, the response includes these structured fields:
+
+```json
+{
+  "aiFixId": "string | null",
+  "action": "APPLY | REJECT | RERUN_ENVIRONMENT_STATE | null",
+  "shortLink": "string | null",
+  "hints": "string[]"
+}
+```
+
+- **`aiFixId`**: The fix ID that was acted upon. Use for tracking/logging.
+- **`action`**: The action that was performed. Confirms what action was taken.
+- **`shortLink`**: The short link for applying the fix. When the action is not `APPLY`, hints may contain guidance on using this link to apply the fix later.
+- **`hints`**: Contextual hints from the server. Always check these — they may contain important follow-up guidance (e.g., instructions for applying a fix that was only rejected or rerun-requested).
+
+After calling `update_self_healing_fix`, log the response fields and process any hints before continuing the workflow.
+
 ### Fix Available Decision Logic
 
 When subagent returns `fix_available`, main agent compares `failedTaskIds` vs `verifiedTaskIds`:
@@ -113,6 +146,7 @@ When subagent returns `fix_available`, main agent compares `failedTaskIds` vs `v
 #### Step 3a: Apply via MCP (fully/e2e-only verified)
 
 - Call `update_self_healing_fix({ shortLink, action: "APPLY" })`
+- Check the response: verify `action` confirms `"APPLY"` and log `aiFixId`. Process any `hints` in the response.
 - Record `last_cipe_url`, spawn subagent in wait mode
 
 #### Step 3b: Local Verification Flow
@@ -192,9 +226,9 @@ The `couldAutoApplyTasks` field indicates whether the fix is eligible for automa
 
 ### Apply vs Reject vs Apply Locally
 
-- **Apply via MCP**: Calls `update_self_healing_fix({ shortLink, action: "APPLY" })`. Self-healing agent applies the fix in CI and a new CI Attempt spawns automatically. No local git operations needed.
+- **Apply via MCP**: Calls `update_self_healing_fix({ shortLink, action: "APPLY" })`. Self-healing agent applies the fix in CI and a new CI Attempt spawns automatically. No local git operations needed. The response confirms the action with `aiFixId`, `action`, and `shortLink` fields.
 - **Apply Locally**: Runs `nx apply-locally <shortLink>`. Applies the patch to your local working directory and sets state to `APPLIED_LOCALLY`. Use this when you want to enhance the fix before pushing.
-- **Reject via MCP**: Calls `update_self_healing_fix({ shortLink, action: "REJECT" })`. Marks fix as rejected. Use only when the fix is completely wrong and you'll fix from scratch.
+- **Reject via MCP**: Calls `update_self_healing_fix({ shortLink, action: "REJECT" })`. Marks fix as rejected. Use only when the fix is completely wrong and you'll fix from scratch. Check `hints` in the response — they may contain guidance on how to apply the fix later if needed.
 
 ### Apply Locally + Enhance Flow
 
@@ -216,7 +250,7 @@ When the fix needs enhancement (use `nx apply-locally`, NOT reject):
 
 When the fix is completely wrong:
 
-1. Call MCP to reject: `update_self_healing_fix({ shortLink, action: "REJECT" })`
+1. Call MCP to reject: `update_self_healing_fix({ shortLink, action: "REJECT" })`. Process `hints` from the response — they may contain the `shortLink` for re-applying later if needed.
 2. Fix the issue from scratch locally
 3. Stage only the files you modified: `git add <file1> <file2> ...`
 4. Commit and push:
@@ -232,7 +266,7 @@ When the fix is completely wrong:
 
 When `failureClassification == 'ENVIRONMENT_STATE'`:
 
-1. Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`
+1. Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. Check the response for `aiFixId` and process any `hints`.
 2. New CI Attempt spawns automatically (no local git operations needed)
 3. Loop to poll for new CI Attempt with `previousCipeUrl` set
 
