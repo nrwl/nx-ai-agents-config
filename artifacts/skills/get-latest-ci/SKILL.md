@@ -33,7 +33,7 @@ Task(
   prompt: "Fetch the latest CI pipeline execution status. Do NOT use Bash for this.
 
 Use the mcp__nx-mcp__ci_information MCP tool (or mcp__plugin_nx_nx-mcp__ci_information) with these parameters:
-  select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning'
+  select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
 
 Return ALL fields from the response as-is. Do not summarize or omit any fields.
 
@@ -47,6 +47,14 @@ Return those fields too. Only return the first page — do not paginate."
 ## Step 2: Report Results
 
 Based on the subagent's response, report to the user. Always include the CIPE URL when available.
+
+**Hints handling:** The response may include a `hints` array with contextual guidance from the server (e.g., disclaimers about which CI Attempt was retrieved, context about task summary sources like "remoteTaskSummary contains output from tasks that ran on CI machines. localTaskSummary contains output from the self-healing agent machine."). If `hints` is non-empty, append them to the output:
+
+```
+[get-latest-ci] Hints:
+[get-latest-ci]   - <hint 1>
+[get-latest-ci]   - <hint 2>
+```
 
 ### No CIPE found (null/empty response)
 
