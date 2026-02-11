@@ -105,7 +105,7 @@ For each repo with `ciStatus: FAILED`:
 
    - `sessionId`: the session ID
    - `target`: the repository name
-   - `instruction`: Use the `ci_information` MCP tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other).
+   - `instruction`: Use the `ci_information` MCP tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other), (3) any hints from the `hints` array in the response (these provide contextual guidance such as disclaimers about which CI Attempt was retrieved or context about task summary sources).
    - `context`: Polygraph session monitoring — investigating CI failure for unified summary.
 
    Since `cloud_polygraph_delegate` is non-blocking, you can delegate to multiple failed repos in parallel.
@@ -137,7 +137,7 @@ For each repo with `ciStatus: FAILED`:
 2. Identify cross-repo dependency issues (e.g., shared-lib build failure blocking frontend)
 3. Suggest fix order based on dependency graph (upstream repos first)
 4. Present next actions to the user based on self-healing status:
-   - If any repo has `selfHealingStatus` with an available fix → offer to **apply self-healing** via `update_self_healing_fix(action: "APPLY")` or **reject** it
+   - If any repo has `selfHealingStatus` with an available fix → offer to **apply self-healing** via `update_self_healing_fix(action: "APPLY")` or **reject** it. The response returns structured fields: `aiFixId` (the fix acted upon), `action` (confirmation of the action taken), `shortLink` (link for applying the fix), and `hints` (contextual guidance). Always check `hints` — they may contain important follow-up instructions, especially when the action is not `APPLY`.
    - If self-healing was already applied → offer to **resume monitoring** to watch the re-triggered CI
    - **Delegate fixes**: use Polygraph to send fix instructions to child agents (for repos without self-healing or where self-healing was rejected/failed)
    - **Get more details**: drill into a specific repo's failure
@@ -145,7 +145,8 @@ For each repo with `ciStatus: FAILED`:
 
 ## Notes
 
-- This skill does NOT push code directly. The only write action it may take is applying/rejecting a self-healing fix via `update_self_healing_fix`, which is an Nx Cloud operation (not a local code change).
+- This skill does NOT push code directly. The only write action it may take is applying/rejecting a self-healing fix via `update_self_healing_fix`, which is an Nx Cloud operation (not a local code change). The response includes `aiFixId`, `action`, `shortLink`, and `hints` — always process `hints` for contextual guidance.
+- Both `ci_information` and `update_self_healing_fix` return a `hints` array with contextual information from the server. Log and act on any non-empty hints.
 - All heavy CI data inspection happens in child agents via `cloud_polygraph_delegate` to keep this context window clean.
 - `cloud_polygraph_delegate` is **non-blocking** — it starts the child agent and returns immediately. Use `cloud_polygraph_child_status` to poll for results and `cloud_polygraph_stop_child` to terminate stuck agents.
 - The `cloud_polygraph_get_session` response is compact and safe to poll from the main agent.
