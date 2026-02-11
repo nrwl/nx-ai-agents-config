@@ -48,13 +48,7 @@ Return those fields too. Only return the first page — do not paginate."
 
 Based on the subagent's response, report to the user. Always include the CIPE URL when available.
 
-**Hints handling:** The response may include a `hints` array with contextual guidance from the server (e.g., disclaimers about which CI Attempt was retrieved, context about task summary sources like "remoteTaskSummary contains output from tasks that ran on CI machines. localTaskSummary contains output from the self-healing agent machine."). If `hints` is non-empty, append them to the output:
-
-```
-[get-latest-ci] Hints:
-[get-latest-ci]   - <hint 1>
-[get-latest-ci]   - <hint 2>
-```
+If the response contains a non-empty `hints` array, include those hints in the output to the user.
 
 ### No CIPE found (null/empty response)
 
