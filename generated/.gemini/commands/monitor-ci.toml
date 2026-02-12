@@ -51,13 +51,13 @@ Parse any overrides from `{{args}}` and merge with defaults.
 
 **CRITICAL**: The following behaviors are strictly prohibited:
 
-| Anti-Pattern                                                                                    | Why It's Bad                                                        |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely                             |
-| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing                       |
-| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                                      |
-| Running CI checks on main agent                                                                 | Wastes main agent context tokens                                    |
-| Independently analyzing/fixing CI failures while subagent polls                                 | Races with self-healing, causes duplicate fixes and confused state  |
+| Anti-Pattern                                                                                    | Why It's Bad                                                       |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely                            |
+| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing                      |
+| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                                     |
+| Running CI checks on main agent                                                                 | Wastes main agent context tokens                                   |
+| Independently analyzing/fixing CI failures while subagent polls                                 | Races with self-healing, causes duplicate fixes and confused state |
 
 **If this skill fails to activate**, the fallback is:
 
