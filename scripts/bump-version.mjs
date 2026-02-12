@@ -6,7 +6,6 @@ const pluginJsonPath = join(
   rootDir,
   'artifacts/claude-config/.claude-plugin/plugin.json'
 );
-const marketplaceJsonPath = join(rootDir, '.claude-plugin/marketplace.json');
 
 // Parse --version argument
 const versionArg = process.argv.find((arg) => arg.startsWith('--version'));
@@ -36,14 +35,5 @@ const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
 pluginJson.version = version;
 writeFileSync(pluginJsonPath, JSON.stringify(pluginJson, null, 2) + '\n');
 console.log(`Updated ${pluginJsonPath} → ${version}`);
-
-// Update marketplace.json (plugins[0].version)
-const marketplaceJson = JSON.parse(readFileSync(marketplaceJsonPath, 'utf-8'));
-marketplaceJson.plugins[0].version = version;
-writeFileSync(
-  marketplaceJsonPath,
-  JSON.stringify(marketplaceJson, null, 2) + '\n'
-);
-console.log(`Updated ${marketplaceJsonPath} → ${version}`);
 
 console.log(`\nVersion bumped to ${version}`);

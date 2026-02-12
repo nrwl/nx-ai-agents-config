@@ -1,7 +1,5 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "nx-claude-plugins",
-  "version": "1.0.0",
   "description": "Official Nx plugins for Claude Code.",
   "owner": {
     "name": "Nx",
@@ -10,9 +8,11 @@
   "plugins": [
     {
       "name": "nx",
-      "version": "0.2.8-pr.53",
-      "source": ".",
-      "description": "Claude Code plugin for Nx - helps with generators, documentation, and CI monitoring with self-healing integration"
+      "description": "Claude Code plugin for Nx - helps with generators, documentation, and CI monitoring with self-healing integration",
+      "source": {
+        "source": "github",
+        "repo": "nrwl/nx-ai-agents-config"
+      }
     }
   ]
 }
