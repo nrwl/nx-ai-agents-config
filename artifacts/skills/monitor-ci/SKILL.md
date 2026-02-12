@@ -49,12 +49,13 @@ Parse any overrides from `$ARGUMENTS` and merge with defaults.
 
 **CRITICAL**: The following behaviors are strictly prohibited:
 
-| Anti-Pattern                                                                                    | Why It's Bad                                  |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely       |
-| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing |
-| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                |
-| Running CI checks on main agent                                                                 | Wastes main agent context tokens              |
+| Anti-Pattern                                                                                    | Why It's Bad                                                       |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely                            |
+| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing                      |
+| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                                     |
+| Running CI checks on main agent                                                                 | Wastes main agent context tokens                                   |
+| Independently analyzing/fixing CI failures while subagent polls                                 | Races with self-healing, causes duplicate fixes and confused state |
 
 **If this skill fails to activate**, the fallback is:
 
@@ -192,7 +193,17 @@ The `couldAutoApplyTasks` field indicates whether the fix is eligible for automa
 - **`true`**: Fix is eligible for auto-apply. Subagent keeps polling while verification is in progress. Returns `fix_auto_applying` when verified, or `fix_available` if verification fails.
 - **`false`** or **`null`**: Fix requires manual action (apply via MCP, apply locally, or reject)
 
-**Key point**: When subagent returns `fix_auto_applying`, do NOT call MCP to apply - self-healing handles it. Just spawn a new subagent in wait mode.
+**Key point**: When subagent returns `fix_auto_applying`, do NOT call MCP to apply - self-healing handles it. Just spawn a new subagent in wait mode. No local git operations (no commit, no push).
+
+### Accidental Local Fix Recovery
+
+If you find yourself with uncommitted local changes from your own fix attempt when the subagent returns (e.g., you accidentally analyzed/fixed the failure while the subagent was polling):
+
+1. **Compare your local changes with the self-healing fix** (`suggestedFix` / `suggestedFixDescription`)
+2. **If identical or substantially similar** → discard only the files you modified (`git checkout -- <file1> <file2> ...`), then apply via MCP instead. Self-healing's pipeline is the preferred path. Do NOT discard unrelated user changes.
+3. **If meaningfully different** (your fix addresses something self-healing missed) → proceed with the Apply Locally + Enhance Flow
+
+Self-healing fixes go through proper CI verification. Always prefer the self-healing path when fixes overlap.
 
 ### Apply vs Reject vs Apply Locally
 
@@ -413,6 +424,9 @@ After spawning the background subagent, enter a monitoring loop:
 - Spawn subagent and passively say "Waiting for results..."
 - Check once and say "Still working, I'll wait"
 - Only show output when the subagent finishes
+- Independently analyze CI failures, read task output, or attempt fixes while subagent is polling
+
+**While the subagent is polling, your ONLY job is to relay its output.** Do not read CI task output, diagnose failures, generate fixes, modify code, or run tasks locally. All fix decisions happen in Step 3 AFTER the subagent returns with a status. Self-healing may already be working on a fix — independent local analysis races with it and causes duplicate/conflicting fixes.
 
 ### Step 3: Handle Subagent Response
 
