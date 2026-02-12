@@ -81,7 +81,7 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 3. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
 4. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to terminate a running child agent.
 5. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
-6. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Pass `plan` and `agentSessionId` to enable session resuming.
+6. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Both `plan` and `agentSessionId` are required.
 7. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
 8. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
 9. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
@@ -261,12 +261,14 @@ Create PRs for all repositories at once using `cloud_polygraph_create_prs`. PRs 
   - `title` (required): PR title
   - `body` (required): PR description (session metadata is appended automatically)
   - `branch` (required): Branch name that was pushed
-- `plan` (optional): High-level plan describing the session's purpose (saved to the session for resume capability)
-- `agentSessionId` (optional): The Claude CLI session ID (saved to the session so it can be resumed later)
+- `plan` (required): High-level plan describing the session's purpose. Both `plan` and `agentSessionId` must always be provided together to enable session resuming.
+- `agentSessionId` (required): The Claude CLI session ID. Both `plan` and `agentSessionId` must always be provided together to enable session resuming.
 
 ```
 cloud_polygraph_create_prs(
   sessionId: "<session-id>",
+  plan: "Add user preferences feature: UI in frontend, API in backend",
+  agentSessionId: "<claude-session-id>",
   prs: [
     {
       owner: "org",
@@ -340,12 +342,14 @@ Once all changes are verified and ready to merge, use `cloud_polygraph_mark_read
 
 - `sessionId` (required): The Polygraph session ID
 - `prUrls` (required): Array of PR URLs to mark as ready for review
-- `plan` (optional): High-level plan describing the session's purpose (saved to the session for resume capability)
-- `agentSessionId` (optional): The Claude CLI session ID (saved to the session so it can be resumed later)
+- `plan` (required): High-level plan describing the session's purpose. Both `plan` and `agentSessionId` must always be provided together to enable session resuming.
+- `agentSessionId` (required): The Claude CLI session ID. Both `plan` and `agentSessionId` must always be provided together to enable session resuming.
 
 ```
 cloud_polygraph_mark_ready(
   sessionId: "<session-id>",
+  plan: "Add user preferences feature: UI in frontend, API in backend",
+  agentSessionId: "<claude-session-id>",
   prUrls: [
     "https://github.com/org/frontend/pull/123",
     "https://github.com/org/backend/pull/456"
@@ -372,12 +376,14 @@ Provide either a `prUrl` to associate a specific PR, or a `branch` name to find 
 - `sessionId` (required): The Polygraph session ID
 - `prUrl` (optional): URL of an existing pull request to associate
 - `branch` (optional): Branch name to find and associate PRs for
-- `plan` (optional): High-level plan describing the session's purpose (saved to the session for resume capability)
-- `agentSessionId` (optional): The Claude CLI session ID (saved to the session so it can be resumed later)
+- `plan` (required): High-level plan describing the session's purpose. Both `plan` and `agentSessionId` must always be provided together to enable session resuming.
+- `agentSessionId` (required): The Claude CLI session ID. Both `plan` and `agentSessionId` must always be provided together to enable session resuming.
 
 ```
 cloud_polygraph_associate_pr(
   sessionId: "<session-id>",
+  plan: "Add user preferences feature: UI in frontend, API in backend",
+  agentSessionId: "<claude-session-id>",
   prUrl: "https://github.com/org/repo/pull/123"
 )
 ```
@@ -387,6 +393,8 @@ Or by branch:
 ```
 cloud_polygraph_associate_pr(
   sessionId: "<session-id>",
+  plan: "Add user preferences feature: UI in frontend, API in backend",
+  agentSessionId: "<claude-session-id>",
   branch: "feature/my-changes"
 )
 ```
@@ -395,25 +403,14 @@ cloud_polygraph_associate_pr(
 
 ## Other Capabilities
 
-### Saving Session State for Resume
+### Session State for Resume (Required)
 
-When creating PRs, marking PRs ready, or associating PRs, pass the `plan` and `agentSessionId` parameters to save session state. This enables resuming the Polygraph session later.
+The `plan` and `agentSessionId` parameters are **required** on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. You must always provide both values together. They save session state that enables resuming the Polygraph session later.
 
 - **`plan`**: A high-level description of what this session is doing (e.g., "Add user preferences feature across frontend and backend repos"). This helps anyone resuming the session understand the context.
 - **`agentSessionId`**: The Claude CLI session ID for the parent agent. This is the session ID that can be passed to `claude --continue` to resume exactly where the agent left off.
 
 These fields are saved to the Polygraph session server-side and are available from `cloud_polygraph_get_session`. The Polygraph UI also shows a "Resume Session" section with copy-able commands when these fields are present.
-
-**Example — saving session state when creating PRs:**
-
-```
-cloud_polygraph_create_prs(
-  sessionId: "<session-id>",
-  plan: "Add user preferences feature: UI in frontend, API in backend",
-  agentSessionId: "<claude-session-id>",
-  prs: [...]
-)
-```
 
 ### Resuming a Polygraph Session
 
@@ -469,4 +466,4 @@ If the session has a `plan` or `agentSessionId`, also display:
 6. **Coordinate merge order** if there are deployment dependencies
 7. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
 8. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
-9. **Save session state for resumability** — When creating PRs, pass `plan` and `agentSessionId` so the session can be resumed later with `claude --continue`
+9. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
