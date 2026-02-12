@@ -11,8 +11,7 @@
       "description": "Claude Code plugin for Nx - helps with generators, documentation, and CI monitoring with self-healing integration",
       "source": {
         "source": "github",
-        "repo": "nrwl/nx-ai-agents-config",
-        "ref": "claude-plugin-root"
+        "repo": "nrwl/nx-ai-agents-config"
       }
     }
   ]
