@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "nx",
-      "version": "0.2.7-pr.52",
+      "version": "0.2.8-pr.53",
       "source": ".",
       "description": "Claude Code plugin for Nx - helps with generators, documentation, and CI monitoring with self-healing integration"
     }
