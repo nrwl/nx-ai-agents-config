@@ -81,7 +81,7 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 3. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
 4. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to terminate a running child agent.
 5. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
-6. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs.
+6. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Pass `plan` and `agentSessionId` to enable session resuming.
 7. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
 8. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
 9. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
@@ -261,6 +261,8 @@ Create PRs for all repositories at once using `cloud_polygraph_create_prs`. PRs 
   - `title` (required): PR title
   - `body` (required): PR description (session metadata is appended automatically)
   - `branch` (required): Branch name that was pushed
+- `plan` (optional): High-level plan describing the session's purpose (saved to the session for resume capability)
+- `agentSessionId` (optional): The Claude CLI session ID (saved to the session so it can be resumed later)
 
 ```
 cloud_polygraph_create_prs(
@@ -302,6 +304,8 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
 
 - `session.sessionId`: The session ID
 - `session.polygraphSessionUrl`: URL to the Polygraph session UI
+- `session.plan`: High-level plan describing what this session is doing (null if not set)
+- `session.agentSessionId`: The Claude CLI session ID that can be used to resume the session (null if not set)
 - `session.workspaces[]`: Array of connected workspaces, each with:
   - `id`: Workspace ID
   - `name`: Workspace name
@@ -336,6 +340,8 @@ Once all changes are verified and ready to merge, use `cloud_polygraph_mark_read
 
 - `sessionId` (required): The Polygraph session ID
 - `prUrls` (required): Array of PR URLs to mark as ready for review
+- `plan` (optional): High-level plan describing the session's purpose (saved to the session for resume capability)
+- `agentSessionId` (optional): The Claude CLI session ID (saved to the session so it can be resumed later)
 
 ```
 cloud_polygraph_mark_ready(
@@ -366,6 +372,8 @@ Provide either a `prUrl` to associate a specific PR, or a `branch` name to find 
 - `sessionId` (required): The Polygraph session ID
 - `prUrl` (optional): URL of an existing pull request to associate
 - `branch` (optional): Branch name to find and associate PRs for
+- `plan` (optional): High-level plan describing the session's purpose (saved to the session for resume capability)
+- `agentSessionId` (optional): The Claude CLI session ID (saved to the session so it can be resumed later)
 
 ```
 cloud_polygraph_associate_pr(
@@ -387,6 +395,38 @@ cloud_polygraph_associate_pr(
 
 ## Other Capabilities
 
+### Saving Session State for Resume
+
+When creating PRs, marking PRs ready, or associating PRs, pass the `plan` and `agentSessionId` parameters to save session state. This enables resuming the Polygraph session later.
+
+- **`plan`**: A high-level description of what this session is doing (e.g., "Add user preferences feature across frontend and backend repos"). This helps anyone resuming the session understand the context.
+- **`agentSessionId`**: The Claude CLI session ID for the parent agent. This is the session ID that can be passed to `claude --continue` to resume exactly where the agent left off.
+
+These fields are saved to the Polygraph session server-side and are available from `cloud_polygraph_get_session`. The Polygraph UI also shows a "Resume Session" section with copy-able commands when these fields are present.
+
+**Example — saving session state when creating PRs:**
+
+```
+cloud_polygraph_create_prs(
+  sessionId: "<session-id>",
+  plan: "Add user preferences feature: UI in frontend, API in backend",
+  agentSessionId: "<claude-session-id>",
+  prs: [...]
+)
+```
+
+### Resuming a Polygraph Session
+
+If a session has a saved `agentSessionId`, it can be resumed using:
+
+```
+claude --continue <agentSessionId>
+```
+
+This resumes the Claude CLI session that was coordinating the Polygraph work, restoring the full conversation context including which repos were involved, what work was delegated, and what remains to be done.
+
+To check if a session is resumable, call `cloud_polygraph_get_session` and look for the `agentSessionId` field in the response.
+
 ### Print Polygraph Session Details
 
 When asked to print polygraph session details, use `cloud_polygraph_get_session` and display in the following format:
@@ -396,6 +436,14 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 | Repo           | PR                 | PR Status | CI Status | Self-Healing        | CI Link          |
 | -------------- | ------------------ | --------- | --------- | ------------------- | ---------------- |
 | REPO_FULL_NAME | [PR_TITLE](PR_URL) | PR_STATUS | CI_STATUS | SELF_HEALING_STATUS | [View](CIPE_URL) |
+
+If the session has a `plan` or `agentSessionId`, also display:
+
+**Plan:** SESSION_PLAN
+
+**Resume:** `claude --continue AGENT_SESSION_ID`
+
+(Omit the Plan line if `plan` is null. Omit the Resume line if `agentSessionId` is null.)
 
 **Local paths:**
 
@@ -408,6 +456,8 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 - SELF_HEALING_STATUS: from `ciStatus[prId].selfHealingStatus` (omit or show `-` if null)
 - CIPE_URL: from `ciStatus[prId].cipeUrl`
 - POLYGRAPH_SESSION_URL: from `polygraphSessionUrl`
+- SESSION_PLAN: from `plan`
+- AGENT_SESSION_ID: from `agentSessionId`
 
 ## Best Practices
 
@@ -419,3 +469,4 @@ When asked to print polygraph session details, use `cloud_polygraph_get_session`
 6. **Coordinate merge order** if there are deployment dependencies
 7. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
 8. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
+9. **Save session state for resumability** — When creating PRs, pass `plan` and `agentSessionId` so the session can be resumed later with `claude --continue`
