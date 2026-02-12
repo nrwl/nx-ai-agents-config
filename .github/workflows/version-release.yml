@@ -28,7 +28,7 @@ jobs:
         id: check
         run: |
           # Check if there are changes to the Claude plugin beyond just version bumps
-          PLUGIN_DIFF=$(git diff HEAD~1..HEAD -- 'generated/nx-claude-plugin/' ':!generated/nx-claude-plugin/.claude-plugin/plugin.json')
+          PLUGIN_DIFF=$(git diff HEAD~1..HEAD -- 'skills/' 'agents/' '.mcp.json' '.claude-plugin/plugin.json')
           if [ -z "$PLUGIN_DIFF" ]; then
             echo "No plugin content changes detected. Skipping version bump."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"

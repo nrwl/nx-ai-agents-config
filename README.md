@@ -45,9 +45,12 @@ Want to contribute or modify the AI agent configurations? Here's how to work in 
    npx nx sync-artifacts
    ```
 
-3. This generates output in the `generated/` directory:
-   - `generated/nx-claude-plugin/` - Claude Code plugin
-   - `generated/.opencode/` - OpenCode
-   - `generated/.github/` - GitHub Copilot
-   - `generated/.cursor/` - Cursor
-   - `generated/.gemini/` - Gemini
+3. This generates output:
+   - **Claude Code plugin** outputs to the **repo root**: `skills/`, `agents/`, `.mcp.json`, `.claude-plugin/plugin.json` (required for marketplace plugin resolution)
+   - Other agents output to the `generated/` directory:
+     - `generated/.opencode/` - OpenCode
+     - `generated/.github/` - GitHub Copilot
+     - `generated/.cursor/` - Cursor
+     - `generated/.gemini/` - Gemini
+
+> **Note:** The root-level `skills/`, `agents/`, `.mcp.json`, and `.claude-plugin/plugin.json` files are auto-generated. Do not edit them directly — modify the source files in `artifacts/` and run `npx nx sync-artifacts` instead.
