@@ -42,7 +42,7 @@ jobs:
         id: compute
         run: |
           # Read current version from merge commit
-          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/claude-config/.claude-plugin/plugin.json','utf-8')).version)")
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf-8')).version)")
 
           echo "Current version: $CURRENT"
 
@@ -62,7 +62,7 @@ jobs:
           # Read previous main version via HEAD~1
           PREVIOUS=$(node -e "
             try {
-              console.log(JSON.parse(require('child_process').execSync('git show HEAD~1:artifacts/claude-config/.claude-plugin/plugin.json', {encoding:'utf-8'})).version);
+              console.log(JSON.parse(require('child_process').execSync('git show HEAD~1:.claude-plugin/plugin.json', {encoding:'utf-8'})).version);
             } catch {
               console.log('0.0.0');
             }

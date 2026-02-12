@@ -422,8 +422,6 @@ function cleanClaudeRootOutput() {
   }
   const mcpJson = join(rootDir, '.mcp.json');
   if (existsSync(mcpJson)) rmSync(mcpJson);
-  const pluginJson = join(rootDir, '.claude-plugin', 'plugin.json');
-  if (existsSync(pluginJson)) rmSync(pluginJson);
 }
 
 /**
@@ -431,15 +429,6 @@ function cleanClaudeRootOutput() {
  */
 function copyClaudePluginConfigs() {
   const claudeConfigDir = join(artifactsDir, 'claude-config');
-
-  // Copy .claude-plugin/plugin.json to root (alongside marketplace.json)
-  const pluginJsonSrc = join(claudeConfigDir, '.claude-plugin', 'plugin.json');
-  const pluginJsonDest = join(rootDir, '.claude-plugin', 'plugin.json');
-  if (existsSync(pluginJsonSrc)) {
-    mkdirSync(dirname(pluginJsonDest), { recursive: true });
-    cpSync(pluginJsonSrc, pluginJsonDest);
-    console.log('  Copied .claude-plugin/plugin.json');
-  }
 
   // Copy .mcp.json to root
   const mcpJsonSrc = join(claudeConfigDir, '.mcp.json');
@@ -595,7 +584,7 @@ function runCheck() {
 
   // Check for unstaged changes only (working tree vs index)
   const gitDiff = execSync(
-    'git diff --name-only generated/ skills/ agents/ .mcp.json .claude-plugin/plugin.json',
+    'git diff --name-only generated/ skills/ agents/ .mcp.json',
     { encoding: 'utf-8' }
   ).trim();
 
@@ -607,10 +596,9 @@ function runCheck() {
     console.error('Changed files:');
     console.error(gitDiff);
     console.error('\nDiff:');
-    const diff = execSync(
-      'git diff generated/ skills/ agents/ .mcp.json .claude-plugin/plugin.json',
-      { encoding: 'utf-8' }
-    );
+    const diff = execSync('git diff generated/ skills/ agents/ .mcp.json', {
+      encoding: 'utf-8',
+    });
     if (diff) console.error(diff);
     process.exit(1);
   }

@@ -2,10 +2,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 const rootDir = join(import.meta.dirname, '..');
-const pluginJsonPath = join(
-  rootDir,
-  'artifacts/claude-config/.claude-plugin/plugin.json'
-);
+const pluginJsonPath = join(rootDir, '.claude-plugin/plugin.json');
 
 // Parse --version argument
 const versionArg = process.argv.find((arg) => arg.startsWith('--version'));

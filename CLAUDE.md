@@ -36,10 +36,7 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
 
 # Plugin Versioning
 
-Version is tracked in 2 files (kept in sync automatically):
-
-1. `artifacts/claude-config/.claude-plugin/plugin.json` — source of truth
-2. `.claude-plugin/plugin.json` — auto-copied to root by `sync-artifacts`
+Version is tracked in `.claude-plugin/plugin.json` (source of truth).
 
 ## How it works
 
