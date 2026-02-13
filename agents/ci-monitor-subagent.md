@@ -611,4 +611,4 @@ Output detailed phase box after every poll:
 - Track consecutive failures - if 5 consecutive failures, return with `status: error`
 - `newCipeTimeout` applies to both normal and wait mode — if no CI Attempt appears within this window, return `no_new_cipe`
 - Track `newCipeTimeout` (default 10 minutes) separately from main polling timeout (default 30 minutes)
-- The `hints` array in `ci_information` responses contains contextual guidance from the MCP server (e.g., disclaimers about which CI Attempt was retrieved, context about task summary sources). Always include hints in your return format when they are non-empty so the main agent can act on them.
+- If the `hints` array in `ci_information` responses is non-empty, include hints in your return format.
