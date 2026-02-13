@@ -28,7 +28,7 @@ jobs:
         id: check
         run: |
           # Check if there are changes to the Claude plugin beyond just version bumps
-          PLUGIN_DIFF=$(git diff HEAD~1..HEAD -- 'generated/nx-claude-plugin/' ':!generated/nx-claude-plugin/.claude-plugin/plugin.json')
+          PLUGIN_DIFF=$(git diff HEAD~1..HEAD -- 'skills/' 'agents/' '.mcp.json' '.claude-plugin/plugin.json')
           if [ -z "$PLUGIN_DIFF" ]; then
             echo "No plugin content changes detected. Skipping version bump."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
@@ -42,7 +42,7 @@ jobs:
         id: compute
         run: |
           # Read current version from merge commit
-          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/claude-config/.claude-plugin/plugin.json','utf-8')).version)")
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf-8')).version)")
 
           echo "Current version: $CURRENT"
 
@@ -62,7 +62,7 @@ jobs:
           # Read previous main version via HEAD~1
           PREVIOUS=$(node -e "
             try {
-              console.log(JSON.parse(require('child_process').execSync('git show HEAD~1:artifacts/claude-config/.claude-plugin/plugin.json', {encoding:'utf-8'})).version);
+              console.log(JSON.parse(require('child_process').execSync('git show HEAD~1:.claude-plugin/plugin.json', {encoding:'utf-8'})).version);
             } catch {
               console.log('0.0.0');
             }

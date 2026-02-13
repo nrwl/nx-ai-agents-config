@@ -20,7 +20,7 @@ const generatedDir = join(rootDir, 'generated');
 // Agent output configurations
 const agents = {
   claude: {
-    outputDir: join(generatedDir, 'nx-claude-plugin'),
+    outputDir: rootDir,
     agentsDir: 'agents',
     agentsExt: '.md',
     commandsDir: 'commands',
@@ -412,24 +412,27 @@ function recreateDir(dir) {
 }
 
 /**
- * Copy Claude plugin config files
+ * Clean Claude plugin output at repo root before regenerating.
+ * Removes generated dirs/files but preserves marketplace.json.
+ */
+function cleanClaudeRootOutput() {
+  for (const dir of ['skills', 'agents']) {
+    const p = join(rootDir, dir);
+    if (existsSync(p)) rmSync(p, { recursive: true });
+  }
+  const mcpJson = join(rootDir, '.mcp.json');
+  if (existsSync(mcpJson)) rmSync(mcpJson);
+}
+
+/**
+ * Copy Claude plugin config files to repo root
  */
 function copyClaudePluginConfigs() {
-  const claudeOutputDir = agents.claude.outputDir;
   const claudeConfigDir = join(artifactsDir, 'claude-config');
 
-  // Copy .claude-plugin/plugin.json
-  const pluginJsonSrc = join(claudeConfigDir, '.claude-plugin', 'plugin.json');
-  const pluginJsonDest = join(claudeOutputDir, '.claude-plugin', 'plugin.json');
-  if (existsSync(pluginJsonSrc)) {
-    mkdirSync(dirname(pluginJsonDest), { recursive: true });
-    cpSync(pluginJsonSrc, pluginJsonDest);
-    console.log('  Copied .claude-plugin/plugin.json');
-  }
-
-  // Copy .mcp.json
+  // Copy .mcp.json to root
   const mcpJsonSrc = join(claudeConfigDir, '.mcp.json');
-  const mcpJsonDest = join(claudeOutputDir, '.mcp.json');
+  const mcpJsonDest = join(rootDir, '.mcp.json');
   if (existsSync(mcpJsonSrc)) {
     cpSync(mcpJsonSrc, mcpJsonDest);
     console.log('  Copied .mcp.json');
@@ -545,9 +548,12 @@ const isCheckMode = process.argv.includes('--check');
 const includeExperimental = process.argv.includes('--include-experimental');
 
 function runSync() {
-  console.log('Syncing artifacts to generated/ folders...\n');
+  console.log('Syncing artifacts...\n');
 
-  // Clear and recreate generated directory
+  // Clean Claude output at repo root (preserves marketplace.json)
+  cleanClaudeRootOutput();
+
+  // Clear and recreate generated directory (non-Claude agents only)
   recreateDir(generatedDir);
 
   // Process each agent
@@ -577,21 +583,22 @@ function runCheck() {
   console.log('\nChecking for unstaged changes...');
 
   // Check for unstaged changes only (working tree vs index)
-  const gitDiff = execSync('git diff --name-only generated/', {
-    encoding: 'utf-8',
-  }).trim();
+  const gitDiff = execSync(
+    'git diff --name-only generated/ skills/ agents/ .mcp.json',
+    { encoding: 'utf-8' }
+  ).trim();
 
   if (gitDiff) {
-    console.error(
-      '\nError: Generated files in generated/ are out of sync with source.'
-    );
+    console.error('\nError: Generated files are out of sync with source.');
     console.error(
       "Please run 'npx nx sync-artifacts' and stage the changes.\n"
     );
     console.error('Changed files:');
     console.error(gitDiff);
     console.error('\nDiff:');
-    const diff = execSync('git diff generated/', { encoding: 'utf-8' });
+    const diff = execSync('git diff generated/ skills/ agents/ .mcp.json', {
+      encoding: 'utf-8',
+    });
     if (diff) console.error(diff);
     process.exit(1);
   }

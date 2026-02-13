@@ -31,7 +31,7 @@ jobs:
         id: check
         run: |
           # Check if there are changes to the Claude plugin beyond just version bumps
-          PLUGIN_DIFF=$(git diff origin/main...HEAD -- 'generated/nx-claude-plugin/' ':!generated/nx-claude-plugin/.claude-plugin/plugin.json')
+          PLUGIN_DIFF=$(git diff origin/main...HEAD -- 'skills/' 'agents/' '.mcp.json' '.claude-plugin/plugin.json')
           if [ -z "$PLUGIN_DIFF" ]; then
             echo "No plugin content changes detected. Skipping version bump."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
@@ -44,7 +44,7 @@ jobs:
         if: steps.check.outputs.has_changes == 'true'
         run: |
           # Read main's version
-          MAIN_VERSION=$(node -e "console.log(JSON.parse(require('child_process').execSync('git show origin/main:artifacts/claude-config/.claude-plugin/plugin.json', {encoding:'utf-8'})).version)")
+          MAIN_VERSION=$(node -e "console.log(JSON.parse(require('child_process').execSync('git show origin/main:.claude-plugin/plugin.json', {encoding:'utf-8'})).version)")
 
           # Strip any pre-release suffix and bump patch
           BASE=$(echo "$MAIN_VERSION" | sed 's/-.*//')
@@ -55,7 +55,7 @@ jobs:
           TARGET="${MAJOR}.${MINOR}.${NEXT_PATCH}-pr.${{ github.event.pull_request.number }}"
 
           # Read current version
-          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/claude-config/.claude-plugin/plugin.json','utf-8')).version)")
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.claude-plugin/plugin.json','utf-8')).version)")
 
           echo "Main version: $MAIN_VERSION"
           echo "Target version: $TARGET"
