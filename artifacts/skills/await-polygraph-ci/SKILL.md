@@ -146,6 +146,7 @@ For each repo with `ciStatus: FAILED`:
 ## Notes
 
 - This skill does NOT push code directly. The only write action it may take is applying/rejecting a self-healing fix via `update_self_healing_fix`, which is an Nx Cloud operation (not a local code change).
+- Both `ci_information` and `update_self_healing_fix` responses include a `hints` array with contextual guidance (e.g., disclaimers about which CI Attempt was retrieved). Always check and surface non-empty hints.
 - All heavy CI data inspection happens in child agents via `cloud_polygraph_delegate` to keep this context window clean.
 - `cloud_polygraph_delegate` is **non-blocking** — it starts the child agent and returns immediately. Use `cloud_polygraph_child_status` to poll for results and `cloud_polygraph_stop_child` to terminate stuck agents.
 - The `cloud_polygraph_get_session` response is compact and safe to poll from the main agent.
