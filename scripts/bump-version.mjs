@@ -3,6 +3,7 @@ import { join } from 'path';
 
 const rootDir = join(import.meta.dirname, '..');
 const pluginJsonPath = join(rootDir, '.claude-plugin/plugin.json');
+const cursorPluginJsonPath = join(rootDir, '.cursor-plugin/plugin.json');
 
 // Parse --version argument
 const versionArg = process.argv.find((arg) => arg.startsWith('--version'));
@@ -27,10 +28,12 @@ if (!semverRegex.test(version)) {
   process.exit(1);
 }
 
-// Update plugin.json (source of truth)
-const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
-pluginJson.version = version;
-writeFileSync(pluginJsonPath, JSON.stringify(pluginJson, null, 2) + '\n');
-console.log(`Updated ${pluginJsonPath} → ${version}`);
+// Update plugin.json files
+for (const path of [pluginJsonPath, cursorPluginJsonPath]) {
+  const pluginJson = JSON.parse(readFileSync(path, 'utf-8'));
+  pluginJson.version = version;
+  writeFileSync(path, JSON.stringify(pluginJson, null, 2) + '\n');
+  console.log(`Updated ${path} → ${version}`);
+}
 
 console.log(`\nVersion bumped to ${version}`);

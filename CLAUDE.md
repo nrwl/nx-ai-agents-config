@@ -28,6 +28,7 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
 - Run `npx nx sync-artifacts` to generate outputs for all agents
 - Generated files:
   - Claude Code plugin outputs to **repo root**: `skills/`, `agents/`, `.mcp.json`, `.claude-plugin/plugin.json`
+  - Cursor plugin outputs to `generated/.cursor/` with manifest at `.cursor-plugin/plugin.json`
   - Other agents output to `generated/` directory:
     - `generated/.opencode/` - OpenCode
     - `generated/.github/` - GitHub Copilot
@@ -36,7 +37,7 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
 
 # Plugin Versioning
 
-Version is tracked in `.claude-plugin/plugin.json` (source of truth).
+Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrored to `.cursor-plugin/plugin.json`.
 
 ## How it works
 
