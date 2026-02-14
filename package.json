@@ -23,7 +23,7 @@
   ],
   "nx": {
     "nxCloudImplicitDependencies": [
-      "697890bce47a1e5245e880ad:nx-mcp"
+      "698fe56d9c60351a0e65a82b:nx-mcp"
     ],
     "targets": {
       "sync-artifacts": {
