@@ -282,10 +282,10 @@ Based on the response, decide whether to **keep polling** or **return to main ag
 
 Before checking keep-polling conditions, check if self-healing was skipped:
 
-| Condition | Action |
-|-----------|--------|
-| `selfHealingSkippedReason != null` | Return immediately with appropriate status |
-| `selfHealingSkippedReason == 'THROTTLED'` | Return `fix_throttled` |
+| Condition                                 | Action                                                  |
+| ----------------------------------------- | ------------------------------------------------------- |
+| `selfHealingSkippedReason != null`        | Return immediately with appropriate status              |
+| `selfHealingSkippedReason == 'THROTTLED'` | Return `fix_throttled`                                  |
 | `selfHealingSkippedReason` is other value | Return `no_fix` (self-healing skipped for other reason) |
 
 **CRITICAL:** Do NOT keep polling when `selfHealingSkippedReason` is set. The skip reason is final — self-healing will not start.
@@ -625,18 +625,18 @@ Output detailed phase box after every poll:
 
 ### Phase Descriptions (for verbose output)
 
-| Status Combo                                                                              | Description                                 |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `cipeStatus: IN_PROGRESS`                                                                 | "CI running..."                             |
-| `cipeStatus: NOT_STARTED`                                                                 | "Waiting for CI to start..."                |
-| `cipeStatus: FAILED` + `selfHealingStatus: NOT_STARTED`                                   | "CI failed. Self-healing starting..."       |
-| `cipeStatus: FAILED` + `selfHealingStatus: IN_PROGRESS`                                   | "CI failed. Self-healing generating fix..." |
-| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: IN_PROGRESS` | "Fix generated! Verification running..."    |
-| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: COMPLETED`   | "Fix ready! Verified successfully."         |
-| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: FAILED`      | "Fix generated but verification failed."    |
-| `cipeStatus: FAILED` + `selfHealingStatus: FAILED`                                        | "Self-healing could not generate a fix."    |
+| Status Combo                                                                              | Description                                                     |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `cipeStatus: IN_PROGRESS`                                                                 | "CI running..."                                                 |
+| `cipeStatus: NOT_STARTED`                                                                 | "Waiting for CI to start..."                                    |
+| `cipeStatus: FAILED` + `selfHealingStatus: NOT_STARTED`                                   | "CI failed. Self-healing starting..."                           |
+| `cipeStatus: FAILED` + `selfHealingStatus: IN_PROGRESS`                                   | "CI failed. Self-healing generating fix..."                     |
+| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: IN_PROGRESS` | "Fix generated! Verification running..."                        |
+| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: COMPLETED`   | "Fix ready! Verified successfully."                             |
+| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: FAILED`      | "Fix generated but verification failed."                        |
+| `cipeStatus: FAILED` + `selfHealingStatus: FAILED`                                        | "Self-healing could not generate a fix."                        |
 | `cipeStatus: FAILED` + `selfHealingSkippedReason: 'THROTTLED'`                            | "CI failed. Self-healing throttled — too many unapplied fixes." |
-| `cipeStatus: SUCCEEDED`                                                                   | "CI passed!"                                |
+| `cipeStatus: SUCCEEDED`                                                                   | "CI passed!"                                                    |
 
 ## Important Notes
 

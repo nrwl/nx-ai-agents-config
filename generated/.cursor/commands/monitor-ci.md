@@ -84,6 +84,7 @@ The subagent returns with one of the following statuses. This table defines the 
 | `fix_available`     | Compare `failedTaskIds` vs `verifiedTaskIds` to determine verification state. See **Fix Available Decision Logic** section below.                                             |
 | `fix_failed`        | Self-healing failed to generate fix. Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.                          |
 | `environment_issue` | Call MCP to request rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. New CI Attempt spawns automatically. Loop to poll for new CI Attempt. |
+| `fix_throttled`     | Self-healing throttled (too many unapplied fixes). No task output available. Exit with guidance to reject unapplied fixes or push empty commit to resume.                     |
 | `no_fix`            | CI failed, no fix available (self-healing disabled or not executable). Attempt local fix if possible. Otherwise exit with failure.                                            |
 | `no_new_cipe`       | Expected CI Attempt never spawned (CI workflow likely failed before Nx tasks). Report to user, attempt common fixes if configured, or exit with guidance.                     |
 | `polling_timeout`   | Subagent polling timeout reached. Exit with timeout.                                                                                                                          |

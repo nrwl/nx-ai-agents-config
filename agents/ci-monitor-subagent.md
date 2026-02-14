@@ -71,6 +71,8 @@ When `expectedCommitSha` or `previousCipeUrl` is provided, you must detect wheth
   "couldAutoApplyTasks": "boolean | null",
   "confidence": "number | null",
   "confidenceReasoning": "string | null",
+  "selfHealingSkippedReason": "string | null",
+  "selfHealingSkipMessage": "string | null",
   "hints": "string[]"
 }
 ```
@@ -91,7 +93,7 @@ WAIT_FIELDS:
   # Minimal fields for detecting new CI Attempt
 
 LIGHT_FIELDS:
-  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
+  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints,selfHealingSkippedReason,selfHealingSkipMessage'
   # Status fields for determining actionable state (includes hints for contextual guidance)
 
 HEAVY_FIELDS:
@@ -246,7 +248,7 @@ Only fetch minimal fields needed to detect CI Attempt change. Do NOT fetch heavy
 ```
 ci_information({
   branch: "<branch_name>",
-  select: "cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints"
+  select: "cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints,selfHealingSkippedReason,selfHealingSkipMessage"
 })
 ```
 
@@ -284,6 +286,18 @@ This prevents continuing to poll after CI has already completed.
 
 **If in Normal Mode**:
 Based on the response, decide whether to **keep polling** or **return to main agent**.
+
+### Early Return: Self-Healing Skipped
+
+Before checking keep-polling conditions, check if self-healing was skipped:
+
+| Condition                                 | Action                                                  |
+| ----------------------------------------- | ------------------------------------------------------- |
+| `selfHealingSkippedReason != null`        | Return immediately with appropriate status              |
+| `selfHealingSkippedReason == 'THROTTLED'` | Return `fix_throttled`                                  |
+| `selfHealingSkippedReason` is other value | Return `no_fix` (self-healing skipped for other reason) |
+
+**CRITICAL:** Do NOT keep polling when `selfHealingSkippedReason` is set. The skip reason is final — self-healing will not start.
 
 ### Keep Polling When
 
@@ -347,6 +361,7 @@ Before returning to main agent, fetch heavy fields if the status requires them:
 | `fix_available`     | `taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription` |
 | `fix_failed`        | `taskOutputSummary`                                                            |
 | `no_fix`            | `taskOutputSummary`                                                            |
+| `fix_throttled`     | None                                                                           |
 | `environment_issue` | None                                                                           |
 | `no_new_cipe`       | None                                                                           |
 | `polling_timeout`   | None                                                                           |
@@ -377,6 +392,7 @@ Return immediately with structured state if ANY of these conditions are true:
 | `fix_available`     | `selfHealingStatus == 'COMPLETED'` AND `suggestedFix != null` AND (`couldAutoApplyTasks != true` OR `verificationStatus` in (`FAILED`, `NOT_EXECUTABLE`)) |
 | `fix_failed`        | `selfHealingStatus == 'FAILED'`                                                                                                                           |
 | `environment_issue` | `failureClassification == 'ENVIRONMENT_STATE'`                                                                                                            |
+| `fix_throttled`     | `selfHealingSkippedReason == 'THROTTLED'` — fix generation suspended due to unapplied fixes                                                               |
 | `no_fix`            | `cipeStatus == 'FAILED'` AND (`selfHealingEnabled == false` OR `selfHealingStatus == 'NOT_EXECUTABLE'`)                                                   |
 | `no_new_cipe`       | No CI Attempt found for branch (normal mode) or no new CI Attempt detected (wait mode) after `newCipeTimeout` (default 10 min)                            |
 | `polling_timeout`   | Subagent has been polling for > configured timeout (default 30 min)                                                                                       |
@@ -523,6 +539,35 @@ When returning with `status: polling_timeout`, include additional context:
 - Consider stopping this agent and starting fresh
 ```
 
+### Return Format for `fix_throttled`
+
+When returning with `status: fix_throttled`, include throttle context:
+
+```
+## CI Monitor Result
+
+**Status:** fix_throttled
+**Iterations:** <count>
+**Elapsed:** <minutes>m <seconds>s
+
+### CI Attempt Details
+- **Status:** <cipeStatus>
+- **URL:** <cipeUrl>
+- **Branch:** <branch>
+- **Failed Tasks:** <failedTaskIds>
+
+### Throttle Information
+- **Reason:** THROTTLED
+- **Message:** <selfHealingSkipMessage>
+
+### Suggestions
+Self-healing fix generation has been suspended because previous fixes were not acted upon.
+To resume fix generation:
+1. Review and reject previous unapplied fixes using `update_self_healing_fix` tool with action: REJECT
+2. Attempt to fix the failing tasks locally based on the task output
+3. If local fix not possible, push an empty commit to trigger a new CI run — self-healing will resume after suspension clears
+```
+
 ## Status Reporting (Verbosity-Controlled)
 
 **Important:** When running in background mode, your text output goes to an output file — it is NOT directly visible to users. The main agent is responsible for reading your output and relaying it to the user. Write your status lines clearly and consistently so the main agent can parse and forward them.
@@ -589,17 +634,18 @@ Output detailed phase box after every poll:
 
 ### Phase Descriptions (for verbose output)
 
-| Status Combo                                                                              | Description                                 |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------- |
-| `cipeStatus: IN_PROGRESS`                                                                 | "CI running..."                             |
-| `cipeStatus: NOT_STARTED`                                                                 | "Waiting for CI to start..."                |
-| `cipeStatus: FAILED` + `selfHealingStatus: NOT_STARTED`                                   | "CI failed. Self-healing starting..."       |
-| `cipeStatus: FAILED` + `selfHealingStatus: IN_PROGRESS`                                   | "CI failed. Self-healing generating fix..." |
-| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: IN_PROGRESS` | "Fix generated! Verification running..."    |
-| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: COMPLETED`   | "Fix ready! Verified successfully."         |
-| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: FAILED`      | "Fix generated but verification failed."    |
-| `cipeStatus: FAILED` + `selfHealingStatus: FAILED`                                        | "Self-healing could not generate a fix."    |
-| `cipeStatus: SUCCEEDED`                                                                   | "CI passed!"                                |
+| Status Combo                                                                              | Description                                                     |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `cipeStatus: IN_PROGRESS`                                                                 | "CI running..."                                                 |
+| `cipeStatus: NOT_STARTED`                                                                 | "Waiting for CI to start..."                                    |
+| `cipeStatus: FAILED` + `selfHealingStatus: NOT_STARTED`                                   | "CI failed. Self-healing starting..."                           |
+| `cipeStatus: FAILED` + `selfHealingStatus: IN_PROGRESS`                                   | "CI failed. Self-healing generating fix..."                     |
+| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: IN_PROGRESS` | "Fix generated! Verification running..."                        |
+| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: COMPLETED`   | "Fix ready! Verified successfully."                             |
+| `cipeStatus: FAILED` + `selfHealingStatus: COMPLETED` + `verificationStatus: FAILED`      | "Fix generated but verification failed."                        |
+| `cipeStatus: FAILED` + `selfHealingStatus: FAILED`                                        | "Self-healing could not generate a fix."                        |
+| `cipeStatus: FAILED` + `selfHealingSkippedReason: 'THROTTLED'`                            | "CI failed. Self-healing throttled — too many unapplied fixes." |
+| `cipeStatus: SUCCEEDED`                                                                   | "CI passed!"                                                    |
 
 ## Important Notes
 
