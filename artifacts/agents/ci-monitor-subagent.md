@@ -352,7 +352,7 @@ Before returning to main agent, fetch heavy fields if the status requires them:
 | `fix_available`     | `taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription` |
 | `fix_failed`        | `taskOutputSummary`                                                            |
 | `no_fix`            | `taskOutputSummary`                                                            |
-| `fix_throttled`     | `taskOutputSummary`                                                            |
+| `fix_throttled`     | None                                                                           |
 | `environment_issue` | None                                                                           |
 | `no_new_cipe`       | None                                                                           |
 | `polling_timeout`   | None                                                                           |
@@ -550,9 +550,6 @@ When returning with `status: fix_throttled`, include throttle context:
 ### Throttle Information
 - **Reason:** THROTTLED
 - **Message:** <selfHealingSkipMessage>
-
-### Task Output Summary (first page)
-<taskOutputSummary>
 
 ### Suggestions
 Self-healing fix generation has been suspended because previous fixes were not acted upon.
