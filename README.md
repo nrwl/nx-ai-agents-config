@@ -24,7 +24,7 @@ This will set up the appropriate configuration files for your preferred AI tools
 
 ## Features
 
-<!-- TODO: embed video here -->
+https://github.com/user-attachments/assets/edd45819-e955-4ba7-adba-8255f4174da6
 
 Nx AI agent skills teach your coding assistant how to work effectively in your monorepo. Key capabilities:
 
