@@ -8,6 +8,5 @@
   },
   "license": "MIT",
   "repository": "https://github.com/nrwl/nx-ai-agents-config",
-  "skills": "./generated/.cursor/skills/",
-  "mcpServers": "./.mcp.json"
+  "skills": "./generated/.cursor/skills/"
 }
