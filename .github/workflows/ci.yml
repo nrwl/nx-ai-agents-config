@@ -37,10 +37,10 @@ jobs:
 
       # Validate Claude plugin files
       - name: Validate Claude plugin
-        run: claude plugin validate .claude-plugin/plugin.json
+        run: npx nx-cloud record -- claude plugin validate .claude-plugin/plugin.json
 
       - name: Validate Claude marketplace listing
-        run: claude plugin validate .claude-plugin/marketplace.json
+        run: npx nx-cloud record -- claude plugin validate .claude-plugin/marketplace.json
 
       # Verify that generated artifacts are in sync with source
       - name: Verify artifacts sync
