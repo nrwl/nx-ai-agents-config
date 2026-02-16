@@ -22,35 +22,25 @@ nx configure-ai-agents
 
 This will set up the appropriate configuration files for your preferred AI tools.
 
+## Features
+
+https://github.com/user-attachments/assets/edd45819-e955-4ba7-adba-8255f4174da6
+
+Nx AI agent skills teach your coding assistant how to work effectively in your monorepo. Key capabilities:
+
+- **CI Monitoring & Self-Healing** — Watches CI pipelines, detects failures, and applies fixes automatically
+- **Workspace Understanding** — Agents explore your project graph, dependencies, and conventions before acting
+- **Intelligent Code Generation** — Scaffolds new code following your workspace's existing patterns, tags, and tooling
+- **Monorepo-Aware Skills** — A series of skills that help your agent navigate, build, and operate more efficiently in monorepo setups
+- **Multi-Agent Support** — Works across Claude Code, GitHub Copilot, Cursor, Gemini, and OpenCode
+
+Read more on the [Nx blog](https://nx.dev/blog/nx-ai-agent-skills).
+
 ## Related Projects
 
 - **[nx-mcp](https://www.npmjs.com/package/nx-mcp)** - The Nx MCP (Model Context Protocol) server that powers AI agent integrations
 - **[Nx Console](https://github.com/nrwl/nx-console)** - The repository where nx-mcp and these configurations are maintained
 
-## Development / Contributing
+## Contributing
 
-Want to contribute or modify the AI agent configurations? Here's how to work in this repository:
-
-### Making Changes
-
-1. All source artifacts live in the `/artifacts` directory:
-
-   - `artifacts/commands/` - Slash commands
-   - `artifacts/skills/` - Skills
-   - `artifacts/agents/` - Subagents
-
-2. After making changes, run the sync script to distribute to agent-specific formats:
-
-   ```sh
-   npx nx sync-artifacts
-   ```
-
-3. This generates output:
-   - **Claude Code plugin** outputs to the **repo root**: `skills/`, `agents/`, `.mcp.json`, `.claude-plugin/plugin.json` (required for marketplace plugin resolution)
-   - Other agents output to the `generated/` directory:
-     - `generated/.opencode/` - OpenCode
-     - `generated/.github/` - GitHub Copilot
-     - `generated/.cursor/` - Cursor
-     - `generated/.gemini/` - Gemini
-
-> **Note:** The root-level `skills/`, `agents/`, `.mcp.json`, and `.claude-plugin/plugin.json` files are auto-generated. Do not edit them directly — modify the source files in `artifacts/` and run `npx nx sync-artifacts` instead.
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
