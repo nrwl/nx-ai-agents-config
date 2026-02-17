@@ -42,16 +42,16 @@ jobs:
       - name: Validate Claude marketplace listing
         run: npx nx-cloud record -- claude plugin validate .claude-plugin/marketplace.json
 
-      # Verify that generated artifacts are in sync with source
-      - name: Verify artifacts sync
-        run: npx nx sync-artifacts-verification
-
       # Validate Cursor plugin against official schema
       - name: Validate Cursor plugin
         run: npx nx validate-cursor-plugin
 
+      # Verify that generated artifacts are in sync with source
+      - name: Verify artifacts sync
+        run: npx nx sync-artifacts-verification
+
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      - run: npx nx format:check  --base="remotes/origin/main"
+      - run: npx nx-cloud record -- npx nx format:check  --base="remotes/origin/main"
       - run: npx nx run-many -t lint test build typecheck e2e-ci
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: npx nx fix-ci

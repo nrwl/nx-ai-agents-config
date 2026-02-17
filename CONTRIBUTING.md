@@ -17,6 +17,7 @@ Want to contribute or modify the AI agent configurations? Here's how to work in 
    ```
 
 3. This generates output:
+
    - **Claude Code and Cursor plugins** share root output: `skills/`, `agents/`, `.mcp.json`
      - Claude plugin manifest: `.claude-plugin/plugin.json`
      - Cursor plugin manifest: `.cursor-plugin/plugin.json` (uses convention-based discovery of root `skills/` and `agents/`)
