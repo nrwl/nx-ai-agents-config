@@ -34,6 +34,7 @@ The tools have one of two MCP prefixes. Try the first prefix, and if it fails, u
 
 | Tool Name (use with prefix above) | Description                                                             |
 | --------------------------------- | ----------------------------------------------------------------------- |
+| `cloud_polygraph_candidates`      | Discover candidate workspaces with descriptions and graph relationships |
 | `cloud_polygraph_init`            | Initialize Polygraph for the Nx Cloud workspace                         |
 | `cloud_polygraph_delegate`        | Start a task in a child agent in a dependent repository (non-blocking)  |
 | `cloud_polygraph_child_status`    | Get the status and recent output of child agents in a Polygraph session |
@@ -66,7 +67,7 @@ nx run cloud_polygraph_init
 bash: mcp__nx-mcp__cloud_polygraph_init
 ```
 
-**Note:** `cloud_polygraph_init`, `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr` should be called directly as MCP tools (not wrapped in Task). However, `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via a background Task subagent as described in section 2.
+**Note:** `cloud_polygraph_candidates`, `cloud_polygraph_init`, `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr` should be called directly as MCP tools (not wrapped in Task). However, `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via a background Task subagent as described in section 2.
 
 If the first prefix fails, retry with the second prefix:
 
@@ -76,7 +77,8 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 
 ## Workflow Overview
 
-1. **Initialize Polygraph session** - Use `cloud_polygraph_init` to set up the session.
+0. **Discover candidate repos** (optional) - Use `cloud_polygraph_candidates` to see available workspaces with descriptions and graph relationships, then select which repos to include.
+1. **Initialize Polygraph session** - Use `cloud_polygraph_init` to set up the session. Optionally pass `selectedWorkspaceIds` from step 0.
 2. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
 3. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
 4. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to terminate a running child agent.
@@ -88,6 +90,46 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 
 ## Step-by-Step Guide
 
+### 0. Discover Candidate Repos (Optional)
+
+Before initializing a session, you can discover which repositories are available and understand their relationships:
+
+```
+cloud_polygraph_candidates()
+```
+
+This returns:
+
+- **`initiator`**: The current workspace (the one making the request)
+- **`candidates`**: All connected workspaces, each with:
+  - `id`: Workspace ID (use these for `selectedWorkspaceIds` in init)
+  - `name`: Workspace name
+  - `description`: AI-generated description of what the workspace does (may be null)
+  - `vcsConfiguration.repositoryFullName`: Full repo name (e.g., `org/repo`)
+  - `graphRelationship`: How this workspace relates to the initiator:
+    - `distance`: Number of hops in the dependency graph
+    - `direction`: `upstream`, `downstream`, `bidirectional`, or `connected`
+    - `path`: The dependency path between workspaces
+- **`dependencyGraph`**: Full graph with `nodes` and `edges`
+
+Use this information to:
+
+1. Understand which repos are available before starting work
+2. Select only the repos relevant to your task
+3. Pass selected workspace IDs to `cloud_polygraph_init` via `selectedWorkspaceIds`
+
+**Example — select specific repos:**
+
+```
+// First discover what's available
+cloud_polygraph_candidates()
+
+// Then init with only the repos you need
+cloud_polygraph_init(selectedWorkspaceIds: ["workspace-id-1", "workspace-id-2"])
+```
+
+If you skip this step, `cloud_polygraph_init` will include all connected workspaces (the previous default behavior).
+
 ### 1. Initialize Polygraph Session
 
 - Current branch name: !`git branch --show-current`
@@ -97,6 +139,14 @@ First, initialize a Polygraph session:
 ```
 cloud_polygraph_init()
 ```
+
+If you used `cloud_polygraph_candidates` in step 0, you can pass selected workspace IDs:
+
+```
+cloud_polygraph_init(selectedWorkspaceIds: ["id1", "id2"])
+```
+
+This limits the session to only the specified workspaces plus the initiator. Omit `selectedWorkspaceIds` to include all connected workspaces.
 
 The session ID is provided by the user:
 
@@ -314,6 +364,7 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
   - `defaultBranch`: Default branch (e.g., `main`)
   - `vcsConfiguration.repositoryFullName`: Full repo name (e.g., `org/repo`)
   - `vcsConfiguration.provider`: VCS provider (e.g., `GITHUB`)
+  - `workspaceDescription`: AI-generated description of what this workspace does (may be null)
   - `initiator`: Whether this workspace initiated the session
 - `session.dependencyGraph`: Graph of workspace dependencies (`nodes` and `edges`)
 - `session.pullRequests[]`: Array of PRs, each with:
