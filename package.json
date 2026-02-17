@@ -31,6 +31,9 @@
       },
       "sync-artifacts-verification": {
         "command": "node scripts/sync-artifacts.mjs --check"
+      },
+      "validate-cursor-plugin": {
+        "command": "node scripts/validate-cursor-plugin.mjs"
       }
     }
   }

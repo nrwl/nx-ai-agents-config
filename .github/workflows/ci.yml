@@ -46,6 +46,10 @@ jobs:
       - name: Verify artifacts sync
         run: npx nx sync-artifacts-verification
 
+      # Validate Cursor plugin against official schema
+      - name: Validate Cursor plugin
+        run: npx nx validate-cursor-plugin
+
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       - run: npx nx format:check  --base="remotes/origin/main"
       - run: npx nx run-many -t lint test build typecheck e2e-ci
