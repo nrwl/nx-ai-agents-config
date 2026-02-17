@@ -35,6 +35,8 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
     - `generated/.github/` - GitHub Copilot
     - `generated/.cursor/` - Cursor
     - `generated/.gemini/` - Gemini
+    - `generated/.agents/` - Codex (skills only)
+    - `generated/.codex/` - Codex (MCP config)
 
 # Plugin Versioning
 
