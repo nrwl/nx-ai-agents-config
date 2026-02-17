@@ -570,6 +570,20 @@ function runSync() {
   console.log('\n[claude] Copying plugin config files...');
   copyClaudePluginConfigs();
 
+  // Update marketplace.json with experimental ref when including experimental artifacts
+  if (includeExperimental) {
+    const marketplacePath = join(rootDir, '.claude-plugin', 'marketplace.json');
+    const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf-8'));
+    if (marketplace.plugins && marketplace.plugins.length > 0) {
+      marketplace.plugins[0].source.ref = 'experimental';
+      writeFileSync(
+        marketplacePath,
+        JSON.stringify(marketplace, null, 2) + '\n'
+      );
+      console.log('  Updated marketplace.json with experimental ref');
+    }
+  }
+
   console.log('\nRunning nx format....');
   execSync('npx nx format --fix', { stdio: 'inherit' });
 
