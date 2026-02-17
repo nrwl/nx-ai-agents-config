@@ -1,0 +1,18 @@
+{
+  "name": "nx",
+  "owner": {
+    "name": "Narwhal Technologies Inc",
+    "email": "hello@nrwl.io"
+  },
+  "metadata": {
+    "description": "Nx AI agents configuration",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "nx",
+      "source": ".",
+      "description": "Cursor plugin for Nx monorepo development with skills, agents, and MCP server"
+    }
+  ]
+}
