@@ -43,6 +43,7 @@ The tools have one of two MCP prefixes. Try the first prefix, and if it fails, u
 | `cloud_polygraph_get_session`     | Query status of the current polygraph session                           |
 | `cloud_polygraph_mark_ready`      | Mark draft PRs as ready for review                                      |
 | `cloud_polygraph_associate_pr`    | Associate an existing PR with a Polygraph session                       |
+| `cloud_polygraph_complete_session` | Mark a Polygraph session as completed, sealing it from further changes |
 
 ### How to invoke these tools
 
@@ -66,7 +67,7 @@ nx run cloud_polygraph_init
 bash: mcp__nx-mcp__cloud_polygraph_init
 ```
 
-**Note:** `cloud_polygraph_init`, `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr` should be called directly as MCP tools (not wrapped in Task). However, `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via a background Task subagent as described in section 2.
+**Note:** `cloud_polygraph_init`, `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_complete_session` should be called directly as MCP tools (not wrapped in Task). However, `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via a background Task subagent as described in section 2.
 
 If the first prefix fails, retry with the second prefix:
 
@@ -85,6 +86,7 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 7. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
 8. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
 9. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
+10. **Complete session** - Use `cloud_polygraph_complete_session` to mark the session as completed when the user requests it.
 
 ## Step-by-Step Guide
 
@@ -401,6 +403,29 @@ cloud_polygraph_associate_pr(
 
 **Returns** the list of PRs now associated with the session.
 
+### 8. Complete Session
+
+**IMPORTANT: Only call this tool when the user explicitly asks to complete or close the session.** Do not automatically complete sessions as part of the workflow.
+
+Use `cloud_polygraph_complete_session` to mark the session as completed. A completed session is sealed — no further modifications (new PRs, status changes, etc.) can be made.
+
+This is idempotent — completing an already-completed session returns success.
+
+**Parameters:**
+
+- `sessionId` (required): The Polygraph session ID
+
+```
+cloud_polygraph_complete_session(
+  sessionId: "<session-id>"
+)
+```
+
+**When to call:**
+- After all cross-repo work is finished
+- All PRs have been created and marked ready for review
+- The user explicitly asks to complete or close the session
+
 ## Other Capabilities
 
 ### Session State for Resume (Required)
@@ -467,3 +492,4 @@ If the session has a `plan` or `agentSessionId`, also display:
 7. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
 8. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
 9. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
+10. **Only complete sessions when asked** — Only call `cloud_polygraph_complete_session` when the user explicitly requests it. Do not automatically complete sessions.
