@@ -89,6 +89,20 @@ const agents = {
     writeCommand: writeGeminiCommand,
     writeSkill: writeGeminiSkill,
   },
+  codex: {
+    outputDir: join(generatedDir, '.agents'),
+    agentsDir: null, // Codex doesn't support subagents
+    agentsExt: null,
+    commandsDir: null, // No separate commands concept
+    commandsExt: null,
+    skillsDir: 'skills',
+    skillsFile: 'SKILL.md',
+    supportsAgents: false,
+    argumentsPlaceholder: '$ARGUMENTS',
+    writeAgent: null,
+    writeCommand: null,
+    writeSkill: writeBasicSkill,
+  },
 };
 
 /**
@@ -505,6 +519,11 @@ function processSkills(agentName, config) {
       continue;
     }
 
+    // Skip monitor-ci for Codex (relies on subagent orchestration)
+    if (agentName === 'codex' && meta.name === 'monitor-ci') {
+      continue;
+    }
+
     // Always write as skill
     const destDir = join(config.outputDir, config.skillsDir);
     const destSkillDir = join(destDir, skillDir);
@@ -542,6 +561,34 @@ function processSkills(agentName, config) {
   }
 }
 
+/**
+ * Convert MCP JSON config to Codex TOML format and write to generated/.codex/config.toml
+ */
+function copyCodexMcpConfig() {
+  const mcpJsonPath = join(artifactsDir, 'claude-config', '.mcp.json');
+  if (!existsSync(mcpJsonPath)) {
+    console.log('  Skipped .codex/config.toml (no .mcp.json source)');
+    return;
+  }
+
+  const mcpJson = JSON.parse(readFileSync(mcpJsonPath, 'utf-8'));
+  const tomlObj = { mcp_servers: {} };
+
+  for (const [name, server] of Object.entries(mcpJson)) {
+    const entry = {};
+    if (server.command) entry.command = server.command;
+    if (server.args) entry.args = server.args;
+    if (server.env) entry.env = server.env;
+    // Skip 'type' — Codex infers it
+    tomlObj.mcp_servers[name] = entry;
+  }
+
+  const codexDir = join(generatedDir, '.codex');
+  mkdirSync(codexDir, { recursive: true });
+  writeFileSync(join(codexDir, 'config.toml'), TOML.stringify(tomlObj));
+  console.log('  Copied .codex/config.toml');
+}
+
 // ============== Main Execution ==============
 
 const isCheckMode = process.argv.includes('--check');
@@ -569,6 +616,24 @@ function runSync() {
   // Copy Claude-specific config files
   console.log('\n[claude] Copying plugin config files...');
   copyClaudePluginConfigs();
+
+  // Update marketplace.json with experimental ref when including experimental artifacts
+  if (includeExperimental) {
+    const marketplacePath = join(rootDir, '.claude-plugin', 'marketplace.json');
+    const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf-8'));
+    if (marketplace.plugins && marketplace.plugins.length > 0) {
+      marketplace.plugins[0].source.ref = 'experimental';
+      writeFileSync(
+        marketplacePath,
+        JSON.stringify(marketplace, null, 2) + '\n'
+      );
+      console.log('  Updated marketplace.json with experimental ref');
+    }
+  }
+
+  // Copy Codex MCP config (JSON → TOML)
+  console.log('\n[codex] Copying MCP config...');
+  copyCodexMcpConfig();
 
   console.log('\nRunning nx format....');
   execSync('npx nx format --fix', { stdio: 'inherit' });
