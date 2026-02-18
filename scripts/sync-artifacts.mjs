@@ -542,7 +542,7 @@ function processSkills(agentName, config) {
     }
 
     // For non-Claude agents, also write command skills to commands folder
-    if (meta.command && agentName !== 'claude') {
+    if (meta.command && agentName !== 'claude' && config.commandsDir) {
       const cmdDestDir = join(config.outputDir, config.commandsDir);
       mkdirSync(cmdDestDir, { recursive: true });
       const destFile = join(cmdDestDir, skillDir + config.commandsExt);
