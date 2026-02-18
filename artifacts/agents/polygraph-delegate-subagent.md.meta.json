@@ -1,0 +1,10 @@
+{
+  "name": "polygraph-delegate-subagent",
+  "description": "Delegates work to a child agent in another repository via Polygraph, polls for completion, and returns a structured summary. Runs in the background.",
+  "experimental": true,
+  "model": "haiku",
+  "allowed-tools": [
+    "mcp__plugin_nx_nx-mcp__cloud_polygraph_delegate",
+    "mcp__plugin_nx_nx-mcp__cloud_polygraph_child_status"
+  ]
+}
