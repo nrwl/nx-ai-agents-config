@@ -1,8 +1,8 @@
 {
   "name": "nx",
   "displayName": "Nx",
-  "version": "0.2.13",
-  "description": "Make Cursor an effective monorepo developer. Navigate the project graph, follow workspace conventions, and run generators with best practices baked in. Give Cursor the ability to drive autonomous CI fix loops - retrieving failed task outputs, analyzing errors, applying fixes, and iterating until green. Includes skills, subagents, and an MCP server.",
+  "version": "0.2.14-pr.69",
+  "description": "Make Cursor an effective monorepo developer. Faster workspace navigation, predictable code scaffolding that follows existing conventions. Ability to manage and monitor your PRs and CI runs until they’re green.",
   "author": {
     "name": "Narwhal Technologies Inc",
     "email": "hello@nrwl.io"
