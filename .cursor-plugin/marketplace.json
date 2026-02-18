@@ -12,7 +12,7 @@
     {
       "name": "nx",
       "source": ".",
-      "description": "Cursor plugin for Nx monorepo development with skills, agents, and MCP server"
+      "description": "Make Cursor an effective monorepo developer. Faster workspace navigation, predictable code scaffolding that follows existing conventions. Ability to manage and monitor your PRs and CI runs until they’re green."
     }
   ]
 }
