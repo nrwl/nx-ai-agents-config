@@ -1,0 +1,11 @@
+{
+  "name": "polygraph-init-subagent",
+  "description": "Discovers candidate repositories and initializes a Polygraph session. Returns a structured summary of the session with repos, workspace IDs, and session URL.",
+  "experimental": true,
+  "model": "haiku",
+  "allowed-tools": [
+    "mcp__plugin_nx_nx-mcp__cloud_polygraph_candidates",
+    "mcp__plugin_nx_nx-mcp__cloud_polygraph_init",
+    "mcp__plugin_nx_nx-mcp__cloud_polygraph_get_session"
+  ]
+}
