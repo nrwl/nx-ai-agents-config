@@ -1,6 +1,6 @@
 {
   "name": "nx",
-  "version": "0.2.15",
+  "version": "0.2.16-pr.72",
   "description": "Make Claude an effective monorepo developer. Navigate the project graph, follow workspace conventions, and run generators with best practices baked in. Give Claude the ability to drive autonomous CI fix loops - retrieving failed task outputs, analyzing errors, applying fixes, and iterating until green. Includes skills, subagents, and an MCP server.",
   "author": {
     "name": "Narwhal Technologies Inc",
