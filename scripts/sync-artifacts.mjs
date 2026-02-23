@@ -91,15 +91,16 @@ const agents = {
   },
   codex: {
     outputDir: join(generatedDir, '.agents'),
-    agentsDir: null, // Codex doesn't support subagents
-    agentsExt: null,
+    agentsOutputDir: join(generatedDir, '.codex'), // Agent TOML files go to .codex/agents/
+    agentsDir: 'agents',
+    agentsExt: '.toml',
     commandsDir: null, // No separate commands concept
     commandsExt: null,
     skillsDir: 'skills',
     skillsFile: 'SKILL.md',
-    supportsAgents: false,
+    supportsAgents: true,
     argumentsPlaceholder: '$ARGUMENTS',
-    writeAgent: null,
+    writeAgent: writeCodexAgent,
     writeCommand: null,
     writeSkill: writeBasicSkill,
   },
@@ -373,6 +374,19 @@ function toMultilineTomlString(tomlOutput, key) {
 }
 
 /**
+ * Write Codex agent (TOML config file with developer_instructions)
+ */
+function writeCodexAgent(destPath, content, meta) {
+  const tomlObj = {
+    developer_instructions: content.trim(),
+  };
+
+  let tomlOutput = TOML.stringify(tomlObj);
+  tomlOutput = toMultilineTomlString(tomlOutput, 'developer_instructions');
+  writeFileSync(destPath, tomlOutput);
+}
+
+/**
  * Write Gemini command (TOML format with {{args}})
  */
 function writeGeminiCommand(destPath, content, meta, config) {
@@ -467,7 +481,8 @@ function processAgents(agentName, config) {
     return;
   }
 
-  const destDir = join(config.outputDir, config.agentsDir);
+  const baseDir = config.agentsOutputDir || config.outputDir;
+  const destDir = join(baseDir, config.agentsDir);
   mkdirSync(destDir, { recursive: true });
 
   const files = readdirSync(srcDir).filter(
@@ -562,9 +577,11 @@ function processSkills(agentName, config) {
 }
 
 /**
- * Convert MCP JSON config to Codex TOML format and write to generated/.codex/config.toml
+ * Generate Codex config.toml with MCP servers, agent definitions, and feature flags.
+ * Uses marker comments so downstream tools (e.g. configure-ai-agents in nx) can
+ * identify and replace the nx-managed section when merging into user config files.
  */
-function copyCodexMcpConfig() {
+function writeCodexConfig() {
   const mcpJsonPath = join(artifactsDir, 'claude-config', '.mcp.json');
   if (!existsSync(mcpJsonPath)) {
     console.log('  Skipped .codex/config.toml (no .mcp.json source)');
@@ -572,21 +589,61 @@ function copyCodexMcpConfig() {
   }
 
   const mcpJson = JSON.parse(readFileSync(mcpJsonPath, 'utf-8'));
-  const tomlObj = { mcp_servers: {} };
 
+  // Build MCP servers object
+  const mcpServers = {};
   for (const [name, server] of Object.entries(mcpJson)) {
     const entry = {};
     if (server.command) entry.command = server.command;
     if (server.args) entry.args = server.args;
     if (server.env) entry.env = server.env;
     // Skip 'type' — Codex infers it
-    tomlObj.mcp_servers[name] = entry;
+    mcpServers[name] = entry;
   }
+
+  // Collect generated agent TOML files to reference in config
+  const codexAgentsDir = join(generatedDir, '.codex', 'agents');
+  const agentEntries = {};
+  if (existsSync(codexAgentsDir)) {
+    const agentFiles = readdirSync(codexAgentsDir).filter((f) =>
+      f.endsWith('.toml')
+    );
+    for (const file of agentFiles) {
+      const baseName = basename(file, '.toml');
+      // Read the corresponding source metadata for description
+      const srcMetaPath = join(
+        artifactsDir,
+        'agents',
+        baseName + '.md.meta.json'
+      );
+      if (existsSync(srcMetaPath)) {
+        const meta = JSON.parse(readFileSync(srcMetaPath, 'utf-8'));
+        agentEntries[baseName] = {
+          description: meta.description,
+          config_file: `.codex/agents/${file}`,
+        };
+      }
+    }
+  }
+
+  const hasAgents = Object.keys(agentEntries).length > 0;
+
+  const parts = [];
+  parts.push(TOML.stringify({ mcp_servers: mcpServers }).trim());
+
+  if (hasAgents) {
+    parts.push('');
+    parts.push(TOML.stringify({ features: { multi_agent: true } }).trim());
+    parts.push('');
+    parts.push(TOML.stringify({ agents: agentEntries }).trim());
+  }
+
+  parts.push('');
 
   const codexDir = join(generatedDir, '.codex');
   mkdirSync(codexDir, { recursive: true });
-  writeFileSync(join(codexDir, 'config.toml'), TOML.stringify(tomlObj));
-  console.log('  Copied .codex/config.toml');
+  writeFileSync(join(codexDir, 'config.toml'), parts.join('\n'));
+  console.log('  Generated .codex/config.toml');
 }
 
 // ============== Main Execution ==============
@@ -631,9 +688,9 @@ function runSync() {
     }
   }
 
-  // Copy Codex MCP config (JSON → TOML)
-  console.log('\n[codex] Copying MCP config...');
-  copyCodexMcpConfig();
+  // Generate Codex config (MCP + agents + features)
+  console.log('\n[codex] Generating config...');
+  writeCodexConfig();
 
   console.log('\nRunning nx format....');
   execSync('npx nx format --fix', { stdio: 'inherit' });
