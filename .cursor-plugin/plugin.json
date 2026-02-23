@@ -1,7 +1,7 @@
 {
   "name": "nx",
   "displayName": "Nx",
-  "version": "0.2.15",
+  "version": "0.2.16-pr.72",
   "description": "Make Cursor an effective monorepo developer. Faster workspace navigation, predictable code scaffolding that follows existing conventions. Ability to manage and monitor your PRs and CI runs until they’re green.",
   "author": {
     "name": "Narwhal Technologies Inc",
