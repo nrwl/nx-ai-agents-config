@@ -9,14 +9,19 @@ USE WHEN the user wants to import, merge, or combine repositories/projects into 
 
 ## Quick Start
 
-1. Run `nx import --help` for an overview of available options.
-2. Make sure the destination directory in the target workspace is empty before importing.
-3. Run `nx import` with `--source` and `--destination`.
-4. Treat both local paths and Git repositories as valid import sources.
-5. If importing multiple libraries into `libs/`, import each one individually into its own destination path.
-   Example: import `packages/lib1` into `libs/lib1`, then `packages/lib2` into `libs/lib2`.
+- `nx import` brings code from a source repository or folder into a destination folder in the current workspace and can preserve commit history for imported files so merged projects keep traceable history.
+- Run `nx import --help` for an overview of available options.
+- Run `nx import` with `--source` and `--destination`.
+- Make sure the destination directory in the target workspace is empty before importing.
+  EXAMPLE SCENARIO 1:
+  target has `libs/` with `libs/utils` and `libs/models` dirs
+  source has `libs/` with `libs/ui` and `libs/data-access` dirs
+  => You cannot import `libs/` into `libs/` directly. Instead import each source library into `libs/` individually
 
-`nx import` brings code from a source repository or folder into a destination folder in the current workspace and can preserve commit history for imported files so merged projects keep traceable history.
+  EXAMPLE SCENARIO 2:
+  target has `packages/` with some subdirs
+  source has `apps/app1`, `apps/app2` as `packages/` with some subdirs
+  => you can import all the apps in `apps/` directly because there is no `/apps` folder in the target repo. But you have to import the individual dirs in `packages/` individually
 
 Primary docs:
 
