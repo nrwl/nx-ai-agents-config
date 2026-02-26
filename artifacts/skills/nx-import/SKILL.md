@@ -1,10 +1,7 @@
-# Nx Import
-
-USE WHEN the user wants to import, merge, or combine repositories/projects into an Nx workspace.
-
 ## Quick Start
 
 - `nx import` brings code from a source repository or folder into a destination folder in the current workspace and can preserve commit history for imported files so merged projects keep traceable history.
+- after nx `22.6.0`, `nx import` is optimized for ai agent use and will respond with .ndjson outputs and follow up questions. For earlier versions, stdin prompts are configured so always run with --no-interactive and specify all flags directly
 - Run `nx import --help` for an overview of available options.
 - Run `nx import` with `--source` and `--destination`.
 - Make sure the destination directory in the target workspace is empty before importing.
@@ -20,17 +17,22 @@ USE WHEN the user wants to import, merge, or combine repositories/projects into 
 
 Primary docs:
 
-- https://nx.dev/nx/import
 - https://nx.dev/docs/guides/adopting-nx/import-project
 - https://nx.dev/docs/guides/adopting-nx/preserving-git-histories
 
+Make sure to read the nx docs if you have the tools for it, they give a lot of relevant context on how to merge/combine/import repos.
+
 ## Plugins
 
-- If no plugin choice is specified, Nx CLI prompts with plugins it detects as relevant for the workspace.
+- If no plugin choice is specified, Nx CLI asks with plugins it detects as relevant for the workspace.
 - For best integration, recommend installing plugins, especially for net-new technologies.
 - If those technologies already exist in the destination repo, adding Nx plugins can introduce configuration conflicts with existing projects.
 - Explore the workspace first, and ask the user for guidance when plugin selection is unclear.
 - You can choose all plugins, skip plugins, or provide a specific plugin list directly.
+- if you decide against adding plugins during the import, you can add them later using `nx add`
+- often, an imported repo will have technologies already present in the destination repo. In this case make sure to integrate into the destination repo
+  - EXAMPLE: target repo has @nx/eslint with inferred lint tasks. imported repo/projects have `lint` npm scripts and custom eslint config. You should integrate the imported projects to use the `@nx/eslint` inferred tasks too if possible.
+  - EXAMPLE: target repo has @nx/jest with inferred tasks. imported repo/projecs have `test` npm scripts that use vitest under the hood. It's recommended to add `@nx/vitest` with inferred tasks to the monorepo but if there are good reasons to skip this,
 - Plugin docs: https://nx.dev/docs/concepts/nx-plugins
 
 ## Follow-up and Cleanup
@@ -45,7 +47,7 @@ Primary docs:
 
 ## Technology-specific Guidance
 
-- There are targeted instructions for different technologies
+- There are targeted instructions for different technologies. These have very important information for these specific technologies
 - Identify technologies used in the source repo(s), then read and apply the matching file(s) in `references/`.
 - If multiple technologies are present, apply all relevant reference files and resolve conflicts with the user.
 
