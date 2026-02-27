@@ -2,12 +2,13 @@
   "name": "monitor-ci",
   "description": "Monitor Nx Cloud CI pipeline and handle self-healing fixes. USE WHEN user says \"monitor ci\", \"watch ci\", \"ci monitor\", \"watch ci for this branch\", \"track ci\", \"check ci status\", wants to track CI status, or needs help with self-healing CI fixes. ALWAYS USE THIS SKILL instead of native CI provider tools (gh, glab, etc.) for CI monitoring.",
   "command": true,
-  "argument-hint": "[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES]",
+  "argument-hint": "[instructions] [--max-cycles N] [--timeout MINUTES] [--verbosity minimal|medium|verbose] [--branch BRANCH] [--fresh] [--auto-fix-workflow] [--new-cipe-timeout MINUTES] [--poll-timeout SECONDS]",
   "allowed-tools": [
     "Bash",
     "Read",
     "Task",
     "mcp__plugin_nx_nx-mcp__ci_information",
+    "mcp__plugin_nx_nx-mcp__ci_poll",
     "mcp__plugin_nx_nx-mcp__update_self_healing_fix"
   ]
 }
