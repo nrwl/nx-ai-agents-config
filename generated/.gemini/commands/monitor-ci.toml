@@ -18,17 +18,17 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 ## Configuration Defaults
 
-| Setting               | Default       | Description                                                               |
-| --------------------- | ------------- | ------------------------------------------------------------------------- |
-| `--max-cycles`        | 10            | Maximum **agent-initiated** CI Attempt cycles before timeout              |
-| `--timeout`           | 120           | Maximum duration in minutes                                               |
-| `--verbosity`         | medium        | Output level: minimal, medium, verbose                                    |
-| `--branch`            | (auto-detect) | Branch to monitor                                                         |
-| `--fresh`             | false         | Ignore previous context, start fresh                                      |
-| `--auto-fix-workflow` | false         | Attempt common fixes for pre-CI-Attempt failures (e.g., lockfile updates) |
-| `--new-cipe-timeout`  | 10            | Minutes to wait for new CI Attempt after action                           |
-| `--poll-timeout`      | 180           | Seconds per ci_poll call before returning current state                   |
-| `--local-verify-attempts` | 3         | Max local verification + enhance cycles before pushing to CI              |
+| Setting                   | Default       | Description                                                               |
+| ------------------------- | ------------- | ------------------------------------------------------------------------- |
+| `--max-cycles`            | 10            | Maximum **agent-initiated** CI Attempt cycles before timeout              |
+| `--timeout`               | 120           | Maximum duration in minutes                                               |
+| `--verbosity`             | medium        | Output level: minimal, medium, verbose                                    |
+| `--branch`                | (auto-detect) | Branch to monitor                                                         |
+| `--fresh`                 | false         | Ignore previous context, start fresh                                      |
+| `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CI-Attempt failures (e.g., lockfile updates) |
+| `--new-cipe-timeout`      | 10            | Minutes to wait for new CI Attempt after action                           |
+| `--poll-timeout`          | 180           | Seconds per ci_poll call before returning current state                   |
+| `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI              |
 
 Parse any overrides from `{{args}}` and merge with defaults.
 
@@ -96,20 +96,20 @@ Long-running CI monitoring tool. Polls internally with exponential backoff (60s�
 
 **Actionable statuses returned by ci_poll:**
 
-| Status                   | Condition                                                              |
-| ------------------------ | ---------------------------------------------------------------------- |
-| `ci_success`             | CI passed                                                              |
-| `fix_available`          | Self-healing fix ready for action                                      |
-| `fix_auto_applying`      | Fix verified, auto-apply in progress                                   |
-| `fix_failed`             | Self-healing couldn't generate fix                                     |
-| `environment_issue`      | CI failed due to environment problem                                   |
-| `no_fix`                 | CI failed, self-healing disabled/not executable                        |
-| `self_healing_throttled` | Too many unapplied fixes                                               |
-| `polling_timeout`        | Timeout reached without actionable state                               |
-| `no_cipe`                | No CI Attempt found for branch                                         |
-| `cipe_canceled`          | CI was canceled                                                        |
-| `cipe_timed_out`         | CI timed out                                                           |
-| `cipe_no_tasks`          | CI failed with no task data                                            |
+| Status                   | Condition                                       |
+| ------------------------ | ----------------------------------------------- |
+| `ci_success`             | CI passed                                       |
+| `fix_available`          | Self-healing fix ready for action               |
+| `fix_auto_applying`      | Fix verified, auto-apply in progress            |
+| `fix_failed`             | Self-healing couldn't generate fix              |
+| `environment_issue`      | CI failed due to environment problem            |
+| `no_fix`                 | CI failed, self-healing disabled/not executable |
+| `self_healing_throttled` | Too many unapplied fixes                        |
+| `polling_timeout`        | Timeout reached without actionable state        |
+| `no_cipe`                | No CI Attempt found for branch                  |
+| `cipe_canceled`          | CI was canceled                                 |
+| `cipe_timed_out`         | CI timed out                                    |
+| `cipe_no_tasks`          | CI failed with no task data                     |
 
 ### `ci_information`
 
@@ -139,21 +139,21 @@ Apply, reject, or rerun fixes.
 
 ## Default Behaviors by Status
 
-| Status                   | Default Behavior                                                                                                                             |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci_success`             | Exit with success. Log "CI passed successfully!"                                                                                             |
-| `fix_auto_applying`      | Fix will be auto-applied. Record `last_cipe_url`, wait for new CI Attempt, loop.                                                            |
-| `fix_available`          | Compare `failedTaskIds` vs `verifiedTaskIds`. See **Fix Available Decision Logic** below.                                                    |
-| `fix_failed`             | Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.                             |
-| `environment_issue`      | Call MCP to rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. Wait for new CI Attempt, loop.              |
-| `self_healing_throttled` | See **Throttled Self-Healing Flow** below.                                                                                                   |
-| `no_fix`                 | CI failed, no fix available. Attempt local fix if possible. Otherwise exit with failure.                                                    |
-| `no_cipe`                | No CI Attempt found. Report to user, attempt common fixes if configured, or exit.                                                           |
-| `polling_timeout`        | ci_poll timeout reached (not session timeout). Re-call ci_poll to continue monitoring.                                                      |
-| `cipe_canceled`          | Exit with canceled status.                                                                                                                   |
-| `cipe_timed_out`         | Exit with timeout status.                                                                                                                    |
-| `cipe_no_tasks`          | Retry once with empty commit. If retry fails, exit with guidance.                                                                           |
-| `error`                  | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise loop.                                                         |
+| Status                   | Default Behavior                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `ci_success`             | Exit with success. Log "CI passed successfully!"                                                                               |
+| `fix_auto_applying`      | Fix will be auto-applied. Record `last_cipe_url`, wait for new CI Attempt, loop.                                               |
+| `fix_available`          | Compare `failedTaskIds` vs `verifiedTaskIds`. See **Fix Available Decision Logic** below.                                      |
+| `fix_failed`             | Attempt local fix based on `taskOutputSummary`. If successful → commit, push, loop. If not → exit with failure.                |
+| `environment_issue`      | Call MCP to rerun: `update_self_healing_fix({ shortLink, action: "RERUN_ENVIRONMENT_STATE" })`. Wait for new CI Attempt, loop. |
+| `self_healing_throttled` | See **Throttled Self-Healing Flow** below.                                                                                     |
+| `no_fix`                 | CI failed, no fix available. Attempt local fix if possible. Otherwise exit with failure.                                       |
+| `no_cipe`                | No CI Attempt found. Report to user, attempt common fixes if configured, or exit.                                              |
+| `polling_timeout`        | ci_poll timeout reached (not session timeout). Re-call ci_poll to continue monitoring.                                         |
+| `cipe_canceled`          | Exit with canceled status.                                                                                                     |
+| `cipe_timed_out`         | Exit with timeout status.                                                                                                      |
+| `cipe_no_tasks`          | Retry once with empty commit. If retry fails, exit with guidance.                                                              |
+| `error`                  | Increment `no_progress_count`. If >= 3 → exit with circuit breaker. Otherwise loop.                                            |
 
 ### Fix Available Decision Logic
 
@@ -184,6 +184,7 @@ When ci_poll returns `fix_available`:
 When verifiable (non-e2e) unverified tasks exist:
 
 1. **Detect package manager:**
+
    - `pnpm-lock.yaml` exists → `pnpm nx`
    - `yarn.lock` exists → `yarn nx`
    - Otherwise → `npx nx`
@@ -198,6 +199,7 @@ When verifiable (non-e2e) unverified tasks exist:
 | ANY verifiable task fails | Apply-locally + enhance flow |
 
 4. **Apply-locally + enhance flow:**
+
    - Run `nx-cloud apply-locally <shortLink>`
    - Enhance the code to fix failing tasks
    - Run failing tasks again to verify
@@ -406,13 +408,13 @@ When `cycle_count >= max_cycles - 2`, ask user:
 
 ## Error Handling
 
-| Error                          | Action                                                               |
-| ------------------------------ | -------------------------------------------------------------------- |
-| Git rebase conflict            | Report to user, exit                                                 |
-| `nx-cloud apply-locally` fails | Reject fix via MCP, then attempt manual patch or exit                |
-| MCP tool error                 | Retry once, if fails report to user                                  |
-| No new CI Attempt detected     | If `--auto-fix-workflow`, try lockfile update; otherwise report      |
-| Lockfile auto-fix fails        | Report to user, exit with guidance                                   |
+| Error                          | Action                                                          |
+| ------------------------------ | --------------------------------------------------------------- |
+| Git rebase conflict            | Report to user, exit                                            |
+| `nx-cloud apply-locally` fails | Reject fix via MCP, then attempt manual patch or exit           |
+| MCP tool error                 | Retry once, if fails report to user                             |
+| No new CI Attempt detected     | If `--auto-fix-workflow`, try lockfile update; otherwise report |
+| Lockfile auto-fix fails        | Report to user, exit with guidance                              |
 
 ## Example Session
 
