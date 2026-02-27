@@ -83,9 +83,10 @@ Parse any overrides from `${input:args}` and merge with defaults.
 
 ## Architecture Overview
 
-1. **This skill (orchestrator)**: spawns subagents, runs decision script, prints status, does local coding work
+1. **This skill (orchestrator)**: spawns subagents, runs scripts, prints status, does local coding work
 2. **ci-monitor-subagent (haiku)**: calls one MCP tool (ci_information or update_self_healing_fix), returns structured result, exits
 3. **ci-poll-decide.mjs (deterministic script)**: takes ci_information result + state, returns action + status message
+4. **ci-state-update.mjs (deterministic script)**: manages budget gates, post-action state transitions, and cycle classification
 
 ## Status Reporting
 
@@ -143,17 +144,17 @@ The decision script returns one of the following statuses. This table defines th
 
 **Statuses requiring action** — see subsections below:
 
-| Status                   | Summary                                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `fix_apply_ready`        | Fix verified (all tasks or e2e-only). Apply via MCP.                                                    |
-| `fix_needs_local_verify` | Fix has unverified non-e2e tasks. Run locally, then apply or enhance.                                   |
-| `fix_needs_review`       | Fix verification failed/not attempted. Analyze and decide.                                              |
-| `fix_failed`             | Self-healing failed. Fetch heavy data, attempt local fix (subject to `local_verify_count` budget).      |
-| `no_fix`                 | No fix available. Fetch heavy data, attempt local fix (subject to `local_verify_count` budget) or exit. |
-| `environment_issue`      | Request environment rerun via MCP. Subject to `environment_rerun_count` cap (max 2 consecutive).        |
-| `self_healing_throttled` | Reject old fixes, attempt local fix.                                                                    |
-| `no_new_cipe`            | CI Attempt never spawned. Auto-fix workflow or exit with guidance.                                      |
-| `cipe_no_tasks`          | CI failed with no tasks. Retry once with empty commit.                                                  |
+| Status                   | Summary                                                                           |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| `fix_apply_ready`        | Fix verified (all tasks or e2e-only). Apply via MCP.                              |
+| `fix_needs_local_verify` | Fix has unverified non-e2e tasks. Run locally, then apply or enhance.             |
+| `fix_needs_review`       | Fix verification failed/not attempted. Analyze and decide.                        |
+| `fix_failed`             | Self-healing failed. Fetch heavy data, attempt local fix (gate check first).      |
+| `no_fix`                 | No fix available. Fetch heavy data, attempt local fix (gate check first) or exit. |
+| `environment_issue`      | Request environment rerun via MCP (gate check first).                             |
+| `self_healing_throttled` | Reject old fixes, attempt local fix.                                              |
+| `no_new_cipe`            | CI Attempt never spawned. Auto-fix workflow or exit with guidance.                |
+| `cipe_no_tasks`          | CI failed with no tasks. Retry once with empty commit.                            |
 
 ### fix_apply_ready
 
@@ -175,15 +176,15 @@ Spawn FETCH_HEAVY subagent, then analyze fix content (`suggestedFixDescription`,
 
 - If fix looks correct → apply via MCP
 - If fix needs enhancement → Apply Locally + Enhance Flow
-- If fix is wrong → check `local_verify_count` budget first. If exhausted, exit with failure. Otherwise → Reject + Fix From Scratch Flow
+- If fix is wrong → run `ci-state-update.mjs gate --gate-type local-fix`. If not allowed, print message and exit. Otherwise → Reject + Fix From Scratch Flow
 
 ### fix_failed / no_fix
 
-Spawn FETCH_HEAVY subagent for `taskFailureSummaries`. Check `local_verify_count` budget — if exhausted, exit with failure. Otherwise increment `local_verify_count`, attempt local fix. If successful → commit, push, enter wait mode. If not → exit with failure.
+Spawn FETCH_HEAVY subagent for `taskFailureSummaries`. Run `ci-state-update.mjs gate --gate-type local-fix` — if not allowed, print message and exit. Otherwise attempt local fix (counter already incremented by gate). If successful → commit, push, enter wait mode. If not → exit with failure.
 
 ### environment_issue
 
-1. Increment `env_rerun_count`. If `env_rerun_count >= 2` → bail with message that environment issue persists after N reruns, manual investigation needed
+1. Run `ci-state-update.mjs gate --gate-type env-rerun`. If not allowed, print message and exit.
 2. Spawn UPDATE_FIX subagent with `RERUN_ENVIRONMENT_STATE`
 3. Enter wait mode with `last_cipe_url` set
 
@@ -193,10 +194,7 @@ Spawn FETCH_HEAVY subagent for `selfHealingSkipMessage`.
 
 1. **Parse throttle message** for CI Attempt URLs (regex: `/cipes/{id}`)
 2. **Reject previous fixes** — for each URL: spawn FETCH_THROTTLE_INFO to get `shortLink`, then UPDATE_FIX with `REJECT`
-3. **Attempt local fix** (subject to `local_verify_count` budget):
-   - If `local_verify_count >= local_verify_attempts` → skip to step 4 (fallback)
-   - Increment `local_verify_count`
-   - Use `failedTaskIds` and `taskFailureSummaries` for context
+3. **Attempt local fix**: Run `ci-state-update.mjs gate --gate-type local-fix`. If not allowed → skip to step 4. Otherwise use `failedTaskIds` and `taskFailureSummaries` for context.
 4. **Fallback if local fix not possible or budget exhausted**: push empty commit (`git commit --allow-empty -m "ci: rerun after rejecting throttled fixes"`), enter wait mode
 
 ### no_new_cipe
@@ -222,16 +220,15 @@ Spawn UPDATE_FIX subagent with `APPLY`. New CI Attempt spawns automatically. No 
 1. `nx-cloud apply-locally <shortLink>` (sets state to `APPLIED_LOCALLY`)
 2. Enhance code to fix failing tasks
 3. Run failing tasks to verify
-4. If still failing → increment `local_verify_count`, loop back to enhance
+4. If still failing → run `ci-state-update.mjs gate --gate-type local-fix`. If not allowed, commit current state and push (let CI be final judge). Otherwise loop back to enhance.
 5. If passing → commit and push, enter wait mode
 
 ### Reject + Fix From Scratch Flow
 
-1. **Check budget**: If `local_verify_count >= local_verify_attempts` → do NOT attempt. Exit with failure (local fix budget exhausted)
+1. Run `ci-state-update.mjs gate --gate-type local-fix`. If not allowed, print message and exit.
 2. Spawn UPDATE_FIX subagent with `REJECT`
-3. Increment `local_verify_count`
-4. Fix from scratch locally
-5. Commit and push, enter wait mode
+3. Fix from scratch locally
+4. Commit and push, enter wait mode
 
 ### Git Safety
 
@@ -346,52 +343,41 @@ Several statuses require fetching heavy data or calling MCP:
 
 ### Step 3a: Track State for New-CI-Attempt Detection
 
-After actions that should trigger a new CI Attempt, record state before looping:
+After actions that should trigger a new CI Attempt, run:
 
-| Action                              | What to Track                                 | Next Mode |
-| ----------------------------------- | --------------------------------------------- | --------- |
-| Fix auto-applying                   | `last_cipe_url = current cipeUrl`             | Wait mode |
-| Apply via MCP                       | `last_cipe_url = current cipeUrl`             | Wait mode |
-| Apply locally + push                | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode |
-| Reject + fix + push                 | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode |
-| Fix failed + local fix + push       | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode |
-| No fix + local fix + push           | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode |
-| Environment rerun                   | `last_cipe_url = current cipeUrl`             | Wait mode |
-| No-new-CI-Attempt + auto-fix + push | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode |
-| CI Attempt no tasks + retry push    | `expected_commit_sha = $(git rev-parse HEAD)` | Wait mode |
+```bash
+node <skill_dir>/scripts/ci-state-update.mjs post-action \
+  --action <type> \
+  --cipe-url <current_cipe_url> \
+  --commit-sha <git_rev_parse_HEAD>
+```
 
-Set `wait_mode = true`, reset `poll_count = 0`, then go to Step 2.
+Action types: `fix-auto-applying`, `apply-mcp`, `apply-local-push`, `reject-fix-push`, `local-fix-push`, `env-rerun`, `auto-fix-push`, `empty-commit-push`
+
+The script returns `{ waitMode, pollCount, lastCipeUrl, expectedCommitSha, agentTriggered }`. Update all tracking state from the output, then go to Step 2.
 
 ### Step 4: Cycle Classification and Progress Tracking
 
-#### Cycle Classification
+When the decision script returns `action == "done"`, run cycle-check **before** handling the status:
 
-Not all cycles are equal. Only count cycles the monitor itself triggered toward `--max-cycles`:
+```bash
+node <skill_dir>/scripts/ci-state-update.mjs cycle-check \
+  --status <status> \
+  [--agent-triggered] \
+  --cycle-count <cycle_count> --max-cycles <max_cycles> \
+  --env-rerun-count <env_rerun_count>
+```
 
-1. **After decision script returns `done`**, check `agent_triggered`:
-   - `agent_triggered == true` → this cycle was triggered by the monitor → `cycle_count++`
-   - `agent_triggered == false` → this cycle was human-initiated or a first observation → do NOT increment `cycle_count`
-2. **Reset** `agent_triggered = false`
-3. **After Step 3a** (when the monitor takes an action that triggers a new CI Attempt) → set `agent_triggered = true`
+The script returns `{ cycleCount, agentTriggered, envRerunCount, approachingLimit, message }`. Update tracking state from the output.
 
-**How detection works**: Step 3a is only called when the monitor explicitly pushes code, applies a fix via MCP, or triggers an environment rerun. If a human pushes on their own, the script detects a new CI Attempt but the monitor never went through Step 3a, so `agent_triggered` remains `false`.
-
-**When a human-initiated cycle is detected**, log it:
-
-Log that a human-initiated push was detected, monitoring continues without incrementing cycle count.
-
-#### Approaching Limit Gate
-
-When `cycle_count >= max_cycles - 2`, pause and ask the user before continuing:
-
-Ask user whether to continue (with 5 or 10 more cycles) or stop monitoring. Increase `max_cycles` by user's choice.
+- If `approachingLimit` → ask user whether to continue (with 5 or 10 more cycles) or stop monitoring
+- If previous cycle was NOT agent-triggered (human pushed), log that human-initiated push was detected
 
 #### Progress Tracking
 
-- `no_progress_count` and circuit breaker are handled by the decision script
-- Reset `no_progress_count` only when: `cipeStatus` changes (e.g. IN_PROGRESS → FAILED) OR a new CI Attempt is detected. Do NOT reset on superficial changes like different error messages within the same status.
-- On new CI Attempt detected → reset `local_verify_count = 0`, reset `environment_rerun_count = 0`
-- On non-`environment_issue` status → reset `environment_rerun_count = 0`
+- `no_progress_count` and circuit breaker are handled by ci-poll-decide.mjs
+- `env_rerun_count` reset on non-environment status is handled by ci-state-update.mjs cycle-check
+- On new CI Attempt detected (poll script returns `newCipeDetected`) → reset `local_verify_count = 0`, `env_rerun_count = 0`
 
 ## User Instruction Examples
 
@@ -410,13 +396,13 @@ Users can override default behaviors:
 
 ### Environment vs Code Failure Recognition
 
-When any local fix path runs a task and it fails, assess whether the failure is a **code issue** or an **environment/tooling issue** before consuming a `local_verify_count` attempt.
+When any local fix path runs a task and it fails, assess whether the failure is a **code issue** or an **environment/tooling issue** before running the gate script.
 
 **Indicators of environment/tooling failures** (non-exhaustive): command not found / binary missing, OOM / heap allocation failures, permission denied, network timeouts / DNS failures, missing system libraries, Docker/container issues, disk space exhaustion.
 
-When detected → bail immediately without incrementing `local_verify_count`. Report that the failure is an environment/tooling issue, not a code bug.
+When detected → bail immediately, do NOT run gate (no budget consumed). Report that the failure is an environment/tooling issue, not a code bug.
 
-**Code failures** (compilation errors, test assertion failures, lint violations, type errors) are genuine candidates for local fix attempts and proceed normally through the budget.
+**Code failures** (compilation errors, test assertion failures, lint violations, type errors) are genuine candidates for local fix attempts and proceed normally through the gate.
 
 ## Error Handling
 
