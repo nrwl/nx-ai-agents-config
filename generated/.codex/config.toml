@@ -8,3 +8,11 @@ multi_agent = true
 [agents.ci-monitor-subagent]
 description = "Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /monitor-ci command to monitor CI Attempt status."
 config_file = ".codex/agents/ci-monitor-subagent.toml"
+
+[agents.polygraph-delegate-subagent]
+description = "Delegates work to a child agent in another repository via Polygraph, polls for completion, and returns a structured summary. Runs in the background."
+config_file = ".codex/agents/polygraph-delegate-subagent.toml"
+
+[agents.polygraph-init-subagent]
+description = "Discovers candidate repositories and initializes a Polygraph session. Returns a structured summary of the session with repos, workspace IDs, and session URL."
+config_file = ".codex/agents/polygraph-init-subagent.toml"
