@@ -1,6 +1,6 @@
 # Monitor CI Command
 
-You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn subagents to interact with Nx Cloud, run a deterministic decision script, and take action based on the results.
+You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn subagents to interact with Nx Cloud, run deterministic decision scripts, and take action based on the results.
 
 ## Context
 
@@ -40,6 +40,20 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 3. **If connected** → continue to main loop
 
+## Architecture Overview
+
+1. **This skill (orchestrator)**: spawns subagents, runs scripts, prints status, does local coding work
+2. **ci-monitor-subagent (haiku)**: calls one MCP tool (ci_information or update_self_healing_fix), returns structured result, exits
+3. **ci-poll-decide.mjs (deterministic script)**: takes ci_information result + state, returns action + status message
+4. **ci-state-update.mjs (deterministic script)**: manages budget gates, post-action state transitions, and cycle classification
+
+## Status Reporting
+
+The decision script handles message formatting based on verbosity. When printing messages to the user:
+
+- Prepend `[monitor-ci]` to every message from the script's `message` field
+- For your own action messages (e.g. "Applying fix via MCP..."), also prepend `[monitor-ci]`
+
 ## Anti-Patterns (NEVER DO)
 
 **CRITICAL**: The following behaviors are strictly prohibited:
@@ -71,20 +85,6 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 - **To continue monitoring:** Just re-run `/monitor-ci` (context is preserved)
 - **To start fresh:** Use `/monitor-ci --fresh` to ignore previous context
 - **For a completely clean slate:** Exit Claude Code and restart `claude`
-
-## Architecture Overview
-
-1. **This skill (orchestrator)**: spawns subagents, runs scripts, prints status, does local coding work
-2. **ci-monitor-subagent (haiku)**: calls one MCP tool (ci_information or update_self_healing_fix), returns structured result, exits
-3. **ci-poll-decide.mjs (deterministic script)**: takes ci_information result + state, returns action + status message
-4. **ci-state-update.mjs (deterministic script)**: manages budget gates, post-action state transitions, and cycle classification
-
-## Status Reporting
-
-The decision script handles message formatting based on verbosity. When printing messages to the user:
-
-- Prepend `[monitor-ci]` to every message from the script's `message` field
-- For your own action messages (e.g. "Applying fix via MCP..."), also prepend `[monitor-ci]`
 
 ## MCP Tool Reference
 
@@ -221,6 +221,16 @@ Spawn UPDATE_FIX subagent with `APPLY`. New CI Attempt spawns automatically. No 
 3. Fix from scratch locally
 4. Commit and push, enter wait mode
 
+### Environment vs Code Failure Recognition
+
+When any local fix path runs a task and it fails, assess whether the failure is a **code issue** or an **environment/tooling issue** before running the gate script.
+
+**Indicators of environment/tooling failures** (non-exhaustive): command not found / binary missing, OOM / heap allocation failures, permission denied, network timeouts / DNS failures, missing system libraries, Docker/container issues, disk space exhaustion.
+
+When detected → bail immediately, do NOT run gate (no budget consumed). Report that the failure is an environment/tooling issue, not a code bug.
+
+**Code failures** (compilation errors, test assertion failures, lint violations, type errors) are genuine candidates for local fix attempts and proceed normally through the gate.
+
 ### Git Safety
 
 - NEVER use `git add -A` or `git add .` — always stage specific files by name
@@ -314,12 +324,13 @@ Based on `action`:
 
 When decision script returns `action == "done"`:
 
-1. Check the returned `status`
-2. Look up default behavior in the table above
-3. Check if user instructions override the default
-4. Execute the appropriate action
-5. **If action expects new CI Attempt**, update tracking (see Step 3a)
-6. If action results in looping, go to Step 2
+1. Run cycle-check (Step 4) **before** handling the status
+2. Check the returned `status`
+3. Look up default behavior in the table above
+4. Check if user instructions override the default
+5. Execute the appropriate action
+6. **If action expects new CI Attempt**, update tracking (see Step 3a)
+7. If action results in looping, go to Step 2
 
 #### Spawning subagents for actions
 
@@ -370,6 +381,18 @@ The script returns `{ cycleCount, agentTriggered, envRerunCount, approachingLimi
 - `env_rerun_count` reset on non-environment status is handled by ci-state-update.mjs cycle-check
 - On new CI Attempt detected (poll script returns `newCipeDetected`) → reset `local_verify_count = 0`, `env_rerun_count = 0`
 
+## Error Handling
+
+| Error                          | Action                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Git rebase conflict            | Report to user, exit                                                                                        |
+| `nx-cloud apply-locally` fails | Reject fix via MCP (`action: "REJECT"`), then attempt manual patch (Reject + Fix From Scratch Flow) or exit |
+| MCP tool error                 | Retry once, if fails report to user                                                                         |
+| Subagent spawn failure         | Retry once, if fails exit with error                                                                        |
+| Decision script error          | Treat as `error` status, increment `no_progress_count`                                                      |
+| No new CI Attempt detected     | If `--auto-fix-workflow`, try lockfile update; otherwise report to user with guidance                       |
+| Lockfile auto-fix fails        | Report to user, exit with guidance to check CI logs                                                         |
+
 ## User Instruction Examples
 
 Users can override default behaviors:
@@ -384,25 +407,3 @@ Users can override default behaviors:
 | "run 'nx affected -t typecheck' before applying" | Add local verification step                         |
 | "auto-fix workflow failures"                     | Attempt lockfile updates on pre-CI-Attempt failures |
 | "wait 45 min for new CI Attempt"                 | Override new-CI-Attempt timeout (default: 10 min)   |
-
-### Environment vs Code Failure Recognition
-
-When any local fix path runs a task and it fails, assess whether the failure is a **code issue** or an **environment/tooling issue** before running the gate script.
-
-**Indicators of environment/tooling failures** (non-exhaustive): command not found / binary missing, OOM / heap allocation failures, permission denied, network timeouts / DNS failures, missing system libraries, Docker/container issues, disk space exhaustion.
-
-When detected → bail immediately, do NOT run gate (no budget consumed). Report that the failure is an environment/tooling issue, not a code bug.
-
-**Code failures** (compilation errors, test assertion failures, lint violations, type errors) are genuine candidates for local fix attempts and proceed normally through the gate.
-
-## Error Handling
-
-| Error                          | Action                                                                                                      |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Git rebase conflict            | Report to user, exit                                                                                        |
-| `nx-cloud apply-locally` fails | Reject fix via MCP (`action: "REJECT"`), then attempt manual patch (Reject + Fix From Scratch Flow) or exit |
-| MCP tool error                 | Retry once, if fails report to user                                                                         |
-| Subagent spawn failure         | Retry once, if fails exit with error                                                                        |
-| Decision script error          | Treat as `error` status, increment `no_progress_count`                                                      |
-| No new CI Attempt detected     | If `--auto-fix-workflow`, try lockfile update; otherwise report to user with guidance                       |
-| Lockfile auto-fix fails        | Report to user, exit with guidance to check CI logs                                                         |
