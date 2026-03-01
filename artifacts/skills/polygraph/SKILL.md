@@ -38,7 +38,7 @@ The tools have one of two MCP prefixes. Try the first prefix, and if it fails, u
 | `cloud_polygraph_init`             | Initialize Polygraph for the Nx Cloud workspace                                                       |
 | `cloud_polygraph_delegate`         | Start a task in a child agent in a dependent repository (non-blocking)                                |
 | `cloud_polygraph_child_status`     | Get the status and recent output of child agents in a Polygraph session                               |
-| `cloud_polygraph_stop_child`       | Stop a running child agent in a Polygraph session                                                     |
+| `cloud_polygraph_stop_child`       | Stop an in-progress child agent in a Polygraph session                                                |
 | `cloud_polygraph_push_branch`      | Push a local git branch to the remote repository                                                      |
 | `cloud_polygraph_create_prs`       | Create draft pull requests with session metadata linking related PRs                                  |
 | `cloud_polygraph_get_session`      | Query status of the current polygraph session                                                         |
@@ -81,7 +81,7 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 0. **Initialize Polygraph session** - Launch the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the session. The subagent returns a summary with session details.
 1. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
 2. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
-3. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to terminate a running child agent.
+3. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
 4. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
 5. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Both `plan` and `agentSessionId` are required.
 6. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
@@ -209,9 +209,9 @@ cloud_polygraph_child_status(sessionId: "<session-id>", target: "org/repo-name",
 
 Always verify all background subagents have completed before proceeding to push branches and create PRs.
 
-### 1b. Stop a Running Child Agent
+### 1b. Stop an In-Progress Child Agent
 
-Use `cloud_polygraph_stop_child` to terminate a running child agent. Use this if a child agent is stuck, taking too long, or if you need to cancel delegated work.
+Use `cloud_polygraph_stop_child` to cancel an in-progress child agent. Use this if a child agent is stuck, taking too long, or if you need to cancel delegated work.
 
 **Parameters:**
 
@@ -227,7 +227,7 @@ cloud_polygraph_stop_child(sessionId: "<session-id>", target: "org/repo-name")
 Display:
 
 ```
-Child agent for <repo> has been stopped.
+Child agent for <repo> has been cancelled.
 
 To continue the work manually, run:
   cd <path> && claude --continue

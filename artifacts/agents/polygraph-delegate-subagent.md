@@ -59,13 +59,13 @@ Use `sleep` in Bash between polls. Always run sleep in the **foreground** (never
 
 The `cloud_polygraph_child_status` response contains NDJSON log entries. Parse the last entry to determine status:
 
-| Condition                                                | Status    |
-| -------------------------------------------------------- | --------- |
-| Last line has `type: "result"` with `subtype: "success"` | Completed |
-| Last line has `type: "result"` with `is_error: true`     | Failed    |
-| No `type: "result"` entry                                | Running   |
+| Condition                                                | Status      |
+| -------------------------------------------------------- | ----------- |
+| Last line has `type: "result"` with `subtype: "success"` | Completed   |
+| Last line has `type: "result"` with `is_error: true`     | Failed      |
+| No `type: "result"` entry                                | In Progress |
 
-If still running, continue polling (step 2).
+If still in progress, continue polling (step 2).
 
 ### Step 4: Return Summary
 
