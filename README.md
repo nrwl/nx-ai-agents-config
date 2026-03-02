@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/nx-logo.svg" alt="Nx Logo" width="140">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/nx-logo-light.svg">
+    <img src="assets/nx-logo.svg" alt="Nx Logo" width="140">
+  </picture>
 </p>
 
 <h1 align="center">Nx AI Agent Skills</h1>
