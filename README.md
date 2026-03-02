@@ -24,7 +24,6 @@
 <p align="center">
   <a href="#getting-started">Installation</a> ·
   <a href="#features">Features</a> ·
-  <a href="#compatibility">Compatibility</a> ·
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -51,16 +50,6 @@ Nx AI agent skills teach your coding assistant how to work effectively in your m
 - **Multi-Agent Support**: Works across Claude Code, GitHub Copilot, Cursor, Gemini, and OpenCode
 
 Read more on the [Nx blog](https://nx.dev/blog/nx-ai-agent-skills).
-
-## Compatibility
-
-| Platform           | Install Method           |
-| ------------------ | ------------------------ |
-| **Claude Code**    | `nx configure-ai-agents` |
-| **Cursor**         | `nx configure-ai-agents` |
-| **GitHub Copilot** | `nx configure-ai-agents` |
-| **Gemini**         | `nx configure-ai-agents` |
-| **OpenCode**       | `nx configure-ai-agents` |
 
 ## Related Projects
 
