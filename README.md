@@ -1,16 +1,29 @@
-# Nx AI Agents Configuration
+<p align="center">
+  <img src="assets/nx-logo.svg" alt="Nx Logo" width="140">
+</p>
 
-This repository contains the official AI agent configuration artifacts for [Nx](https://nx.dev). It provides skills, subagents, and commands that enhance AI coding assistants with Nx-specific capabilities.
+<h1 align="center">Nx AI Agent Skills</h1>
 
-## Supported AI Agents
+<p align="center">
+  Official AI agent configuration artifacts for <a href="https://nx.dev">Nx</a>. Skills, subagents, and commands that enhance AI coding assistants with Nx-specific capabilities.
+</p>
 
-Configuration is generated for the following tools:
+<p align="center">
+  <img src="https://img.shields.io/badge/Claude_Code-black?logo=anthropic&logoColor=white" alt="Claude Code">
+  <img src="https://img.shields.io/badge/Cursor-black?logo=cursor&logoColor=white" alt="Cursor">
+  <img src="https://img.shields.io/badge/GitHub_Copilot-black?logo=github&logoColor=white" alt="GitHub Copilot">
+  <img src="https://img.shields.io/badge/Gemini-black?logo=google&logoColor=white" alt="Gemini">
+  <img src="https://img.shields.io/badge/OpenCode-black?logo=terminal&logoColor=white" alt="OpenCode">
+  <br>
+  <img src="https://img.shields.io/github/license/nrwl/nx-ai-agents-config" alt="License">
+</p>
 
-- **Claude Code** - Anthropic's CLI for Claude
-- **OpenCode** - Open source AI coding assistant
-- **GitHub Copilot** - GitHub's AI pair programmer
-- **Cursor** - AI-powered code editor
-- **Gemini** - Google's AI assistant
+<p align="center">
+  <a href="#getting-started">Installation</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#compatibility">Compatibility</a> ·
+  <a href="#contributing">Contributing</a>
+</p>
 
 ## Getting Started
 
@@ -28,13 +41,23 @@ https://github.com/user-attachments/assets/edd45819-e955-4ba7-adba-8255f4174da6
 
 Nx AI agent skills teach your coding assistant how to work effectively in your monorepo. Key capabilities:
 
-- **CI Monitoring & Self-Healing** — Watches CI pipelines, detects failures, and applies fixes automatically
-- **Workspace Understanding** — Agents explore your project graph, dependencies, and conventions before acting
-- **Intelligent Code Generation** — Scaffolds new code following your workspace's existing patterns, tags, and tooling
-- **Monorepo-Aware Skills** — A series of skills that help your agent navigate, build, and operate more efficiently in monorepo setups
-- **Multi-Agent Support** — Works across Claude Code, GitHub Copilot, Cursor, Gemini, and OpenCode
+- **CI Monitoring & Self-Healing**: Watches CI pipelines, detects failures, and applies fixes automatically
+- **Workspace Understanding**: Agents explore your project graph, dependencies, and conventions before acting
+- **Intelligent Code Generation**: Scaffolds new code following your workspace's existing patterns, tags, and tooling
+- **Monorepo-Aware Skills**: A series of skills that help your agent navigate, build, and operate more efficiently in monorepo setups
+- **Multi-Agent Support**: Works across Claude Code, GitHub Copilot, Cursor, Gemini, and OpenCode
 
 Read more on the [Nx blog](https://nx.dev/blog/nx-ai-agent-skills).
+
+## Compatibility
+
+| Platform | Install Method |
+| --- | --- |
+| **Claude Code** | `nx configure-ai-agents` |
+| **Cursor** | `nx configure-ai-agents` |
+| **GitHub Copilot** | `nx configure-ai-agents` |
+| **Gemini** | `nx configure-ai-agents` |
+| **OpenCode** | `nx configure-ai-agents` |
 
 ## Related Projects
 
