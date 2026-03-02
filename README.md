@@ -51,10 +51,14 @@ Nx AI agent skills teach your coding assistant how to work effectively in your m
 
 Read more on the [Nx blog](https://nx.dev/blog/nx-ai-agent-skills).
 
-## Related Projects
+## Learn More
 
-- **[nx-mcp](https://www.npmjs.com/package/nx-mcp)** - The Nx MCP (Model Context Protocol) server that powers AI agent integrations
+- **[nx-mcp](https://www.npmjs.com/package/nx-mcp)** - The Nx MCP server that powers AI agent integrations
 - **[Nx Console](https://github.com/nrwl/nx-console)** - The repository where nx-mcp and these configurations are maintained
+- **[Teach Your AI Agent How to Work in a Monorepo](https://nx.dev/blog/nx-ai-agent-skills)** - Intro blog post for this project
+- **[Why We Deleted (Most of) Our MCP Tools](https://nx.dev/blog/why-we-deleted-most-of-our-mcp-tools)** - Why skills over MCP tools
+- **[Introducing Self-Healing CI](https://nx.dev/blog/nx-self-healing-ci)** - AI agents that automatically fix CI failures
+- **[Autonomous Agents at Scale](https://nx.dev/blog/ai-agents-and-continuity)** - How monorepo architecture enables autonomous AI agents
 
 ## Contributing
 
