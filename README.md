@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Claude_Code-black?logo=anthropic&logoColor=white" alt="Claude Code">
-  <img src="https://img.shields.io/badge/Cursor-black?logo=cursor&logoColor=white" alt="Cursor">
-  <img src="https://img.shields.io/badge/GitHub_Copilot-black?logo=github&logoColor=white" alt="GitHub Copilot">
-  <img src="https://img.shields.io/badge/Gemini-black?logo=google&logoColor=white" alt="Gemini">
-  <img src="https://img.shields.io/badge/OpenCode-black?logo=terminal&logoColor=white" alt="OpenCode">
+  <img src="https://img.shields.io/badge/Claude_Code-555?logo=anthropic&logoColor=white&style=flat" alt="Claude Code">
+  <img src="https://img.shields.io/badge/Cursor-555?logo=cursor&logoColor=white&style=flat" alt="Cursor">
+  <img src="https://img.shields.io/badge/GitHub_Copilot-555?logo=github&logoColor=white&style=flat" alt="GitHub Copilot">
+  <img src="https://img.shields.io/badge/Gemini-555?logo=google&logoColor=white&style=flat" alt="Gemini">
+  <img src="https://img.shields.io/badge/OpenCode-555?logo=terminal&logoColor=white&style=flat" alt="OpenCode">
   <br>
   <img src="https://img.shields.io/github/license/nrwl/nx-ai-agents-config" alt="License">
 </p>
