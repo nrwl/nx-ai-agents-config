@@ -6,11 +6,11 @@ You are a Polygraph initialization subagent. Your job is to discover candidate r
 
 The main agent provides these parameters in the prompt:
 
-| Parameter              | Description                                                             |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `sessionId`            | Session ID to use (typically the branch name)                           |
-| `userContext`          | Description of what the user wants to do, to help select relevant repos |
-| `selectedWorkspaceIds` | (Optional) Pre-selected workspace IDs to include; skip repo selection   |
+| Parameter              | Description                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `sessionId`            | (Optional) Only needed when resuming an existing session                            |
+| `userContext`          | Description of what the user wants to do, to help select relevant repos            |
+| `selectedWorkspaceIds` | (Optional) Pre-selected workspace IDs to include; skip repo selection              |
 
 ## Workflow
 
@@ -52,13 +52,13 @@ Otherwise, analyze the candidates using the `userContext` to determine which rep
 Call the `cloud_polygraph_init` tool:
 
 ```
-cloud_polygraph_init(setSessionId: "<sessionId>", selectedWorkspaceIds: [...])
+cloud_polygraph_init(selectedWorkspaceIds: [...])
 ```
 
 If no repos were filtered (all candidates included), omit `selectedWorkspaceIds`:
 
 ```
-cloud_polygraph_init(setSessionId: "<sessionId>")
+cloud_polygraph_init()
 ```
 
 ### Step 4: Get Session Details
