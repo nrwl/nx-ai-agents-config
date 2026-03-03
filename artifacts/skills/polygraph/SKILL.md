@@ -321,7 +321,7 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
   - `vcsConfiguration.provider`: VCS provider (e.g., `GITHUB`)
   - `workspaceDescription`: AI-generated description of what this workspace does (may be null)
   - `initiator`: Whether this workspace initiated the session
-- `session.dependencyGraph`: Graph of workspace dependencies (`nodes` and `edges`)
+- `session.dependencyGraph`: Graph of workspace dependency `edges`
 - `session.pullRequests[]`: Array of PRs, each with:
   - `url`: PR URL
   - `branch`: Branch name

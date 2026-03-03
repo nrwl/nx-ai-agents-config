@@ -25,13 +25,13 @@ cloud_polygraph_candidates()
 This returns:
 
 - **`initiator`**: The current workspace
-- **`candidates`**: All connected workspaces, each with:
+- **`candidates`**: All organization workspaces, each with:
   - `id`: Workspace ID
   - `name`: Workspace name
   - `description`: AI-generated description of what the workspace does (may be null)
   - `vcsConfiguration.repositoryFullName`: Full repo name (e.g., `org/repo`)
-  - `graphRelationship`: How this workspace relates to the initiator (`distance`, `direction`, `path`)
-- **`dependencyGraph`**: Full graph with `nodes` and `edges`
+  - `graphRelationship`: How this workspace relates to the initiator (`distance`, `direction`, `path`), or `null` if the workspace is not in the dependency graph
+- **`dependencyGraph`**: Graph of workspace dependency `edges`
 
 ### Step 2: Select Relevant Repos
 
@@ -42,7 +42,7 @@ Otherwise, analyze the candidates using the `userContext` to determine which rep
 1. Read each candidate's `description` and `graphRelationship`
 2. Match against the `userContext` — consider:
    - Workspace descriptions that mention relevant functionality
-   - Graph relationships (closer repos are more likely relevant)
+   - Graph relationships (closer repos are more likely relevant); note that `graphRelationship` may be `null` for workspaces not in the dependency graph — use their `description` to assess relevance
    - Direction (upstream/downstream based on the nature of the change)
 3. Select only the repos that are clearly relevant to the task
 4. If uncertain which repos are relevant, include all candidates (safe default)
