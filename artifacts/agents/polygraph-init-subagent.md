@@ -6,11 +6,11 @@ You are a Polygraph initialization subagent. Your job is to discover candidate r
 
 The main agent provides these parameters in the prompt:
 
-| Parameter              | Description                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| `sessionId`            | (Optional) Only needed when resuming an existing session                            |
-| `userContext`          | Description of what the user wants to do, to help select relevant repos            |
-| `selectedWorkspaceIds` | (Optional) Pre-selected workspace IDs to include; skip repo selection              |
+| Parameter              | Description                                                             |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `sessionId`            | (Optional) Only needed when resuming an existing session                |
+| `userContext`          | Description of what the user wants to do, to help select relevant repos |
+| `selectedWorkspaceIds` | (Optional) Pre-selected workspace IDs to include; skip repo selection   |
 
 ## Workflow
 
