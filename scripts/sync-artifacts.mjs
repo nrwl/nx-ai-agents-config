@@ -620,7 +620,7 @@ function writeCodexConfig() {
         const meta = JSON.parse(readFileSync(srcMetaPath, 'utf-8'));
         agentEntries[baseName] = {
           description: meta.description,
-          config_file: `.codex/agents/${file}`,
+          config_file: `agents/${file}`,
         };
       }
     }
