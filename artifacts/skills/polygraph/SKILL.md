@@ -53,7 +53,7 @@ These are MCP tool calls. Invoke them the same way you invoke `Read`, `Bash`, `G
 **Correct — MCP tool function call:**
 
 ```
-mcp__nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
+mcp__nx-mcp__cloud_polygraph_init()
 mcp__nx-mcp__cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
 mcp__nx-mcp__cloud_polygraph_child_status(sessionId: "...", target: "repo")
 mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
@@ -73,7 +73,7 @@ bash: mcp__nx-mcp__cloud_polygraph_init
 If the first prefix fails, retry with the second prefix:
 
 ```
-mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
+mcp__plugin_nx_nx-mcp__cloud_polygraph_init()
 ```
 
 ## Workflow Overview
@@ -97,9 +97,9 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init(setSessionId: "my-session")
 
 Use the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the Polygraph session. The subagent handles calling `cloud_polygraph_candidates` and `cloud_polygraph_init` and returns a structured summary.
 
-**Determine the session ID first:**
+**Session ID is auto-generated:**
 
-The session ID should be the local branch name. If the branch is `main`, `master`, or `dev`, ask the user to provide a Polygraph session ID.
+The `cloud_polygraph_init` tool automatically generates a unique session ID from a short UUID and the local branch name (e.g., `ad5fa-my-feature-branch`). You do NOT need to pass a session ID unless resuming an existing session.
 
 **Launch the init subagent:**
 
@@ -111,7 +111,6 @@ Task(
     You are a Polygraph init subagent. Follow the instructions in the polygraph-init-subagent agent definition.
 
     Parameters:
-    - sessionId: "<branch-name-or-user-provided-id>"
     - userContext: "<description of what the user wants to do>"
 
     Discover candidates, select relevant repos based on the user context, initialize the session, and return a structured summary.
@@ -249,7 +248,7 @@ Once work is complete in a repository, push the branch using `cloud_polygraph_pu
 cloud_polygraph_push_branch(
   sessionId: "<session-id>",
   repoPath: "/path/to/cloned/repo",
-  branch: "polygraph/abc123/add-user-preferences"
+  branch: "polygraph/ad5fa-add-user-preferences"
 )
 ```
 
@@ -280,14 +279,14 @@ cloud_polygraph_create_prs(
       repo: "frontend",
       title: "feat: Add user preferences UI",
       body: "Part of multi-repo user preferences feature",
-      branch: "polygraph/add-user-preferences"
+      branch: "polygraph/ad5fa-add-user-preferences"
     },
     {
       owner: "org",
       repo: "backend",
       title: "feat: Add user preferences API",
       body: "Part of multi-repo user preferences feature",
-      branch: "polygraph/add-user-preferences"
+      branch: "polygraph/ad5fa-add-user-preferences"
     }
   ]
 )
