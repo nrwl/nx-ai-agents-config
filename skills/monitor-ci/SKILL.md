@@ -145,7 +145,7 @@ The decision script returns one of the following statuses. This table defines th
 | `cipe_canceled`         | Exit, CI was canceled                                                                                 |
 | `cipe_timed_out`        | Exit, CI timed out                                                                                    |
 | `polling_timeout`       | Exit, polling timeout reached                                                                         |
-| `circuit_breaker`       | Exit, no progress after 3 consecutive polls                                                           |
+| `circuit_breaker`       | Exit, no progress after 5 consecutive polls                                                           |
 | `environment_rerun_cap` | Exit, environment reruns exhausted                                                                    |
 | `fix_auto_applying`     | Do NOT call MCP — self-healing handles it. Record `last_cipe_url`, enter wait mode. No local git ops. |
 | `error`                 | Wait 60s and loop                                                                                     |
@@ -279,6 +279,9 @@ poll_count = 0
 wait_mode = false
 prev_status = null
 prev_cipe_status = null
+prev_sh_status = null
+prev_verification_status = null
+prev_failure_classification = null
 ```
 
 ### Step 2: Polling Loop
@@ -315,7 +318,10 @@ node <skill_dir>/scripts/ci-poll-decide.mjs '<subagent_result_json>' <poll_count
   [--new-cipe-timeout <new_cipe_timeout_seconds>] \
   [--env-rerun-count <env_rerun_count>] \
   [--no-progress-count <no_progress_count>] \
-  [--prev-cipe-status <prev_cipe_status>]
+  [--prev-cipe-status <prev_cipe_status>] \
+  [--prev-sh-status <prev_sh_status>] \
+  [--prev-verification-status <prev_verification_status>] \
+  [--prev-failure-classification <prev_failure_classification>]
 ```
 
 The script outputs a single JSON line with `action`, `status`, `message`, `delay`, and updated counters.
@@ -327,6 +333,9 @@ Parse the JSON output and update tracking state:
 - `no_progress_count = output.noProgressCount`
 - `env_rerun_count = output.envRerunCount`
 - `prev_cipe_status = subagent_result.cipeStatus`
+- `prev_sh_status = subagent_result.selfHealingStatus`
+- `prev_verification_status = subagent_result.verificationStatus`
+- `prev_failure_classification = subagent_result.failureClassification`
 - `prev_status = output.action + ":" + (output.status || subagent_result.cipeStatus)`
 - `poll_count++`
 
@@ -394,7 +403,7 @@ The script returns `{ cycleCount, agentTriggered, envRerunCount, approachingLimi
 
 #### Progress Tracking
 
-- `no_progress_count` and circuit breaker are handled by ci-poll-decide.mjs
+- `no_progress_count`, circuit breaker (5 polls), and backoff reset are handled by ci-poll-decide.mjs (progress = any change in cipeStatus, selfHealingStatus, verificationStatus, or failureClassification)
 - `env_rerun_count` reset on non-environment status is handled by ci-state-update.mjs cycle-check
 - On new CI Attempt detected (poll script returns `newCipeDetected`) → reset `local_verify_count = 0`, `env_rerun_count = 0`
 

@@ -10,7 +10,9 @@
  *   node ci-poll-decide.mjs '<ci_info_json>' <poll_count> <verbosity> \
  *     [--wait-mode] [--prev-cipe-url <url>] [--expected-sha <sha>] \
  *     [--prev-status <status>] [--timeout <seconds>] [--new-cipe-timeout <seconds>] \
- *     [--env-rerun-count <n>] [--no-progress-count <n>] [--prev-cipe-status <status>]
+ *     [--env-rerun-count <n>] [--no-progress-count <n>] \
+ *     [--prev-cipe-status <status>] [--prev-sh-status <status>] \
+ *     [--prev-verification-status <status>] [--prev-failure-classification <status>]
  */
 
 // --- Arg parsing ---
@@ -38,6 +40,9 @@ const newCipeTimeoutSeconds = parseInt(getArg('--new-cipe-timeout') || '0', 10);
 let envRerunCount = parseInt(getArg('--env-rerun-count') || '0', 10);
 let noProgressCount = parseInt(getArg('--no-progress-count') || '0', 10);
 const prevCipeStatus = getArg('--prev-cipe-status');
+const prevShStatus = getArg('--prev-sh-status');
+const prevVerificationStatus = getArg('--prev-verification-status');
+const prevFailureClassification = getArg('--prev-failure-classification');
 
 // --- Parse CI info ---
 
@@ -111,11 +116,25 @@ function checkTimeout() {
   return false;
 }
 
-// --- No-progress tracking ---
-// Reset only when cipeStatus changed or new CI Attempt detected
+// --- Progress detection ---
+// Track changes across all significant fields, not just cipeStatus.
+// Any field change = progress. Used for both circuit breaker and backoff reset.
+
+function hasStateChanged() {
+  if (prevCipeStatus && cipeStatus !== prevCipeStatus) return true;
+  if (prevShStatus && selfHealingStatus !== prevShStatus) return true;
+  if (prevVerificationStatus && verificationStatus !== prevVerificationStatus)
+    return true;
+  if (
+    prevFailureClassification &&
+    failureClassification !== prevFailureClassification
+  )
+    return true;
+  return false;
+}
 
 function updateNoProgressCount(isNewCipe) {
-  if (isNewCipe || (prevCipeStatus && cipeStatus !== prevCipeStatus)) {
+  if (isNewCipe || hasStateChanged()) {
     noProgressCount = 0;
   } else {
     noProgressCount++;
@@ -226,12 +245,12 @@ function decide() {
   updateNoProgressCount(false);
 
   // Circuit breaker
-  if (noProgressCount >= 3) {
+  if (noProgressCount >= 5) {
     return output({
       action: 'done',
       status: 'circuit_breaker',
       message: formatMessage(
-        'No progress after 3 consecutive polls. Stopping.'
+        'No progress after 5 consecutive polls. Stopping.'
       ),
       noProgressCount,
       envRerunCount,
@@ -321,7 +340,7 @@ function decide() {
   if (cipeStatus === 'IN_PROGRESS' || cipeStatus === 'NOT_STARTED') {
     return output({
       action: 'poll',
-      delay: backoff(pollCount),
+      delay: backoff(noProgressCount),
       message: formatMessage(`CI: ${cipeStatus}`),
       fields: 'light',
       noProgressCount,
@@ -337,7 +356,7 @@ function decide() {
   ) {
     return output({
       action: 'poll',
-      delay: backoff(pollCount),
+      delay: backoff(noProgressCount),
       message: formatMessage(
         `CI: ${cipeStatus} | Self-healing: ${selfHealingStatus}`
       ),
@@ -351,7 +370,7 @@ function decide() {
   if (failureClassification === 'FLAKY_TASK') {
     return output({
       action: 'poll',
-      delay: backoff(pollCount),
+      delay: backoff(noProgressCount),
       message: formatMessage(
         'CI: FAILED | Classification: FLAKY_TASK (auto-rerun in progress)'
       ),
@@ -365,7 +384,7 @@ function decide() {
   if (userAction === 'APPLIED_AUTOMATICALLY') {
     return output({
       action: 'poll',
-      delay: backoff(pollCount),
+      delay: backoff(noProgressCount),
       message: formatMessage(
         'CI: FAILED | Fix auto-applied, new CI Attempt spawning'
       ),
@@ -383,7 +402,7 @@ function decide() {
     ) {
       return output({
         action: 'poll',
-        delay: backoff(pollCount),
+        delay: backoff(noProgressCount),
         message: formatMessage(
           `CI: FAILED | Self-healing: COMPLETED | Verification: ${verificationStatus}`
         ),
