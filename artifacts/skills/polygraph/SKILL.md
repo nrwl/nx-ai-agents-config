@@ -331,10 +331,21 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
   - `workspaceId`: Associated workspace ID
   - `relatedPRs`: Array of related PR URLs across repos
 - `session.ciStatus`: CI pipeline status keyed by PR ID, each containing:
-  - `status`: One of `SUCCEEDED`, `FAILED`, `IN_PROGRESS`, `NOT_STARTED` (null if no CIPE)
+  - `status`: One of `SUCCEEDED`, `FAILED`, `IN_PROGRESS`, `NOT_STARTED` (null if no CIPE and no external CI)
   - `cipeUrl`: URL to the CI pipeline execution details (null if no CIPE)
   - `completedAt`: Epoch millis timestamp, set only when the CIPE has completed (null otherwise)
   - `selfHealingStatus`: The self-healing fix status string from Nx Cloud's AI fix feature (null if no AI fix exists)
+  - `externalCIRuns`: Array of external CI runs (present when no CIPE but external CI data exists, e.g., GitHub Actions). Each run contains:
+    - `runId`: GitHub Actions run ID
+    - `name`: Workflow name
+    - `status`: Run status (`completed`, `in_progress`, `queued`)
+    - `conclusion`: Run conclusion (`success`, `failure`, `cancelled`, `timed_out`, or null)
+    - `url`: GitHub Actions run URL
+    - `jobs`: Array of jobs in the run, each with:
+      - `jobId`: Job ID (use with `cloud_ci_get_logs`)
+      - `name`: Job name
+      - `status`: Job status
+      - `conclusion`: Job conclusion (or null)
 
 ```
 cloud_polygraph_get_session(sessionId: "<session-id>")
@@ -458,7 +469,7 @@ Use `cloud_ci_get_logs` to retrieve the full plain-text log for a specific CI jo
 
 - `sessionId` (required): The Polygraph session ID
 - `workspaceId` (required): Nx Cloud workspace ID (MongoDB ObjectId hex string, from `session.workspaces[].id`)
-- `jobId` (required): GitHub Actions job ID (from `jobs[].jobId` in CI run data returned by `ci_information`)
+- `jobId` (required): GitHub Actions job ID (from `ciStatus[prId].externalCIRuns[].jobs[].jobId` in the `get_session` response)
 
 **Returns:**
 
@@ -477,8 +488,8 @@ cloud_ci_get_logs(
 
 1. Use `cloud_polygraph_get_session` to see PR CI status
 2. Check `ciStatus[prId].cipeUrl` — if a CIPE exists, use `ci_information` for logs and skip this tool
-3. If NO CIPE exists but external CI runs are present, use `ci_information` to get CI run data including jobs
-4. For a failed job, use `cloud_ci_get_logs` to get the actual log content
+3. If NO CIPE exists, check `ciStatus[prId].externalCIRuns` — examine runs and jobs directly from the session data
+4. For a failed job, use `cloud_ci_get_logs(sessionId, workspaceId, jobId)` to get the actual log content
 
 **Important:** Logs can be large (100KB+). Only fetch logs for failed or relevant jobs to avoid unnecessary context consumption.
 
