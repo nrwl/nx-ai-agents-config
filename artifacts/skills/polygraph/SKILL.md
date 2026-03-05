@@ -473,8 +473,10 @@ Use `cloud_ci_get_logs` to retrieve the full plain-text log for a specific CI jo
 
 **Returns:**
 
-- On success: `{ success: true, jobId: number, log: string }`
+- On success: `{ success: true, jobId: number, logFile: string, sizeBytes: number }`
 - On failure: `{ success: false, error: string }`
+
+The tool saves the log to a local temp file and returns the path in `logFile`. Use the `Read` tool to examine the file contents. For large logs, use `offset` and `limit` parameters to read specific sections.
 
 ```
 cloud_ci_get_logs(
@@ -482,6 +484,8 @@ cloud_ci_get_logs(
   workspaceId: "<workspace-id>",
   jobId: 12345678
 )
+// Returns: { success: true, jobId: 12345678, logFile: "/tmp/ci-logs/job-12345678.log", sizeBytes: 152340 }
+// Then: Read(logFile) to examine the log
 ```
 
 **Typical flow:**
@@ -489,9 +493,10 @@ cloud_ci_get_logs(
 1. Use `cloud_polygraph_get_session` to see PR CI status
 2. Check `ciStatus[prId].cipeUrl` — if a CIPE exists, use `ci_information` for logs and skip this tool
 3. If NO CIPE exists, check `ciStatus[prId].externalCIRuns` — examine runs and jobs directly from the session data
-4. For a failed job, use `cloud_ci_get_logs(sessionId, workspaceId, jobId)` to get the actual log content
+4. For a failed job, call `cloud_ci_get_logs(sessionId, workspaceId, jobId)` to save the log to a file
+5. Use `Read(logFile)` to examine the log content — use `offset`/`limit` for large files
 
-**Important:** Logs can be large (100KB+). Only fetch logs for failed or relevant jobs to avoid unnecessary context consumption.
+**Important:** Logs can be large (100KB+). Only fetch logs for failed or relevant jobs, and read only the sections you need.
 
 ### Session State for Resume (Required)
 
