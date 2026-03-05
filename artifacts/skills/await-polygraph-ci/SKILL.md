@@ -105,8 +105,8 @@ For each repo with `ciStatus: FAILED`:
 
    - `sessionId`: the session ID
    - `target`: the repository name
-   - `instruction`: Use the `ci_information` MCP tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other).
-   - `context`: Polygraph session monitoring — investigating CI failure for unified summary.
+   - `instruction`: Use the `ci_information` tool to investigate the CI failure on this branch. If the CI run data includes external CI runs with job-level detail, identify failed jobs and use `cloud_ci_get_logs(sessionId, workspaceId, jobId)` to retrieve the actual log content for failed jobs. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other), (3) relevant log excerpts from failed jobs if available.
+   - `context`: Polygraph session monitoring — investigating CI failure for unified summary. The workspace ID for this repo is available from the session data.
 
    Since `cloud_polygraph_delegate` is non-blocking, you can delegate to multiple failed repos in parallel.
 
@@ -121,6 +121,7 @@ For each repo with `ciStatus: FAILED`:
 4. Collect each child agent's response from the status output. If a child agent fails or gets stuck, use `cloud_polygraph_stop_child` to terminate it and skip that repo.
 
 5. Display failure summary for each repo:
+
    ```
    Repository: frontend
    CI Pipeline: <cipeUrl>
@@ -129,7 +130,10 @@ For each repo with `ciStatus: FAILED`:
      - frontend:test  → 3 test suites failed
    Category: Build + Test failures
    Self-healing: <selfHealingStatus>
+   Job Logs: <number of logs retrieved, if any>
    ```
+
+   If CI job logs were retrieved via `cloud_ci_get_logs`, include relevant excerpts (error messages, stack traces) in the summary. Keep excerpts concise — only the most relevant lines.
 
 ## Phase 5: Fix Planning
 
@@ -148,5 +152,6 @@ For each repo with `ciStatus: FAILED`:
 - This skill does NOT push code directly. The only write action it may take is applying/rejecting a self-healing fix via `update_self_healing_fix`, which is an Nx Cloud operation (not a local code change).
 - Both `ci_information` and `update_self_healing_fix` responses include a `hints` array with contextual guidance (e.g., disclaimers about which CI Attempt was retrieved). Always check and surface non-empty hints.
 - All heavy CI data inspection happens in child agents via `cloud_polygraph_delegate` to keep this context window clean.
+- Child agents can use `cloud_ci_get_logs` to retrieve full plain-text logs for specific failed CI jobs. Logs can be large (100KB+), so this should only be done for failed or relevant jobs.
 - `cloud_polygraph_delegate` is **non-blocking** — it starts the child agent and returns immediately. Use `cloud_polygraph_child_status` to poll for results and `cloud_polygraph_stop_child` to terminate stuck agents.
 - The `cloud_polygraph_get_session` response is compact and safe to poll from the main agent.

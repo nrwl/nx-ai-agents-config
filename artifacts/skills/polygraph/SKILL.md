@@ -32,19 +32,20 @@ The tools have one of two MCP prefixes. Try the first prefix, and if it fails, u
 **Prefix 1:** `mcp__nx-mcp__`
 **Prefix 2:** `mcp__plugin_nx_nx-mcp__`
 
-| Tool Name (use with prefix above)  | Description                                                                                           |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `cloud_polygraph_candidates`       | Discover candidate workspaces with descriptions and graph relationships                               |
-| `cloud_polygraph_init`             | Initialize Polygraph for the Nx Cloud workspace                                                       |
-| `cloud_polygraph_delegate`         | Start a task in a child agent in a dependent repository (non-blocking)                                |
-| `cloud_polygraph_child_status`     | Get the status and recent output of child agents in a Polygraph session                               |
-| `cloud_polygraph_stop_child`       | Stop an in-progress child agent in a Polygraph session                                                |
-| `cloud_polygraph_push_branch`      | Push a local git branch to the remote repository                                                      |
-| `cloud_polygraph_create_prs`       | Create draft pull requests with session metadata linking related PRs                                  |
-| `cloud_polygraph_get_session`      | Query status of the current polygraph session                                                         |
-| `cloud_polygraph_mark_ready`       | Mark draft PRs as ready for review                                                                    |
-| `cloud_polygraph_associate_pr`     | Associate an existing PR with a Polygraph session                                                     |
-| `cloud_polygraph_complete_session` | Mark a Polygraph session as completed, closing all open/draft PRs and sealing it from further changes |
+| Tool Name (use with prefix above)  | Description                                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `cloud_polygraph_candidates`       | Discover candidate workspaces with descriptions and graph relationships                                                              |
+| `cloud_polygraph_init`             | Initialize Polygraph for the Nx Cloud workspace                                                                                      |
+| `cloud_polygraph_delegate`         | Start a task in a child agent in a dependent repository (non-blocking)                                                               |
+| `cloud_polygraph_child_status`     | Get the status and recent output of child agents in a Polygraph session                                                              |
+| `cloud_polygraph_stop_child`       | Stop an in-progress child agent in a Polygraph session                                                                               |
+| `cloud_polygraph_push_branch`      | Push a local git branch to the remote repository                                                                                     |
+| `cloud_polygraph_create_prs`       | Create draft pull requests with session metadata linking related PRs                                                                 |
+| `cloud_polygraph_get_session`      | Query status of the current polygraph session                                                                                        |
+| `cloud_polygraph_mark_ready`       | Mark draft PRs as ready for review                                                                                                   |
+| `cloud_polygraph_associate_pr`     | Associate an existing PR with a Polygraph session                                                                                    |
+| `cloud_polygraph_complete_session` | Mark a Polygraph session as completed, closing all open/draft PRs and sealing it from further changes                                |
+| `cloud_ci_get_logs`                | Retrieve the full plain-text log for a specific CI job. Use `jobId` from CI run data. Only call for jobs where the run has completed |
 
 ### How to invoke these tools
 
@@ -446,6 +447,37 @@ cloud_polygraph_complete_session(
 - The user explicitly confirms they want to close all PRs and seal the session
 
 ## Other Capabilities
+
+### Retrieving CI Job Logs
+
+Use `cloud_ci_get_logs` to retrieve the full plain-text log for a specific CI job. This is the drill-in tool for investigating CI failures after identifying a failed job from the session's CI status.
+
+**Parameters:**
+
+- `sessionId` (required): The Polygraph session ID
+- `workspaceId` (required): Nx Cloud workspace ID (MongoDB ObjectId hex string, from `session.workspaces[].id`)
+- `jobId` (required): GitHub Actions job ID (from `jobs[].jobId` in CI run data returned by `ci_information`)
+
+**Returns:**
+
+- On success: `{ success: true, jobId: number, log: string }`
+- On failure: `{ success: false, error: string }`
+
+```
+cloud_ci_get_logs(
+  sessionId: "<session-id>",
+  workspaceId: "<workspace-id>",
+  jobId: 12345678
+)
+```
+
+**Typical flow:**
+
+1. Use `cloud_polygraph_get_session` to see PR CI status
+2. Use `ci_information` to get detailed CI run data including jobs
+3. For a failed job, use `cloud_ci_get_logs` to get the actual log content
+
+**Important:** Logs can be large (100KB+). Only fetch logs for failed or relevant jobs to avoid unnecessary context consumption.
 
 ### Session State for Resume (Required)
 
