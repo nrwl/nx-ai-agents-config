@@ -452,6 +452,8 @@ cloud_polygraph_complete_session(
 
 Use `cloud_ci_get_logs` to retrieve the full plain-text log for a specific CI job. This is the drill-in tool for investigating CI failures after identifying a failed job from the session's CI status.
 
+**ONLY use this tool when NO CIPE (CI Pipeline Execution) exists for the PR.** When a CIPE exists (`ciStatus[prId].cipeUrl` is non-null), logs and failure data are available through the CIPE system (Nx Cloud) via `ci_information` — do NOT call `cloud_ci_get_logs`. This tool is specifically for PRs where only external CI runs exist (e.g., GitHub Actions runs without an Nx Cloud CIPE).
+
 **Parameters:**
 
 - `sessionId` (required): The Polygraph session ID
@@ -474,8 +476,9 @@ cloud_ci_get_logs(
 **Typical flow:**
 
 1. Use `cloud_polygraph_get_session` to see PR CI status
-2. Use `ci_information` to get detailed CI run data including jobs
-3. For a failed job, use `cloud_ci_get_logs` to get the actual log content
+2. Check `ciStatus[prId].cipeUrl` — if a CIPE exists, use `ci_information` for logs and skip this tool
+3. If NO CIPE exists but external CI runs are present, use `ci_information` to get CI run data including jobs
+4. For a failed job, use `cloud_ci_get_logs` to get the actual log content
 
 **Important:** Logs can be large (100KB+). Only fetch logs for failed or relevant jobs to avoid unnecessary context consumption.
 
