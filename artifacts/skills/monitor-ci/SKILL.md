@@ -311,7 +311,7 @@ node <skill_dir>/scripts/ci-poll-decide.mjs '<subagent_result_json>' <poll_count
   [--prev-failure-classification <prev_failure_classification>]
 ```
 
-The script outputs a single JSON line with `action`, `status`, `message`, `delay`, and updated counters.
+The script outputs a single JSON line: `{ action, code, message, delay?, noProgressCount, envRerunCount, fields?, newCipeDetected?, verifiableTaskIds? }`
 
 #### 2c. Process script output
 
@@ -323,7 +323,7 @@ Parse the JSON output and update tracking state:
 - `prev_sh_status = subagent_result.selfHealingStatus`
 - `prev_verification_status = subagent_result.verificationStatus`
 - `prev_failure_classification = subagent_result.failureClassification`
-- `prev_status = output.action + ":" + (output.status || subagent_result.cipeStatus)`
+- `prev_status = output.action + ":" + (output.code || subagent_result.cipeStatus)`
 - `poll_count++`
 
 Based on `action`:
@@ -331,14 +331,14 @@ Based on `action`:
 - **`action == "poll"`**: Print `output.message`, sleep `output.delay` seconds, go to 2a
   - If `output.newCipeDetected`: clear wait mode, reset `wait_mode = false`
 - **`action == "wait"`**: Print `output.message`, sleep `output.delay` seconds, go to 2a
-- **`action == "done"`**: Proceed to Step 3 with `output.status`
+- **`action == "done"`**: Proceed to Step 3 with `output.code`
 
 ### Step 3: Handle Actionable Status
 
 When decision script returns `action == "done"`:
 
-1. Run cycle-check (Step 4) **before** handling the status
-2. Check the returned `status`
+1. Run cycle-check (Step 4) **before** handling the code
+2. Check the returned `code`
 3. Look up default behavior in the table above
 4. Check if user instructions override the default
 5. Execute the appropriate action
@@ -373,11 +373,11 @@ The script returns `{ waitMode, pollCount, lastCipeUrl, expectedCommitSha, agent
 
 ### Step 4: Cycle Classification and Progress Tracking
 
-When the decision script returns `action == "done"`, run cycle-check **before** handling the status:
+When the decision script returns `action == "done"`, run cycle-check **before** handling the code:
 
 ```bash
 node <skill_dir>/scripts/ci-state-update.mjs cycle-check \
-  --status <status> \
+  --code <code> \
   [--agent-triggered] \
   --cycle-count <cycle_count> --max-cycles <max_cycles> \
   --env-rerun-count <env_rerun_count>

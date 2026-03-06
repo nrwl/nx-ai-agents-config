@@ -9,7 +9,7 @@
  * Usage:
  *   node ci-state-update.mjs gate --gate-type <local-fix|env-rerun> [counter args]
  *   node ci-state-update.mjs post-action --action <type> [--cipe-url <url>] [--commit-sha <sha>]
- *   node ci-state-update.mjs cycle-check --status <status> [--agent-triggered] [counter args]
+ *   node ci-state-update.mjs cycle-check --code <code> [--agent-triggered] [counter args]
  */
 
 // --- Arg parsing ---
@@ -113,11 +113,11 @@ function postAction() {
 }
 
 // --- cycle-check ---
-// Cycle classification + counter resets when a new "done" status is received.
-// Called at the start of handling each actionable status.
+// Cycle classification + counter resets when a new "done" code is received.
+// Called at the start of handling each actionable code.
 
 function cycleCheck() {
-  const status = getArg('--status');
+  const status = getArg('--code');
   const wasAgentTriggered = getFlag('--agent-triggered');
   let cycleCount = parseInt(getArg('--cycle-count') || '0', 10);
   const maxCycles = parseInt(getArg('--max-cycles') || '10', 10);
