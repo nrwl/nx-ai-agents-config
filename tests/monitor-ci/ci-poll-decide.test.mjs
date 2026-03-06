@@ -152,7 +152,7 @@ describe('environment', () => {
   it('environment_issue when classification is ENVIRONMENT_STATE', async () => {
     const result = await runScript(
       ci({
-        failureClassification: 'ENVIRONMENT_STATE',
+        failureClassification: 'environment_state',
         failedTaskIds: ['proj:build'],
       })
     );
@@ -163,7 +163,7 @@ describe('environment', () => {
   it('environment_rerun_cap when envRerunCount >= 2', async () => {
     const result = await runScript(
       ci({
-        failureClassification: 'ENVIRONMENT_STATE',
+        failureClassification: 'environment_state',
         failedTaskIds: ['proj:build'],
       }),
       0,
@@ -214,7 +214,7 @@ describe('running states', () => {
 
   it('flaky_rerun when classification is FLAKY_TASK', async () => {
     const result = await runScript(
-      ci({ failureClassification: 'FLAKY_TASK', failedTaskIds: ['proj:build'] })
+      ci({ failureClassification: 'flaky_task', failedTaskIds: ['proj:build'] })
     );
     expect(result.code).toBe('flaky_rerun');
     expect(result.action).toBe('poll');
