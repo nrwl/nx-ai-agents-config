@@ -32,19 +32,20 @@ The tools have one of two MCP prefixes. Try the first prefix, and if it fails, u
 **Prefix 1:** `mcp__nx-mcp__`
 **Prefix 2:** `mcp__plugin_nx_nx-mcp__`
 
-| Tool Name (use with prefix above)  | Description                                                                                           |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `cloud_polygraph_candidates`       | Discover candidate workspaces with descriptions and graph relationships                               |
-| `cloud_polygraph_init`             | Initialize Polygraph for the Nx Cloud workspace                                                       |
-| `cloud_polygraph_delegate`         | Start a task in a child agent in a dependent repository (non-blocking)                                |
-| `cloud_polygraph_child_status`     | Get the status and recent output of child agents in a Polygraph session                               |
-| `cloud_polygraph_stop_child`       | Stop an in-progress child agent in a Polygraph session                                                |
-| `cloud_polygraph_push_branch`      | Push a local git branch to the remote repository                                                      |
-| `cloud_polygraph_create_prs`       | Create draft pull requests with session metadata linking related PRs                                  |
-| `cloud_polygraph_get_session`      | Query status of the current polygraph session                                                         |
-| `cloud_polygraph_mark_ready`       | Mark draft PRs as ready for review                                                                    |
-| `cloud_polygraph_associate_pr`     | Associate an existing PR with a Polygraph session                                                     |
-| `cloud_polygraph_complete_session` | Mark a Polygraph session as completed, closing all open/draft PRs and sealing it from further changes |
+| Tool Name (use with prefix above)  | Description                                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `cloud_polygraph_candidates`       | Discover candidate workspaces with descriptions and graph relationships                                                              |
+| `cloud_polygraph_init`             | Initialize Polygraph for the Nx Cloud workspace                                                                                      |
+| `cloud_polygraph_delegate`         | Start a task in a child agent in a dependent repository (non-blocking)                                                               |
+| `cloud_polygraph_child_status`     | Get the status and recent output of child agents in a Polygraph session                                                              |
+| `cloud_polygraph_stop_child`       | Stop an in-progress child agent in a Polygraph session                                                                               |
+| `cloud_polygraph_push_branch`      | Push a local git branch to the remote repository                                                                                     |
+| `cloud_polygraph_create_prs`       | Create draft pull requests with session metadata linking related PRs                                                                 |
+| `cloud_polygraph_get_session`      | Query status of the current polygraph session                                                                                        |
+| `cloud_polygraph_mark_ready`       | Mark draft PRs as ready for review                                                                                                   |
+| `cloud_polygraph_associate_pr`     | Associate an existing PR with a Polygraph session                                                                                    |
+| `cloud_polygraph_complete_session` | Mark a Polygraph session as completed, closing all open/draft PRs and sealing it from further changes                                |
+| `cloud_ci_get_logs`                | Retrieve the full plain-text log for a specific CI job. Use `jobId` from CI run data. Only call for jobs where the run has completed |
 
 ### How to invoke these tools
 
@@ -330,10 +331,21 @@ Check the status of a session using `cloud_polygraph_get_session`. Returns the f
   - `workspaceId`: Associated workspace ID
   - `relatedPRs`: Array of related PR URLs across repos
 - `session.ciStatus`: CI pipeline status keyed by PR ID, each containing:
-  - `status`: One of `SUCCEEDED`, `FAILED`, `IN_PROGRESS`, `NOT_STARTED` (null if no CIPE)
+  - `status`: One of `SUCCEEDED`, `FAILED`, `IN_PROGRESS`, `NOT_STARTED` (null if no CIPE and no external CI)
   - `cipeUrl`: URL to the CI pipeline execution details (null if no CIPE)
   - `completedAt`: Epoch millis timestamp, set only when the CIPE has completed (null otherwise)
   - `selfHealingStatus`: The self-healing fix status string from Nx Cloud's AI fix feature (null if no AI fix exists)
+  - `externalCIRuns`: Array of external CI runs (present when no CIPE but external CI data exists, e.g., GitHub Actions). Each run contains:
+    - `runId`: GitHub Actions run ID
+    - `name`: Workflow name
+    - `status`: Run status (`completed`, `in_progress`, `queued`)
+    - `conclusion`: Run conclusion (`success`, `failure`, `cancelled`, `timed_out`, or null)
+    - `url`: GitHub Actions run URL
+    - `jobs`: Array of jobs in the run, each with:
+      - `jobId`: Job ID (use with `cloud_ci_get_logs`)
+      - `name`: Job name
+      - `status`: Job status
+      - `conclusion`: Job conclusion (or null)
 
 ```
 cloud_polygraph_get_session(sessionId: "<session-id>")
@@ -446,6 +458,45 @@ cloud_polygraph_complete_session(
 - The user explicitly confirms they want to close all PRs and seal the session
 
 ## Other Capabilities
+
+### Retrieving CI Job Logs
+
+Use `cloud_ci_get_logs` to retrieve the full plain-text log for a specific CI job. This is the drill-in tool for investigating CI failures after identifying a failed job from the session's CI status.
+
+**ONLY use this tool when NO CIPE (CI Pipeline Execution) exists for the PR.** When a CIPE exists (`ciStatus[prId].cipeUrl` is non-null), logs and failure data are available through the CIPE system (Nx Cloud) via `ci_information` — do NOT call `cloud_ci_get_logs`. This tool is specifically for PRs where only external CI runs exist (e.g., GitHub Actions runs without an Nx Cloud CIPE).
+
+**Parameters:**
+
+- `sessionId` (required): The Polygraph session ID
+- `workspaceId` (required): Nx Cloud workspace ID (MongoDB ObjectId hex string, from `session.workspaces[].id`)
+- `jobId` (required): GitHub Actions job ID (from `ciStatus[prId].externalCIRuns[].jobs[].jobId` in the `get_session` response)
+
+**Returns:**
+
+- On success: `{ success: true, jobId: number, logFile: string, sizeBytes: number }`
+- On failure: `{ success: false, error: string }`
+
+The tool saves the log to a local temp file and returns the path in `logFile`. Use the `Read` tool to examine the file contents. For large logs, use `offset` and `limit` parameters to read specific sections.
+
+```
+cloud_ci_get_logs(
+  sessionId: "<session-id>",
+  workspaceId: "<workspace-id>",
+  jobId: 12345678
+)
+// Returns: { success: true, jobId: 12345678, logFile: "/tmp/ci-logs/job-12345678.log", sizeBytes: 152340 }
+// Then: Read(logFile) to examine the log
+```
+
+**Typical flow:**
+
+1. Use `cloud_polygraph_get_session` to see PR CI status
+2. Check `ciStatus[prId].cipeUrl` — if a CIPE exists, use `ci_information` for logs and skip this tool
+3. If NO CIPE exists, check `ciStatus[prId].externalCIRuns` — examine runs and jobs directly from the session data
+4. For a failed job, call `cloud_ci_get_logs(sessionId, workspaceId, jobId)` to save the log to a file
+5. Use `Read(logFile)` to examine the log content — use `offset`/`limit` for large files
+
+**Important:** Logs can be large (100KB+). Only fetch logs for failed or relevant jobs, and read only the sections you need.
 
 ### Session State for Resume (Required)
 

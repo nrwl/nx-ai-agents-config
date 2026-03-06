@@ -90,13 +90,17 @@ Include self-healing status for any repo that has one.
 
 ## Phase 4: Failure Investigation (Child Agent Delegation)
 
-For each repo with `ciStatus: FAILED`:
+For each repo with `ciStatus: FAILED`, first check the CI data source from `ciStatus[prId]`:
+
+- **If `cipeUrl` is non-null** → CIPE is authoritative. Delegate investigation using `ci_information`.
+- **If `cipeUrl` is null but `externalCIRuns` exists** → external CI only. Examine failed jobs from `externalCIRuns` in the session data and use `cloud_ci_get_logs` for log retrieval.
 
 1. Display known info from the session data before delegating:
 
    ```
    Repository: frontend
-   CI Pipeline: <cipeUrl from session>
+   CI Source: <CIPE or External CI (GitHub Actions)>
+   CI Pipeline: <cipeUrl from session, or GitHub Actions run URL>
    Self-healing: <selfHealingStatus from session, or "None">
    Investigating failure details...
    ```
@@ -105,8 +109,9 @@ For each repo with `ciStatus: FAILED`:
 
    - `sessionId`: the session ID
    - `target`: the repository name
-   - `instruction`: Use the `ci_information` MCP tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other).
-   - `context`: Polygraph session monitoring — investigating CI failure for unified summary.
+   - `instruction` (when CIPE exists): Use the `ci_information` tool to investigate the CI failure on this branch. Return a structured summary with: (1) list of failed task IDs with a one-line error summary each, (2) failure category (Build / Test / Lint / E2E / Infra / Other).
+   - `instruction` (when no CIPE, external CI only): The session data shows external CI failures with these failed jobs: [list jobId + name from `externalCIRuns[].jobs` where `conclusion` is `failure`]. Use `cloud_ci_get_logs(sessionId, workspaceId, jobId)` to save the log for each failed job to a local file, then use the `Read` tool to examine the log file contents. Return a structured summary with: (1) one-line error summary per failed job, (2) failure category (Build / Test / Lint / E2E / Infra / Other), (3) relevant log excerpts.
+   - `context`: Polygraph session monitoring — investigating CI failure for unified summary. The workspace ID for this repo is available from the session data.
 
    Since `cloud_polygraph_delegate` is non-blocking, you can delegate to multiple failed repos in parallel.
 
@@ -121,6 +126,7 @@ For each repo with `ciStatus: FAILED`:
 4. Collect each child agent's response from the status output. If a child agent fails or gets stuck, use `cloud_polygraph_stop_child` to terminate it and skip that repo.
 
 5. Display failure summary for each repo:
+
    ```
    Repository: frontend
    CI Pipeline: <cipeUrl>
@@ -129,7 +135,10 @@ For each repo with `ciStatus: FAILED`:
      - frontend:test  → 3 test suites failed
    Category: Build + Test failures
    Self-healing: <selfHealingStatus>
+   Job Logs: <number of logs retrieved, if any>
    ```
+
+   If CI job logs were retrieved via `cloud_ci_get_logs`, include relevant excerpts (error messages, stack traces) in the summary. Keep excerpts concise — only the most relevant lines.
 
 ## Phase 5: Fix Planning
 
@@ -148,5 +157,6 @@ For each repo with `ciStatus: FAILED`:
 - This skill does NOT push code directly. The only write action it may take is applying/rejecting a self-healing fix via `update_self_healing_fix`, which is an Nx Cloud operation (not a local code change).
 - Both `ci_information` and `update_self_healing_fix` responses include a `hints` array with contextual guidance (e.g., disclaimers about which CI Attempt was retrieved). Always check and surface non-empty hints.
 - All heavy CI data inspection happens in child agents via `cloud_polygraph_delegate` to keep this context window clean.
+- Child agents can use `cloud_ci_get_logs` to save CI job logs to local files, but ONLY when no CIPE exists for the PR (`ciStatus[prId].cipeUrl` is null). When a CIPE exists, logs come from the CIPE system via `ci_information`. Job IDs come from `ciStatus[prId].externalCIRuns[].jobs[].jobId` in the `get_session` response. The tool returns a file path (`logFile`) and size (`sizeBytes`) — use the `Read` tool to examine the log content. Logs can be large (100KB+), so only fetch logs for failed or relevant jobs.
 - `cloud_polygraph_delegate` is **non-blocking** — it starts the child agent and returns immediately. Use `cloud_polygraph_child_status` to poll for results and `cloud_polygraph_stop_child` to terminate stuck agents.
 - The `cloud_polygraph_get_session` response is compact and safe to poll from the main agent.
