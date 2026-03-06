@@ -1,6 +1,6 @@
 {
   "name": "ci-monitor-subagent",
-  "description": "Polls Nx Cloud CI pipeline and self-healing status. Returns structured state when actionable. Spawned by /monitor-ci command to monitor CI Attempt status.",
+  "description": "CI helper for /monitor-ci. Fetches CI status, retrieves fix details, or updates self-healing fixes. Executes one MCP tool call and returns the result.",
   "model": "haiku",
   "allowed-tools": [
     "mcp__plugin_nx_nx-mcp__ci_information",
