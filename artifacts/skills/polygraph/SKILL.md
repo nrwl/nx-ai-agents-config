@@ -97,18 +97,9 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init()
 
 Use the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the Polygraph session. The subagent handles calling `cloud_polygraph_candidates` and `cloud_polygraph_init` and returns a structured summary.
 
-**Session ID resolution:**
+**Session ID is auto-generated:**
 
-The `cloud_polygraph_init` tool resolves the session ID using the following priority order:
-
-1. **User-provided `setSessionId` parameter** — explicitly passed to `cloud_polygraph_init`
-2. **`CLAUDE_CODE_SESSION_ID` environment variable** — set by the Claude CLI
-3. **`polygraph.json` in the workspace root** — reads the `sessionId` field from this file
-4. **Auto-generated from the git branch name** — generates a unique ID from a short UUID and the local branch name (e.g., `ad5fa-my-feature-branch`)
-
-When the Polygraph CLI launches Claude, it writes a `polygraph.json` file to the workspace root containing the session ID. The MCP server reads this file to ensure consistent session identification across the parent and all child agents.
-
-You do NOT need to pass a session ID unless resuming an existing session.
+The `cloud_polygraph_init` tool automatically generates a unique session ID. You do NOT need to pass a session ID unless resuming an existing session.
 
 **Launch the init subagent:**
 
