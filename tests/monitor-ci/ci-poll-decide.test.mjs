@@ -8,7 +8,13 @@ const SCRIPT = resolve(
 );
 
 function runScript(ciInfo, pollCount = 0, verbosity = 'medium', flags = []) {
-  const args = [SCRIPT, JSON.stringify(ciInfo), String(pollCount), verbosity, ...flags];
+  const args = [
+    SCRIPT,
+    JSON.stringify(ciInfo),
+    String(pollCount),
+    verbosity,
+    ...flags,
+  ];
   return new Promise((resolve, reject) => {
     execFile('node', args, (err, stdout, stderr) => {
       if (err) return reject(new Error(`${err.message}\n${stderr}`));
@@ -145,7 +151,10 @@ describe('terminal CI states', () => {
 describe('environment', () => {
   it('environment_issue when classification is ENVIRONMENT_STATE', async () => {
     const result = await runScript(
-      ci({ failureClassification: 'ENVIRONMENT_STATE', failedTaskIds: ['proj:build'] })
+      ci({
+        failureClassification: 'ENVIRONMENT_STATE',
+        failedTaskIds: ['proj:build'],
+      })
     );
     expect(result.code).toBe('environment_issue');
     expect(result.action).toBe('done');
@@ -153,7 +162,10 @@ describe('environment', () => {
 
   it('environment_rerun_cap when envRerunCount >= 2', async () => {
     const result = await runScript(
-      ci({ failureClassification: 'ENVIRONMENT_STATE', failedTaskIds: ['proj:build'] }),
+      ci({
+        failureClassification: 'ENVIRONMENT_STATE',
+        failedTaskIds: ['proj:build'],
+      }),
       0,
       'medium',
       ['--env-rerun-count', '2']
@@ -168,7 +180,10 @@ describe('environment', () => {
 describe('throttled', () => {
   it('self_healing_throttled', async () => {
     const result = await runScript(
-      ci({ selfHealingSkippedReason: 'THROTTLED', failedTaskIds: ['proj:build'] })
+      ci({
+        selfHealingSkippedReason: 'THROTTLED',
+        failedTaskIds: ['proj:build'],
+      })
     );
     expect(result.code).toBe('self_healing_throttled');
     expect(result.action).toBe('done');
@@ -192,9 +207,7 @@ describe('running states', () => {
   });
 
   it('sh_running when self-healing in progress', async () => {
-    const result = await runScript(
-      ci({ selfHealingStatus: 'IN_PROGRESS' })
-    );
+    const result = await runScript(ci({ selfHealingStatus: 'IN_PROGRESS' }));
     expect(result.code).toBe('sh_running');
     expect(result.action).toBe('poll');
   });
@@ -208,7 +221,9 @@ describe('running states', () => {
   });
 
   it('fix_auto_applied when userAction is APPLIED_AUTOMATICALLY', async () => {
-    const result = await runScript(ci({ userAction: 'APPLIED_AUTOMATICALLY', failedTaskIds: ['proj:build'] }));
+    const result = await runScript(
+      ci({ userAction: 'APPLIED_AUTOMATICALLY', failedTaskIds: ['proj:build'] })
+    );
     expect(result.code).toBe('fix_auto_applied');
     expect(result.action).toBe('poll');
   });
@@ -348,7 +363,11 @@ describe('actionable done states', () => {
 
   it('no_fix when CI failed and SH disabled', async () => {
     const result = await runScript(
-      ci({ cipeStatus: 'FAILED', selfHealingEnabled: false, failedTaskIds: ['proj:build'] })
+      ci({
+        cipeStatus: 'FAILED',
+        selfHealingEnabled: false,
+        failedTaskIds: ['proj:build'],
+      })
     );
     expect(result.code).toBe('no_fix');
     expect(result.action).toBe('done');
