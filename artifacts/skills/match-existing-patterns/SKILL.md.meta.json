@@ -1,0 +1,4 @@
+{
+  "name": "match-existing-patterns",
+  "description": "Follow existing codebase patterns when creating new code artifacts. USE WHEN: (1) creating a new component, service, class, module, endpoint, hook, or other code artifact by hand (not via a generator), (2) user asks to \"add a new X\" or \"create a Y\" and no Nx generator applies, (3) you are about to write a new file that has similar counterparts elsewhere in the workspace, (4) you need to integrate with or call an existing function, API, component, or library — find how other consumers use it first. DO NOT use this skill when running an Nx generator (use nx-generate instead, which handles pattern matching internally)."
+}
