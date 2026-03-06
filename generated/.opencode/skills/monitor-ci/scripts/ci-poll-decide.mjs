@@ -72,7 +72,7 @@ const {
   verificationStatus,
   selfHealingEnabled,
   selfHealingSkippedReason,
-  failureClassification,
+  failureClassification: rawFailureClassification,
   failedTaskIds = [],
   verifiedTaskIds = [],
   couldAutoApplyTasks,
@@ -80,6 +80,8 @@ const {
   cipeUrl,
   commitSha,
 } = ci;
+
+const failureClassification = rawFailureClassification?.toLowerCase() ?? null;
 
 // --- Helpers ---
 
@@ -198,7 +200,7 @@ function classify() {
     return { action: 'done', code: 'cipe_no_tasks' };
 
   // --- Environment failure ---
-  if (failureClassification === 'ENVIRONMENT_STATE') {
+  if (failureClassification === 'environment_state') {
     if (envRerunCount >= 2)
       return { action: 'done', code: 'environment_rerun_cap' };
     return { action: 'done', code: 'environment_issue' };
@@ -221,7 +223,7 @@ function classify() {
     return { action: 'poll', code: 'sh_running' };
 
   // --- Still running: flaky rerun ---
-  if (failureClassification === 'FLAKY_TASK')
+  if (failureClassification === 'flaky_task')
     return { action: 'poll', code: 'flaky_rerun' };
 
   // --- Fix auto-applied, waiting for new CI Attempt ---
