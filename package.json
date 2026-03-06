@@ -16,7 +16,8 @@
     "nx": "22.6.0-beta.6",
     "prettier": "^2.6.2",
     "tslib": "^2.3.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.18"
   },
   "workspaces": [
     "packages/*"
@@ -34,6 +35,14 @@
       },
       "validate-cursor-plugin": {
         "command": "node scripts/validate-cursor-plugin.mjs"
+      },
+      "test": {
+        "command": "npx vitest run",
+        "inputs": [
+          "{workspaceRoot}/tests/**/*.test.mjs",
+          "{workspaceRoot}/artifacts/skills/monitor-ci/**/*",
+          "{workspaceRoot}/vitest.config.mjs"
+        ]
       }
     }
   }

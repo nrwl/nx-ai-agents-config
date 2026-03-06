@@ -5,6 +5,11 @@
     "production": ["default"],
     "sharedGlobals": []
   },
+  "targetDefaults": {
+    "test": {
+      "cache": true
+    }
+  },
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
