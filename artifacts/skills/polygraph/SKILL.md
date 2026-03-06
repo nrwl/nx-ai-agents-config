@@ -99,7 +99,7 @@ Use the `polygraph-init-subagent` to discover candidate repos, select relevant w
 
 **Session ID is auto-generated:**
 
-The `cloud_polygraph_init` tool automatically generates a unique session ID from a short UUID and the local branch name (e.g., `ad5fa-my-feature-branch`). You do NOT need to pass a session ID unless resuming an existing session.
+The `cloud_polygraph_init` tool automatically generates a unique session ID. You do NOT need to pass a session ID unless resuming an existing session.
 
 **Launch the init subagent:**
 
