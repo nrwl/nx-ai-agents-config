@@ -112,7 +112,7 @@ WAIT_FIELDS:
   # Minimal fields for detecting new CI Attempt
 
 LIGHT_FIELDS:
-  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints,selfHealingSkippedReason,selfHealingSkipMessage'
+  'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,autoApplySkipped,autoApplySkipReason,shortLink,confidence,confidenceReasoning,hints,selfHealingSkippedReason,selfHealingSkipMessage'
   # Status fields for determining actionable state
 
 HEAVY_FIELDS:
@@ -135,12 +135,14 @@ The decision script returns one of the following statuses. This table defines th
 | `circuit_breaker`       | Exit, no progress after 5 consecutive polls                                                           |
 | `environment_rerun_cap` | Exit, environment reruns exhausted                                                                    |
 | `fix_auto_applying`     | Do NOT call MCP — self-healing handles it. Record `last_cipe_url`, enter wait mode. No local git ops. |
+| `fix_auto_apply_skipped`| Fix verified but auto-apply was skipped (e.g., loop prevention). Inform user of skip reason, offer to apply manually via MCP. |
 | `error`                 | Wait 60s and loop                                                                                     |
 
 **Statuses requiring action** — see subsections below:
 
 | Status                   | Summary                                                                           |
 | ------------------------ | --------------------------------------------------------------------------------- |
+| `fix_auto_apply_skipped` | Fix verified but auto-apply skipped (e.g., loop prevention). Inform user, offer manual apply. |
 | `fix_apply_ready`        | Fix verified (all tasks or e2e-only). Apply via MCP.                              |
 | `fix_needs_local_verify` | Fix has unverified non-e2e tasks. Run locally, then apply or enhance.             |
 | `fix_needs_review`       | Fix verification failed/not attempted. Analyze and decide.                        |
@@ -150,6 +152,14 @@ The decision script returns one of the following statuses. This table defines th
 | `self_healing_throttled` | Reject old fixes, attempt local fix.                                              |
 | `no_new_cipe`            | CI Attempt never spawned. Auto-fix workflow or exit with guidance.                |
 | `cipe_no_tasks`          | CI failed with no tasks. Retry once with empty commit.                            |
+
+### fix_auto_apply_skipped
+
+The script returns `autoApplySkipReason` in its output.
+
+1. Report the skip reason to the user (e.g., "Auto-apply was skipped because the previous CI pipeline execution was triggered by Nx Cloud")
+2. Offer to apply the fix manually — spawn UPDATE_FIX subagent with `APPLY` if user agrees
+3. Record `last_cipe_url`, enter wait mode
 
 ### fix_apply_ready
 
