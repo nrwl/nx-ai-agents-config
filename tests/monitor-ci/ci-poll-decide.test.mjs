@@ -275,7 +275,8 @@ describe('actionable done states', () => {
       ci({
         couldAutoApplyTasks: true,
         autoApplySkipped: true,
-        autoApplySkipReason: 'The previous CI pipeline execution was triggered by Nx Cloud',
+        autoApplySkipReason:
+          'The previous CI pipeline execution was triggered by Nx Cloud',
         selfHealingStatus: 'COMPLETED',
         verificationStatus: 'COMPLETED',
       })
@@ -290,7 +291,8 @@ describe('actionable done states', () => {
       ci({
         couldAutoApplyTasks: true,
         autoApplySkipped: true,
-        autoApplySkipReason: 'The previous CI pipeline execution was triggered by Nx Cloud',
+        autoApplySkipReason:
+          'The previous CI pipeline execution was triggered by Nx Cloud',
         selfHealingStatus: 'COMPLETED',
         verificationStatus: 'IN_PROGRESS',
       })
