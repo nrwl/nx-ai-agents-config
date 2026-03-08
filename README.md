@@ -60,6 +60,10 @@ Read more on the [Nx blog](https://nx.dev/blog/nx-ai-agent-skills).
 - **[Introducing Self-Healing CI](https://nx.dev/blog/nx-self-healing-ci)** - AI agents that automatically fix CI failures
 - **[Autonomous Agents at Scale](https://nx.dev/blog/ai-agents-and-continuity)** - How monorepo architecture enables autonomous AI agents
 
+## Fun Facts
+
+Cat is the unofficial mascot of this repository.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
