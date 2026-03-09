@@ -94,8 +94,6 @@ mcp__plugin_nx_nx-mcp__cloud_polygraph_init()
 
 ### 0. Initialize Polygraph Session
 
-- Current branch name: !`git branch --show-current`
-
 Use the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the Polygraph session. The subagent handles calling `cloud_polygraph_candidates` and `cloud_polygraph_init` and returns a structured summary.
 
 **Session ID is auto-generated:**
