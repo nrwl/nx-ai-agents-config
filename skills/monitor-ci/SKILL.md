@@ -95,25 +95,9 @@ If the user previously ran `/monitor-ci` in this session, you may have prior sta
 
 ## MCP Tool Reference
 
-Two tools from the Nx MCP server power this skill: `ci_information` for polling CI status, and `update_self_healing_fix` for applying/rejecting/rerunning fixes. Three field sets control polling efficiency — use the lightest set that gives you what you need:
+The `ci_information` and `update_self_healing_fix` tools are called via the **ci-monitor-subagent**, not directly from the orchestrator. Calling MCP tools directly wastes main agent context with large response payloads. The field sets below are for composing subagent prompts (see Step 2a).
 
-- **WAIT_FIELDS**: minimal, for detecting new CI Attempt
-- **LIGHT_FIELDS**: status + self-healing + classification fields, for determining actionable state
-- **HEAVY_FIELDS**: large content fields, fetch only when a fix decision requires reading diffs or task output
-
-### `ci_information`
-
-**Input:**
-
-```json
-{
-  "branch": "string (optional, defaults to current git branch)",
-  "select": "string (optional, comma-separated field names)",
-  "pageToken": "number (optional, 0-based pagination for long strings)"
-}
-```
-
-**Field values:**
+Three field sets control polling efficiency — use the lightest set that gives you what you need:
 
 ```yaml
 WAIT_FIELDS: 'cipeUrl,commitSha,cipeStatus'
@@ -121,9 +105,9 @@ LIGHT_FIELDS: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificatio
 HEAVY_FIELDS: 'taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription'
 ```
 
-### `update_self_healing_fix`
+The `ci_information` tool accepts `branch` (optional, defaults to current git branch), `select` (comma-separated field names), and `pageToken` (0-based pagination for long strings).
 
-Actions: `APPLY`, `REJECT`, `RERUN_ENVIRONMENT_STATE`.
+The `update_self_healing_fix` tool accepts a `shortLink` and an action: `APPLY`, `REJECT`, or `RERUN_ENVIRONMENT_STATE`.
 
 ## Default Behaviors by Status
 
