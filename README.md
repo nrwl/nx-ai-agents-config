@@ -46,7 +46,7 @@ Nx AI agent skills teach your coding assistant how to work effectively in your m
 - **CI Monitoring & Self-Healing**: Watches CI pipelines, detects failures, and applies fixes automatically
 - **Workspace Understanding**: Agents explore your project graph, dependencies, and conventions before acting
 - **Intelligent Code Generation**: Scaffolds new code following your workspace's existing patterns, tags, and tooling
-- **Monorepo-Aware Skills**: A series of skills that help your agent navigate, build, and operate more efficiently in monorepo setups
+- **Monorepo-Aware Skills**: A series of skills that help your agent navigate, build, and operate more efficiently in monorepo setups — no more herding cats across projects
 - **Multi-Agent Support**: Works across Claude Code, GitHub Copilot, Cursor, Gemini, and OpenCode
 
 Read more on the [Nx blog](https://nx.dev/blog/nx-ai-agent-skills).
