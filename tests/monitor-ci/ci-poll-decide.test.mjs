@@ -39,6 +39,8 @@ function ci(overrides = {}) {
     failedTaskIds: [],
     verifiedTaskIds: [],
     couldAutoApplyTasks: false,
+    autoApplySkipped: null,
+    autoApplySkipReason: null,
     userAction: null,
     cipeUrl: 'https://ci.example.com/cipe/1',
     commitSha: 'sha1',
@@ -266,6 +268,63 @@ describe('actionable done states', () => {
     expect(result.code).toBe('fix_auto_applying');
     expect(result.action).toBe('done');
     expect(result.noProgressCount).toBe(0); // in resetProgressCodes
+  });
+
+  it('fix_auto_apply_skipped when couldAutoApply but autoApplySkipped with COMPLETED verification', async () => {
+    const result = await runScript(
+      ci({
+        couldAutoApplyTasks: true,
+        autoApplySkipped: true,
+        autoApplySkipReason:
+          'The previous CI pipeline execution was triggered by Nx Cloud',
+        selfHealingStatus: 'COMPLETED',
+        verificationStatus: 'COMPLETED',
+      })
+    );
+    expect(result.code).toBe('fix_auto_apply_skipped');
+    expect(result.action).toBe('done');
+    expect(result.noProgressCount).toBe(0);
+  });
+
+  it('fix_auto_apply_skipped when couldAutoApply but autoApplySkipped with IN_PROGRESS verification', async () => {
+    const result = await runScript(
+      ci({
+        couldAutoApplyTasks: true,
+        autoApplySkipped: true,
+        autoApplySkipReason:
+          'The previous CI pipeline execution was triggered by Nx Cloud',
+        selfHealingStatus: 'COMPLETED',
+        verificationStatus: 'IN_PROGRESS',
+      })
+    );
+    expect(result.code).toBe('fix_auto_apply_skipped');
+    expect(result.action).toBe('done');
+  });
+
+  it('fix_auto_applying unchanged when couldAutoApply and autoApplySkipped is false', async () => {
+    const result = await runScript(
+      ci({
+        couldAutoApplyTasks: true,
+        autoApplySkipped: false,
+        selfHealingStatus: 'COMPLETED',
+        verificationStatus: 'COMPLETED',
+      })
+    );
+    expect(result.code).toBe('fix_auto_applying');
+    expect(result.action).toBe('done');
+  });
+
+  it('verification_pending unchanged when couldAutoApply and autoApplySkipped is null', async () => {
+    const result = await runScript(
+      ci({
+        couldAutoApplyTasks: true,
+        autoApplySkipped: null,
+        selfHealingStatus: 'COMPLETED',
+        verificationStatus: 'IN_PROGRESS',
+      })
+    );
+    expect(result.code).toBe('verification_pending');
+    expect(result.action).toBe('poll');
   });
 
   it('fix_needs_review when verification FAILED', async () => {
