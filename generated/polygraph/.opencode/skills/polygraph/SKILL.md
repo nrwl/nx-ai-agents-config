@@ -34,8 +34,8 @@ This skill applies when the user mentions:
 
 The tools have one of two MCP prefixes. Try the first prefix, and if it fails, use the second:
 
-**Prefix 1:** `mcp__nx-mcp__`
-**Prefix 2:** `mcp__plugin_nx_nx-mcp__`
+**Prefix 1:** `polygraph_`
+**Prefix 2:** `polygraph_`
 
 | Tool Name (use with prefix above) | Description                                                                                                                                                                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -59,10 +59,10 @@ These are MCP tool calls. Invoke them the same way you invoke `Read`, `Bash`, `G
 **Correct — MCP tool function call:**
 
 ```
-mcp__nx-mcp__cloud_polygraph_init()
-mcp__nx-mcp__cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
-mcp__nx-mcp__cloud_polygraph_child_status(sessionId: "...", target: "repo")
-mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
+polygraph_cloud_polygraph_init()
+polygraph_cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
+polygraph_cloud_polygraph_child_status(sessionId: "...", target: "repo")
+polygraph_cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 ```
 
 **WRONG — Do NOT do any of these:**
@@ -71,7 +71,7 @@ mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 # ❌ Do NOT run as a Bash/CLI command
 npx nx mcp cloud_polygraph_init
 nx run cloud_polygraph_init
-bash: mcp__nx-mcp__cloud_polygraph_init
+bash: polygraph_cloud_polygraph_init
 ```
 
 **Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools (not wrapped in Task). `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
@@ -79,7 +79,7 @@ bash: mcp__nx-mcp__cloud_polygraph_init
 If the first prefix fails, retry with the second prefix:
 
 ```
-mcp__plugin_nx_nx-mcp__cloud_polygraph_init()
+polygraph_cloud_polygraph_init()
 ```
 
 ## Workflow Overview
@@ -108,18 +108,7 @@ The `cloud_polygraph_init` tool automatically generates a unique session ID. You
 **Launch the init subagent:**
 
 ```
-Task(
-  subagent_type: "general-purpose",
-  description: "Init Polygraph session",
-  prompt: """
-    You are a Polygraph init subagent. Follow the instructions in the polygraph-init-subagent agent definition.
 
-    Parameters:
-    - userContext: "<description of what the user wants to do>"
-
-    Discover candidates, select relevant repos based on the user context, initialize the session, and return a structured summary.
-  """
-)
 ```
 
 The subagent will:
@@ -158,30 +147,13 @@ To delegate work to another repository, use the `Task` tool with `run_in_backgro
 **Launch a background subagent per repo** using the `polygraph-delegate-subagent`:
 
 ```
-Task(
-  subagent_type: "general-purpose",
-  run_in_background: true,
-  description: "Delegate to <repo-name>",
-  prompt: """
-    You are a Polygraph delegate subagent. Follow the instructions in the polygraph-delegate-subagent agent definition.
 
-    Parameters:
-    - sessionId: "<session-id>"
-    - target: "<org/repo-name>"
-    - instruction: "<the task instruction>"
-    - context: "<optional context>"
-
-    Delegate the work, poll for completion, and return a structured summary.
-  """
-)
 ```
 
 **Delegate to multiple repos in parallel** by launching multiple background Task subagents at the same time:
 
 ```
 // Launch subagents for each repo — all return immediately
-Task(run_in_background: true, ..., prompt: "...delegate to frontend...")
-Task(run_in_background: true, ..., prompt: "...delegate to backend...")
 
 // Check progress later by reading the output files
 Read(output_file_from_task_1)
@@ -557,7 +529,6 @@ If the session has a `plan` or `agentSessionId`, also display:
 
 ## Best Practices
 
-1. **Delegate via background subagents** — Use `Task(run_in_background: true)` for each repo delegation. This keeps polling noise out of the main conversation.
 2. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
 3. **Link PRs in descriptions** - Reference related PRs in each PR body
 4. **Keep PRs as drafts** until all repos are ready

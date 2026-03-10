@@ -34,12 +34,7 @@ Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https:
 Spawn a `general-purpose` subagent using the Task tool. The subagent will call the MCP tool and return results. Do NOT attempt to fetch CI information yourself — always delegate to the subagent.
 
 ```
-Task(
-  subagent_type: "general-purpose",
-  description: "Fetch latest CI status",
-  prompt: "Fetch the latest CI pipeline execution status. Do NOT use Bash for this.
 
-Use the mcp__nx-mcp__ci_information MCP tool (or mcp__plugin_nx_nx-mcp__ci_information) with these parameters:
   select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
 
 Return ALL fields from the response as-is. Do not summarize or omit any fields.

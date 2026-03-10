@@ -173,12 +173,7 @@ Determine select fields based on mode:
 - **Normal mode (first poll or after newCipeDetected)**: use LIGHT_FIELDS
 
 ```
-Task(
-  agent: "ci-monitor-subagent",
-  model: haiku,
-  prompt: "FETCH_STATUS for branch '<branch>'.
-           select: '<fields>'"
-)
+
 ```
 
 The subagent calls `ci_information` and returns a JSON object with the requested fields. This is a **foreground** call — wait for the result.
