@@ -13,6 +13,15 @@
         "source": "github",
         "repo": "nrwl/nx-ai-agents-config"
       }
+    },
+    {
+      "name": "polygraph",
+      "description": "Coordinate changes across multiple repositories using Polygraph - delegate work to child agents, monitor CI across repos, and manage multi-repo sessions",
+      "source": {
+        "source": "github",
+        "repo": "nrwl/nx-ai-agents-config",
+        "directory": "generated/polygraph"
+      }
     }
   ]
 }

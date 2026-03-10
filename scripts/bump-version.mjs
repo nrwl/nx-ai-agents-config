@@ -2,8 +2,11 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 const rootDir = join(import.meta.dirname, '..');
-const pluginJsonPath = join(rootDir, '.claude-plugin/plugin.json');
-const cursorPluginJsonPath = join(rootDir, '.cursor-plugin/plugin.json');
+const pluginJsonPaths = [
+  join(rootDir, '.claude-plugin/plugin.json'),
+  join(rootDir, '.cursor-plugin/plugin.json'),
+  join(rootDir, 'artifacts/polygraph/claude-config/.claude-plugin/plugin.json'),
+];
 
 // Parse --version argument
 const versionArg = process.argv.find((arg) => arg.startsWith('--version'));
@@ -29,7 +32,7 @@ if (!semverRegex.test(version)) {
 }
 
 // Update plugin.json files
-for (const path of [pluginJsonPath, cursorPluginJsonPath]) {
+for (const path of pluginJsonPaths) {
   const pluginJson = JSON.parse(readFileSync(path, 'utf-8'));
   pluginJson.version = version;
   writeFileSync(path, JSON.stringify(pluginJson, null, 2) + '\n');
