@@ -10,6 +10,13 @@ description: Import, merge, or combine repositories into an Nx workspace using n
 
 ---
 
+---
+
+name: nx-import
+description: Import, merge, or combine repositories into an Nx workspace using nx import. USE WHEN the user asks to adopt Nx across repos, move projects into a monorepo, or bring code/history from another repository.
+
+---
+
 ## Quick Start
 
 - `nx import` brings code from a source repository or folder into the current workspace, preserving commit history.
