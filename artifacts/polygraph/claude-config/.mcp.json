@@ -1,0 +1,7 @@
+{
+  "polygraph-mcp": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["polygraph-mcp@latest"]
+  }
+}

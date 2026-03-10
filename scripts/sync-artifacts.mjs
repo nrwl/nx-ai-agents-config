@@ -15,96 +15,100 @@ import * as TOML from 'smol-toml';
 
 const rootDir = join(import.meta.dirname, '..');
 const artifactsDir = join(rootDir, 'artifacts');
+const polygraphArtifactsDir = join(artifactsDir, 'polygraph');
 const generatedDir = join(rootDir, 'generated');
+const polygraphGeneratedDir = join(generatedDir, 'polygraph');
 
-// Agent output configurations
-const agents = {
-  claude: {
-    outputDir: rootDir,
-    agentsDir: 'agents',
-    agentsExt: '.md',
-    commandsDir: 'commands',
-    commandsExt: '.md',
-    skillsDir: 'skills',
-    skillsFile: 'SKILL.md',
-    supportsAgents: true,
-    argumentsPlaceholder: '$ARGUMENTS', // no change
-    writeAgent: writeClaudeAgent,
-    writeCommand: writeClaudeCommand,
-    writeSkill: writeClaudeSkill,
-  },
-  opencode: {
-    outputDir: join(generatedDir, '.opencode'),
-    agentsDir: 'agents',
-    agentsExt: '.md',
-    commandsDir: 'commands',
-    commandsExt: '.md',
-    skillsDir: 'skills',
-    skillsFile: 'SKILL.md',
-    supportsAgents: true,
-    argumentsPlaceholder: '$ARGUMENTS', // no change
-    writeAgent: writeOpenCodeAgent,
-    writeCommand: writeOpenCodeCommand,
-    writeSkill: writeBasicSkill,
-  },
-  copilot: {
-    outputDir: join(generatedDir, '.github'),
-    agentsDir: 'agents',
-    agentsExt: '.agent.md',
-    commandsDir: 'prompts',
-    commandsExt: '.prompt.md',
-    skillsDir: 'skills',
-    skillsFile: 'SKILL.md',
-    supportsAgents: true,
-    argumentsPlaceholder: '${input:args}',
-    writeAgent: writeCopilotAgent,
-    writeCommand: writeCopilotCommand,
-    writeSkill: writeBasicSkill,
-  },
-  cursor: {
-    outputDir: join(generatedDir, '.cursor'),
-    agentsDir: 'agents',
-    agentsExt: '.md',
-    commandsDir: 'commands',
-    commandsExt: '.md',
-    skillsDir: 'skills',
-    skillsFile: 'SKILL.md',
-    supportsAgents: true,
-    argumentsPlaceholder: null, // strip entirely
-    writeAgent: writeCursorAgent,
-    writeCommand: writeCursorCommand,
-    writeSkill: writeBasicSkill,
-  },
-  gemini: {
-    outputDir: join(generatedDir, '.gemini'),
-    agentsDir: null, // Gemini doesn't support agents
-    agentsExt: null,
-    commandsDir: 'commands',
-    commandsExt: '.toml',
-    skillsDir: 'skills',
-    skillsFile: 'skill.md', // Lowercase for Gemini
-    supportsAgents: false,
-    argumentsPlaceholder: '{{args}}',
-    writeAgent: null,
-    writeCommand: writeGeminiCommand,
-    writeSkill: writeGeminiSkill,
-  },
-  codex: {
-    outputDir: join(generatedDir, '.agents'),
-    agentsOutputDir: join(generatedDir, '.codex'), // Agent TOML files go to .codex/agents/
-    agentsDir: 'agents',
-    agentsExt: '.toml',
-    commandsDir: null, // No separate commands concept
-    commandsExt: null,
-    skillsDir: 'skills',
-    skillsFile: 'SKILL.md',
-    supportsAgents: true,
-    argumentsPlaceholder: '$ARGUMENTS',
-    writeAgent: writeCodexAgent,
-    writeCommand: null,
-    writeSkill: writeBasicSkill,
-  },
-};
+// Agent output configurations for the main nx plugin
+function createPlatformConfigs(outputDir, genDir) {
+  return {
+    claude: {
+      outputDir: outputDir,
+      agentsDir: 'agents',
+      agentsExt: '.md',
+      commandsDir: 'commands',
+      commandsExt: '.md',
+      skillsDir: 'skills',
+      skillsFile: 'SKILL.md',
+      supportsAgents: true,
+      argumentsPlaceholder: '$ARGUMENTS', // no change
+      writeAgent: writeClaudeAgent,
+      writeCommand: writeClaudeCommand,
+      writeSkill: writeClaudeSkill,
+    },
+    opencode: {
+      outputDir: join(genDir, '.opencode'),
+      agentsDir: 'agents',
+      agentsExt: '.md',
+      commandsDir: 'commands',
+      commandsExt: '.md',
+      skillsDir: 'skills',
+      skillsFile: 'SKILL.md',
+      supportsAgents: true,
+      argumentsPlaceholder: '$ARGUMENTS', // no change
+      writeAgent: writeOpenCodeAgent,
+      writeCommand: writeOpenCodeCommand,
+      writeSkill: writeBasicSkill,
+    },
+    copilot: {
+      outputDir: join(genDir, '.github'),
+      agentsDir: 'agents',
+      agentsExt: '.agent.md',
+      commandsDir: 'prompts',
+      commandsExt: '.prompt.md',
+      skillsDir: 'skills',
+      skillsFile: 'SKILL.md',
+      supportsAgents: true,
+      argumentsPlaceholder: '${input:args}',
+      writeAgent: writeCopilotAgent,
+      writeCommand: writeCopilotCommand,
+      writeSkill: writeBasicSkill,
+    },
+    cursor: {
+      outputDir: join(genDir, '.cursor'),
+      agentsDir: 'agents',
+      agentsExt: '.md',
+      commandsDir: 'commands',
+      commandsExt: '.md',
+      skillsDir: 'skills',
+      skillsFile: 'SKILL.md',
+      supportsAgents: true,
+      argumentsPlaceholder: null, // strip entirely
+      writeAgent: writeCursorAgent,
+      writeCommand: writeCursorCommand,
+      writeSkill: writeBasicSkill,
+    },
+    gemini: {
+      outputDir: join(genDir, '.gemini'),
+      agentsDir: null, // Gemini doesn't support agents
+      agentsExt: null,
+      commandsDir: 'commands',
+      commandsExt: '.toml',
+      skillsDir: 'skills',
+      skillsFile: 'skill.md', // Lowercase for Gemini
+      supportsAgents: false,
+      argumentsPlaceholder: '{{args}}',
+      writeAgent: null,
+      writeCommand: writeGeminiCommand,
+      writeSkill: writeGeminiSkill,
+    },
+    codex: {
+      outputDir: join(genDir, '.agents'),
+      agentsOutputDir: join(genDir, '.codex'), // Agent TOML files go to .codex/agents/
+      agentsDir: 'agents',
+      agentsExt: '.toml',
+      commandsDir: null, // No separate commands concept
+      commandsExt: null,
+      skillsDir: 'skills',
+      skillsFile: 'SKILL.md',
+      supportsAgents: true,
+      argumentsPlaceholder: '$ARGUMENTS',
+      writeAgent: writeCodexAgent,
+      writeCommand: null,
+      writeSkill: writeBasicSkill,
+    },
+  };
+}
 
 /**
  * Read artifact content and metadata from sidecar JSON file
@@ -440,42 +444,50 @@ function recreateDir(dir) {
 }
 
 /**
- * Clean Claude plugin output at repo root before regenerating.
- * Removes generated dirs/files but preserves marketplace.json.
+ * Clean Claude plugin output before regenerating.
+ * Removes generated dirs/files but preserves marketplace.json and plugin.json.
  */
-function cleanClaudeRootOutput() {
+function cleanClaudeOutput(outputDir) {
   for (const dir of ['skills', 'agents']) {
-    const p = join(rootDir, dir);
+    const p = join(outputDir, dir);
     if (existsSync(p)) rmSync(p, { recursive: true });
   }
-  const mcpJson = join(rootDir, '.mcp.json');
+  const mcpJson = join(outputDir, '.mcp.json');
   if (existsSync(mcpJson)) rmSync(mcpJson);
 }
 
 /**
- * Copy Claude plugin config files to repo root
+ * Copy Claude plugin config files (e.g. .mcp.json, .claude-plugin/) to output dir
  */
-function copyClaudePluginConfigs() {
-  const claudeConfigDir = join(artifactsDir, 'claude-config');
+function copyClaudePluginConfigs(srcArtifactsDir, outputDir) {
+  const claudeConfigDir = join(srcArtifactsDir, 'claude-config');
 
-  // Copy .mcp.json to root
+  // Copy .mcp.json
   const mcpJsonSrc = join(claudeConfigDir, '.mcp.json');
-  const mcpJsonDest = join(rootDir, '.mcp.json');
+  const mcpJsonDest = join(outputDir, '.mcp.json');
   if (existsSync(mcpJsonSrc)) {
     cpSync(mcpJsonSrc, mcpJsonDest);
     console.log('  Copied .mcp.json');
   }
+
+  // Copy .claude-plugin/ directory (e.g. plugin.json for sub-plugins)
+  const claudePluginSrc = join(claudeConfigDir, '.claude-plugin');
+  const claudePluginDest = join(outputDir, '.claude-plugin');
+  if (existsSync(claudePluginSrc)) {
+    cpSync(claudePluginSrc, claudePluginDest, { recursive: true });
+    console.log('  Copied .claude-plugin/');
+  }
 }
 
 /**
- * Process agents folder
+ * Process agents folder from a given source directory
  */
-function processAgents(agentName, config) {
+function processAgents(agentName, config, srcArtifactsDir) {
   if (!config.supportsAgents) {
     return;
   }
 
-  const srcDir = join(artifactsDir, 'agents');
+  const srcDir = join(srcArtifactsDir, 'agents');
   if (!existsSync(srcDir)) {
     console.log(`  Skipped agents/ (source does not exist)`);
     return;
@@ -495,9 +507,6 @@ function processAgents(agentName, config) {
 
     const { content, meta } = readArtifact(srcPath);
     validateAgentMeta(meta, srcPath);
-    if (meta.experimental && !includeExperimental) {
-      continue;
-    }
     config.writeAgent(destPath, content, meta);
   }
 
@@ -505,12 +514,12 @@ function processAgents(agentName, config) {
 }
 
 /**
- * Process skills folder
+ * Process skills folder from a given source directory
  * For Claude: command skills go to skills/ with user-invocable: true
  * For other agents: command skills go to commands/ folder
  */
-function processSkills(agentName, config) {
-  const srcDir = join(artifactsDir, 'skills');
+function processSkills(agentName, config, srcArtifactsDir) {
+  const srcDir = join(srcArtifactsDir, 'skills');
   if (!existsSync(srcDir)) {
     console.log(`  Skipped skills/ (source does not exist)`);
     return;
@@ -530,9 +539,6 @@ function processSkills(agentName, config) {
 
     const { content, meta } = readArtifact(srcSkillFile);
     validateSkillMeta(meta, srcSkillFile);
-    if (meta.experimental && !includeExperimental) {
-      continue;
-    }
 
     // Skip monitor-ci for Codex (relies on subagent orchestration)
     if (agentName === 'codex' && meta.name === 'monitor-ci') {
@@ -581,8 +587,8 @@ function processSkills(agentName, config) {
  * Uses marker comments so downstream tools (e.g. configure-ai-agents in nx) can
  * identify and replace the nx-managed section when merging into user config files.
  */
-function writeCodexConfig() {
-  const mcpJsonPath = join(artifactsDir, 'claude-config', '.mcp.json');
+function writeCodexConfig(srcArtifactsDir, genDir) {
+  const mcpJsonPath = join(srcArtifactsDir, 'claude-config', '.mcp.json');
   if (!existsSync(mcpJsonPath)) {
     console.log('  Skipped .codex/config.toml (no .mcp.json source)');
     return;
@@ -602,7 +608,7 @@ function writeCodexConfig() {
   }
 
   // Collect generated agent TOML files to reference in config
-  const codexAgentsDir = join(generatedDir, '.codex', 'agents');
+  const codexAgentsDir = join(genDir, '.codex', 'agents');
   const agentEntries = {};
   if (existsSync(codexAgentsDir)) {
     const agentFiles = readdirSync(codexAgentsDir).filter((f) =>
@@ -612,7 +618,7 @@ function writeCodexConfig() {
       const baseName = basename(file, '.toml');
       // Read the corresponding source metadata for description
       const srcMetaPath = join(
-        artifactsDir,
+        srcArtifactsDir,
         'agents',
         baseName + '.md.meta.json'
       );
@@ -640,57 +646,63 @@ function writeCodexConfig() {
 
   parts.push('');
 
-  const codexDir = join(generatedDir, '.codex');
+  const codexDir = join(genDir, '.codex');
   mkdirSync(codexDir, { recursive: true });
   writeFileSync(join(codexDir, 'config.toml'), parts.join('\n'));
   console.log('  Generated .codex/config.toml');
 }
 
+/**
+ * Process a single artifact set: generate outputs for all agent platforms from a source dir
+ */
+function processArtifacts(name, srcArtifactsDir, agentConfigs) {
+  for (const [agentName, config] of Object.entries(agentConfigs)) {
+    console.log(
+      `\n[${name}:${agentName}] → ${config.outputDir.replace(rootDir, '.')}`
+    );
+
+    mkdirSync(config.outputDir, { recursive: true });
+
+    processAgents(agentName, config, srcArtifactsDir);
+    processSkills(agentName, config, srcArtifactsDir);
+  }
+}
+
 // ============== Main Execution ==============
 
 const isCheckMode = process.argv.includes('--check');
-const includeExperimental = process.argv.includes('--include-experimental');
 
 function runSync() {
   console.log('Syncing artifacts...\n');
 
-  // Clean Claude output at repo root (preserves marketplace.json)
-  cleanClaudeRootOutput();
+  // Clean main Claude output at repo root (preserves marketplace.json)
+  cleanClaudeOutput(rootDir);
 
-  // Clear and recreate generated directory (non-Claude agents only)
+  // Clear and recreate generated directory
   recreateDir(generatedDir);
 
-  // Process each agent
-  for (const [agentName, config] of Object.entries(agents)) {
-    console.log(`\n[${agentName}] → ${config.outputDir.replace(rootDir, '.')}`);
+  // ---- Main nx artifacts ----
+  const mainConfigs = createPlatformConfigs(rootDir, generatedDir);
+  processArtifacts('nx', artifactsDir, mainConfigs);
 
-    mkdirSync(config.outputDir, { recursive: true });
+  console.log('\n[nx:claude] Copying plugin config files...');
+  copyClaudePluginConfigs(artifactsDir, rootDir);
 
-    processAgents(agentName, config);
-    processSkills(agentName, config);
-  }
+  console.log('\n[nx:codex] Generating config...');
+  writeCodexConfig(artifactsDir, generatedDir);
 
-  // Copy Claude-specific config files
-  console.log('\n[claude] Copying plugin config files...');
-  copyClaudePluginConfigs();
+  // ---- Polygraph artifacts ----
+  const polygraphConfigs = createPlatformConfigs(
+    polygraphGeneratedDir,
+    polygraphGeneratedDir
+  );
+  processArtifacts('polygraph', polygraphArtifactsDir, polygraphConfigs);
 
-  // Update marketplace.json with experimental ref when including experimental artifacts
-  if (includeExperimental) {
-    const marketplacePath = join(rootDir, '.claude-plugin', 'marketplace.json');
-    const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf-8'));
-    if (marketplace.plugins && marketplace.plugins.length > 0) {
-      marketplace.plugins[0].source.ref = 'experimental';
-      writeFileSync(
-        marketplacePath,
-        JSON.stringify(marketplace, null, 2) + '\n'
-      );
-      console.log('  Updated marketplace.json with experimental ref');
-    }
-  }
+  console.log('\n[polygraph:claude] Copying plugin config files...');
+  copyClaudePluginConfigs(polygraphArtifactsDir, polygraphGeneratedDir);
 
-  // Generate Codex config (MCP + agents + features)
-  console.log('\n[codex] Generating config...');
-  writeCodexConfig();
+  console.log('\n[polygraph:codex] Generating config...');
+  writeCodexConfig(polygraphArtifactsDir, polygraphGeneratedDir);
 
   console.log('\nRunning nx format....');
   execSync('npx nx format --fix', { stdio: 'inherit' });

@@ -1,0 +1,11 @@
+{
+  "name": "polygraph",
+  "version": "0.2.23-pr.94",
+  "description": "Coordinate changes across multiple repositories using Polygraph. Delegate work to child agents, monitor CI across repos, and manage multi-repo sessions. Includes skills, subagents, and an MCP server.",
+  "author": {
+    "name": "Narwhal Technologies Inc",
+    "email": "hello@nrwl.io"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/nrwl/nx-ai-agents-config"
+}
