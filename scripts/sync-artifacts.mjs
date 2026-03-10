@@ -431,6 +431,36 @@ function writeGeminiSkill(destPath, content, meta) {
   writeFileSync(destPath, output);
 }
 
+// ============== Content Transformation ==============
+
+/**
+ * Transform skill content for agent-specific output.
+ * For OpenCode: rewrites Claude-specific patterns to agent-appropriate equivalents.
+ * For all other agents: returns content unchanged.
+ */
+export function transformContent(content, agentName) {
+  if (agentName !== 'opencode') return content;
+
+  let result = content;
+
+  // Replace Claude MCP tool prefix with OpenCode's polygraph_ prefix
+  result = result.replace(/mcp__plugin_nx_nx-mcp__/g, 'polygraph_');
+  // Also handle the alternate prefix pattern
+  result = result.replace(/mcp__nx-mcp__/g, 'polygraph_');
+
+  // Strip Task() subagent invocation blocks - these are Claude-specific orchestration
+  // Remove lines that contain Task( patterns (subagent spawning)
+  result = result.replace(/^.*\bTask\s*\([\s\S]*?\).*$/gm, '');
+
+  // Replace "Claude Code" references with "AI agent" in instructional text
+  result = result.replace(/Claude Code/g, 'AI agent');
+
+  // Clean up multiple consecutive blank lines left by removals
+  result = result.replace(/\n{3,}/g, '\n\n');
+
+  return result;
+}
+
 // ============== Utility Functions ==============
 
 /**
@@ -505,8 +535,9 @@ function processAgents(agentName, config, srcArtifactsDir) {
     const baseName = basename(file, '.md');
     const destPath = join(destDir, baseName + config.agentsExt);
 
-    const { content, meta } = readArtifact(srcPath);
+    const { content: rawContent, meta } = readArtifact(srcPath);
     validateAgentMeta(meta, srcPath);
+    const content = transformContent(rawContent, agentName);
     config.writeAgent(destPath, content, meta);
   }
 
@@ -537,8 +568,9 @@ function processSkills(agentName, config, srcArtifactsDir) {
     const srcSkillFile = join(srcDir, skillDir, 'SKILL.md');
     if (!existsSync(srcSkillFile)) continue;
 
-    const { content, meta } = readArtifact(srcSkillFile);
+    const { content: rawContent, meta } = readArtifact(srcSkillFile);
     validateSkillMeta(meta, srcSkillFile);
+    const content = transformContent(rawContent, agentName);
 
     // Skip monitor-ci for Codex (relies on subagent orchestration)
     if (agentName === 'codex' && meta.name === 'monitor-ci') {
@@ -740,9 +772,14 @@ function runCheck() {
   console.log('\nAll generated artifacts are up to date!');
 }
 
-// Run appropriate mode
-if (isCheckMode) {
-  runCheck();
-} else {
-  runSync();
+// Run appropriate mode (only when executed directly, not when imported)
+const isMainModule =
+  process.argv[1] &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+if (isMainModule) {
+  if (isCheckMode) {
+    runCheck();
+  } else {
+    runSync();
+  }
 }
