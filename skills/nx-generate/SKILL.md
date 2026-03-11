@@ -5,6 +5,19 @@ subagent: general-purpose
 context: fork
 ---
 
+---
+
+name: nx-generate
+description: >-
+Generate code using Nx generators — scaffolding projects, libraries,
+components, and running automated code migrations. Use this skill whenever the
+user wants to create new projects, scaffold features, set up structure, or run
+any generator. Handles generator discovery, source code reading, and
+verification internally — invoke this before exploring docs or generators
+manually.
+
+---
+
 # Run Nx Generator
 
 Nx generators are powerful tools that scaffold projects, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.
@@ -77,12 +90,7 @@ Buildable libs:
 
 ### 4. Read Generator Source Code
 
-**This step is critical.** The schema alone does not tell you everything. Reading the source code helps you:
-
-- Know exactly what files will be created/modified and where
-- Understand side effects (updating configs, installing deps, etc.)
-- Identify behaviors and options not obvious from the schema
-- Understand how options interact with each other
+**This step is critical.** The schema alone does not tell you everything. Reading the source reveals what files will be created, where they go, what side effects occur (updating configs, installing deps), and how options interact — details that the schema and help output omit.
 
 To find generator source code:
 
@@ -92,15 +100,15 @@ To find generator source code:
 
 After reading the source, reconsider: Is this the right generator? If not, go back to step 2.
 
-> **⚠️ `--directory` flag behavior can be misleading.**
+> **`--directory` flag behavior can be misleading.**
 > It should specify the full path of the generated library or component, not the parent path that it will be generated in.
 >
 > ```bash
-> # ✅ Correct - directory is the full path for the library
+> # Correct - directory is the full path for the library
 > nx g @nx/react:library --directory=libs/my-lib
 > # generates libs/my-lib/package.json and more
 >
-> # ❌ Wrong - this will create files at libs and libs/src/...
+> # Wrong - this will create files at libs and libs/src/...
 > nx g @nx/react:library --name=my-lib --directory=libs
 > # generates libs/package.json and more
 > ```
@@ -119,7 +127,7 @@ Before generating, examine the target area of the codebase:
 **Always run with `--dry-run` first** to verify files will be created in the correct location:
 
 ```bash
-npx nx g @nx/react:library --name=my-lib --dry-run --no-interactive
+npx nx g @nx/react:library --directory=libs/my-lib --dry-run --no-interactive
 ```
 
 Review the output carefully. If files would be created in the wrong location, adjust your options based on what you learned from the generator source code.

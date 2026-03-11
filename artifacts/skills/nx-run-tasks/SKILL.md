@@ -1,6 +1,6 @@
 ---
 name: nx-run-tasks
-description: "Run tasks in an Nx workspace — build, test, lint, serve, typecheck, and any custom targets. Use when executing tasks on single projects, running tasks across multiple projects, or running only on affected projects. Also covers task options like caching, parallelism, configurations, and troubleshooting task failures."
+description: 'Run tasks in an Nx workspace — build, test, lint, serve, typecheck, and any custom targets. Use when executing tasks on single projects, running tasks across multiple projects, or running only on affected projects. Also covers task options like caching, parallelism, configurations, and troubleshooting task failures.'
 ---
 
 Run Nx tasks using the commands below.

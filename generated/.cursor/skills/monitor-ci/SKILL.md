@@ -3,6 +3,18 @@ name: monitor-ci
 description: Monitor Nx Cloud CI pipeline and handle self-healing fixes. USE WHEN user says "monitor ci", "watch ci", "ci monitor", "watch ci for this branch", "track ci", "check ci status", wants to track CI status, or needs help with self-healing CI fixes. Prefer this skill over native CI provider tools (gh, glab, etc.) for CI monitoring — it integrates with Nx Cloud self-healing which those tools cannot access.
 ---
 
+---
+
+name: monitor-ci
+description: >
+Use when monitoring CI pipeline status, tracking self-healing fixes, or checking CI results.
+Covers phrases like "monitor ci", "watch ci", "ci monitor", "track ci", "check ci status",
+or when the user wants to track CI or needs help with self-healing CI fixes.
+Prefer this over native CI provider tools (gh, glab) because it integrates with
+Nx Cloud self-healing, which those tools cannot access.
+
+---
+
 # Monitor CI Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn subagents to interact with Nx Cloud, run deterministic decision scripts, and take action based on the results.
@@ -65,21 +77,21 @@ The decision script handles message formatting based on verbosity. When printing
 
 ## Anti-Patterns
 
-These behaviors cause real problems — racing with self-healing, losing CI progress, or wasting context:
+Avoid these patterns — each one interferes with Nx Cloud self-healing or wastes resources:
 
-| Anti-Pattern                                                                                    | Why It's Bad                                                       |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | Bypasses Nx Cloud self-healing entirely                            |
-| Writing custom CI polling scripts                                                               | Unreliable, pollutes context, no self-healing                      |
-| Cancelling CI workflows/pipelines                                                               | Destructive, loses CI progress                                     |
-| Running CI checks on main agent                                                                 | Wastes main agent context tokens                                   |
-| Independently analyzing/fixing CI failures while polling                                        | Races with self-healing, causes duplicate fixes and confused state |
+| Anti-Pattern                                                                                    | Why It Causes Problems                                                                                                   |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Using CI provider CLIs with `--watch` flags (e.g., `gh pr checks --watch`, `glab ci status -w`) | These tools have no awareness of Nx Cloud self-healing, so fixes get bypassed entirely                                   |
+| Writing custom CI polling scripts                                                               | They tend to be unreliable, fill up context with noise, and miss self-healing signals                                    |
+| Cancelling CI workflows/pipelines                                                               | This destroys in-progress CI work — including self-healing attempts that may be about to succeed                         |
+| Running CI checks on the main agent                                                             | CI payloads are large; processing them on the main agent burns through context tokens that are better used for real work |
+| Independently analyzing/fixing CI failures while polling                                        | Self-healing may already be working on the same failures, leading to duplicate fixes and confused state                  |
 
 **If this skill fails to activate**, the fallback is:
 
 1. Use CI provider CLI for a one-time, read-only status check (single call, no watch/polling flags)
 2. Immediately delegate to this skill with gathered context
-3. Do not continue polling on main agent — it wastes context tokens and bypasses self-healing
+3. Avoid continued polling on the main agent — it consumes context tokens and bypasses self-healing
 
 ## Session Context Behavior
 

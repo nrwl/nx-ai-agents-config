@@ -75,29 +75,29 @@ Installed plugins appear at the top of the output. You can also check `nx.json` 
 
 ## Common Nx Plugins
 
-| Plugin | Purpose |
-| --- | --- |
-| `@nx/react` | React applications and libraries |
-| `@nx/angular` | Angular applications and libraries |
-| `@nx/next` | Next.js applications |
-| `@nx/nest` | NestJS applications |
-| `@nx/node` | Node.js applications and libraries |
-| `@nx/express` | Express applications |
-| `@nx/vue` | Vue applications and libraries |
-| `@nx/nuxt` | Nuxt applications |
-| `@nx/web` | Generic web applications |
-| `@nx/vite` | Vite-based build and test |
-| `@nx/webpack` | Webpack-based build |
-| `@nx/rspack` | Rspack-based build |
-| `@nx/esbuild` | esbuild-based build |
-| `@nx/rollup` | Rollup-based build |
-| `@nx/jest` | Jest testing |
-| `@nx/vitest` | Vitest testing |
-| `@nx/cypress` | Cypress e2e testing |
-| `@nx/playwright` | Playwright e2e testing |
-| `@nx/eslint` | ESLint linting |
-| `@nx/storybook` | Storybook integration |
-| `@nx/js` | TypeScript/JavaScript libraries |
+| Plugin           | Purpose                            |
+| ---------------- | ---------------------------------- |
+| `@nx/react`      | React applications and libraries   |
+| `@nx/angular`    | Angular applications and libraries |
+| `@nx/next`       | Next.js applications               |
+| `@nx/nest`       | NestJS applications                |
+| `@nx/node`       | Node.js applications and libraries |
+| `@nx/express`    | Express applications               |
+| `@nx/vue`        | Vue applications and libraries     |
+| `@nx/nuxt`       | Nuxt applications                  |
+| `@nx/web`        | Generic web applications           |
+| `@nx/vite`       | Vite-based build and test          |
+| `@nx/webpack`    | Webpack-based build                |
+| `@nx/rspack`     | Rspack-based build                 |
+| `@nx/esbuild`    | esbuild-based build                |
+| `@nx/rollup`     | Rollup-based build                 |
+| `@nx/jest`       | Jest testing                       |
+| `@nx/vitest`     | Vitest testing                     |
+| `@nx/cypress`    | Cypress e2e testing                |
+| `@nx/playwright` | Playwright e2e testing             |
+| `@nx/eslint`     | ESLint linting                     |
+| `@nx/storybook`  | Storybook integration              |
+| `@nx/js`         | TypeScript/JavaScript libraries    |
 
 This is not exhaustive. Run `nx list` to see the full set of available plugins, including community plugins.
 
