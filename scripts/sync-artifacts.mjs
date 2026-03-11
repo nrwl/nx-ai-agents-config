@@ -443,11 +443,6 @@ export function transformContent(content, agentName) {
 
   let result = content;
 
-  // Replace Claude MCP tool prefix with OpenCode's polygraph_ prefix
-  result = result.replace(/mcp__plugin_nx_nx-mcp__/g, 'polygraph_');
-  // Also handle the alternate prefix pattern
-  result = result.replace(/mcp__nx-mcp__/g, 'polygraph_');
-
   // Strip Task() subagent invocation blocks - these are Claude-specific orchestration
   // Remove lines that contain Task( patterns (subagent spawning)
   result = result.replace(/^.*\bTask\s*\([\s\S]*?\).*$/gm, '');

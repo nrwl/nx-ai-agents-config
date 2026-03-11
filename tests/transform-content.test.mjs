@@ -31,32 +31,16 @@ describe('transformContent', () => {
   });
 
   describe('opencode agent', () => {
-    it('replaces mcp__plugin_nx_nx-mcp__ prefix with polygraph_', () => {
+    it('does not modify MCP tool prefixes (same protocol for all agents)', () => {
       const input = 'Use mcp__plugin_nx_nx-mcp__ci_information tool';
       const result = transformContent(input, 'opencode');
-      expect(result).toBe('Use polygraph_ci_information tool');
-      expect(result).not.toContain('mcp__plugin_nx');
+      expect(result).toBe(input);
     });
 
-    it('replaces mcp__nx-mcp__ prefix with polygraph_', () => {
+    it('preserves mcp__nx-mcp__ prefix unchanged', () => {
       const input = 'Call mcp__nx-mcp__cloud_polygraph_init()';
       const result = transformContent(input, 'opencode');
-      expect(result).toBe('Call polygraph_cloud_polygraph_init()');
-      expect(result).not.toContain('mcp__nx-mcp__');
-    });
-
-    it('replaces both prefix patterns in the same content', () => {
-      const input = [
-        '**Prefix 1:** `mcp__nx-mcp__`',
-        '**Prefix 2:** `mcp__plugin_nx_nx-mcp__`',
-        '',
-        'mcp__nx-mcp__cloud_polygraph_init()',
-        'mcp__plugin_nx_nx-mcp__cloud_polygraph_init()',
-      ].join('\n');
-      const result = transformContent(input, 'opencode');
-      expect(result).not.toContain('mcp__plugin_nx');
-      expect(result).not.toContain('mcp__nx-mcp__');
-      expect(result).toContain('polygraph_');
+      expect(result).toBe(input);
     });
 
     it('strips lines containing Task( subagent invocations', () => {
@@ -108,7 +92,6 @@ describe('transformContent', () => {
         '# Multi-Repo Coordination with Polygraph',
         '',
         'Use the mcp__plugin_nx_nx-mcp__cloud_polygraph_init tool.',
-        'Or try mcp__nx-mcp__cloud_polygraph_init as fallback.',
         '',
         'Launch via Claude Code:',
         '',
@@ -125,11 +108,11 @@ describe('transformContent', () => {
 
       const result = transformContent(input, 'opencode');
 
-      // Tool prefixes replaced
-      expect(result).not.toContain('mcp__plugin_nx');
-      expect(result).not.toContain('mcp__nx-mcp__');
-      expect(result).toContain('polygraph_cloud_polygraph_init');
-      expect(result).toContain('polygraph_cloud_polygraph_delegate');
+      // MCP prefixes are preserved (same protocol for all agents)
+      expect(result).toContain('mcp__plugin_nx_nx-mcp__cloud_polygraph_init');
+      expect(result).toContain(
+        'mcp__plugin_nx_nx-mcp__cloud_polygraph_delegate'
+      );
 
       // Task() blocks removed
       expect(result).not.toMatch(/\bTask\s*\(/);
@@ -161,10 +144,9 @@ describe('transformContent', () => {
       ].join('\n');
 
       const result = transformContent(input, 'opencode');
-      // MCP prefixes outside Task() blocks are replaced
-      expect(result).not.toContain('mcp__plugin_nx');
-      expect(result).not.toContain('mcp__nx-mcp__');
-      expect(result).toContain('polygraph_ci_information');
+      // MCP prefixes preserved
+      expect(result).toContain('mcp__nx-mcp__ci_information');
+      expect(result).toContain('mcp__plugin_nx_nx-mcp__ci_information');
       // Task() blocks are stripped
       expect(result).not.toMatch(/\bTask\s*\(/);
     });
