@@ -79,7 +79,7 @@ bash: mcp__nx-mcp__cloud_polygraph_init
 If the first prefix fails, retry with the second prefix:
 
 ```
-mcp__plugin_nx_nx-mcp__cloud_polygraph_init()
+cloud_polygraph_init()
 ```
 
 ## Workflow Overview

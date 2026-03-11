@@ -34,8 +34,8 @@ This skill applies when the user mentions:
 
 The tools have one of two MCP prefixes. Try the first prefix, and if it fails, use the second:
 
-**Prefix 1:** `polygraph_`
-**Prefix 2:** `polygraph_`
+**Prefix 1:** `mcp__nx-mcp__`
+**Prefix 2:** `mcp__plugin_nx_nx-mcp__`
 
 | Tool Name (use with prefix above) | Description                                                                                                                                                                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -59,10 +59,10 @@ These are MCP tool calls. Invoke them the same way you invoke `Read`, `Bash`, `G
 **Correct — MCP tool function call:**
 
 ```
-polygraph_cloud_polygraph_init()
-polygraph_cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
-polygraph_cloud_polygraph_child_status(sessionId: "...", target: "repo")
-polygraph_cloud_polygraph_stop_child(sessionId: "...", target: "repo")
+mcp__nx-mcp__cloud_polygraph_init()
+mcp__nx-mcp__cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
+mcp__nx-mcp__cloud_polygraph_child_status(sessionId: "...", target: "repo")
+mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 ```
 
 **WRONG — Do NOT do any of these:**
@@ -71,7 +71,7 @@ polygraph_cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 # ❌ Do NOT run as a Bash/CLI command
 npx nx mcp cloud_polygraph_init
 nx run cloud_polygraph_init
-bash: polygraph_cloud_polygraph_init
+bash: mcp__nx-mcp__cloud_polygraph_init
 ```
 
 **Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools (not wrapped in Task). `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
@@ -79,7 +79,7 @@ bash: polygraph_cloud_polygraph_init
 If the first prefix fails, retry with the second prefix:
 
 ```
-polygraph_cloud_polygraph_init()
+cloud_polygraph_init()
 ```
 
 ## Workflow Overview
