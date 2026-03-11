@@ -77,7 +77,7 @@ cloud_polygraph_init()
 
 ## Workflow Overview
 
-0. **Initialize Polygraph session** - Launch the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the session. The subagent returns a summary with session details.
+0. **Initialize Polygraph session** - Discover candidate repos, select relevant workspaces, and initialize the session via `cloud_polygraph_candidates` and `cloud_polygraph_init`.
 1. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
 2. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
 3. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
@@ -92,7 +92,7 @@ cloud_polygraph_init()
 
 ### 0. Initialize Polygraph Session
 
-Use the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the Polygraph session. The subagent handles calling `cloud_polygraph_candidates` and `cloud_polygraph_init` and returns a structured summary.
+Discover candidate repos using `cloud_polygraph_candidates`, select relevant workspaces, and initialize the Polygraph session using `cloud_polygraph_init`.
 
 **Session ID is auto-generated:**
 

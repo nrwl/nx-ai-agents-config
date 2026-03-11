@@ -1,3 +1,6 @@
+{%- assign has_subagents = false -%}
+{%- if platform == "claude" or platform == "opencode" -%}{%- assign has_subagents = true -%}{%- endif -%}
+
 # Multi-Repo Coordination with Polygraph
 
 **IMPORTANT:** NEVER `cd` into cloned repositories or access their files directly. ALWAYS use the `cloud_polygraph_delegate` tool to perform work in other repositories.
@@ -64,9 +67,9 @@ nx run cloud_polygraph_init
 bash: cloud_polygraph_init
 ```
 
-{%- if platform == "claude" %}
+{%- if has_subagents %}
 
-**Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools (not wrapped in Task). `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
+**Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools. `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
 {%- endif %}
 
 If the first prefix fails, retry with the second prefix:
@@ -77,22 +80,34 @@ cloud_polygraph_init()
 
 ## Workflow Overview
 
+{%- if has_subagents %}
+
 0. **Initialize Polygraph session** - Launch the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the session. The subagent returns a summary with session details.
-1. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
-2. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
-3. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
-4. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
-5. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Both `plan` and `agentSessionId` are required.
-6. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
-7. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
-8. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
-9. **Complete session** - Use `cloud_polygraph_modify_session` with `complete: true` to mark the session as completed when the user requests it.
+1. **Delegate work to each repo** - Use the `polygraph-delegate-subagent` to start child agents in other repositories.
+   {%- else %}
+2. **Initialize Polygraph session** - Discover candidate repos, select relevant workspaces, and initialize the session via `cloud_polygraph_candidates` and `cloud_polygraph_init`.
+3. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
+   {%- endif %}
+4. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
+5. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
+6. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
+7. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Both `plan` and `agentSessionId` are required.
+8. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
+9. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
+10. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
+11. **Complete session** - Use `cloud_polygraph_modify_session` with `complete: true` to mark the session as completed when the user requests it.
 
 ## Step-by-Step Guide
 
 ### 0. Initialize Polygraph Session
 
+{%- if has_subagents %}
+
 Use the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the Polygraph session. The subagent handles calling `cloud_polygraph_candidates` and `cloud_polygraph_init` and returns a structured summary.
+{%- else %}
+
+Discover candidate repos using `cloud_polygraph_candidates`, select relevant workspaces, and initialize the Polygraph session using `cloud_polygraph_init`.
+{%- endif %}
 
 **Session ID is auto-generated:**
 
@@ -119,6 +134,11 @@ Task(
 ```
 
 {% endraw %}
+{%- elsif platform == "opencode" %}
+
+**Launch the init subagent** using `@polygraph-init-subagent`:
+
+Invoke the `polygraph-init-subagent` agent with the user context. The subagent handles calling `cloud_polygraph_candidates` and `cloud_polygraph_init` and returns a structured summary.
 {%- else %}
 
 Call `cloud_polygraph_candidates` to discover available workspaces, select relevant repos based on user context, then call `cloud_polygraph_init` with the selected workspace IDs.
@@ -235,6 +255,22 @@ cloud_polygraph_child_status(sessionId: "<session-id>", target: "org/repo-name",
 {% endraw %}
 
 Always verify all background subagents have completed before proceeding to push branches and create PRs.
+{%- elsif platform == "opencode" %}
+
+Use the `polygraph-delegate-subagent` agent (`@polygraph-delegate-subagent`) for each target repository. The subagent handles calling `cloud_polygraph_delegate` to start the child agent, then polls `cloud_polygraph_child_status` with backoff until completion, and returns a structured summary.
+
+**For each target repo**, invoke `@polygraph-delegate-subagent` with:
+
+- `sessionId`: The Polygraph session ID
+- `target`: Repository name (e.g., `org/repo-name`)
+- `instruction`: The task instruction for the child agent
+- `context`: Optional additional context
+
+**Delegate to multiple repos** by launching multiple `@polygraph-delegate-subagent` invocations.
+
+### 1a. Check on Child Agents
+
+Use `cloud_polygraph_child_status` to check progress:
 {%- else %}
 
 Use `cloud_polygraph_delegate` to start a child agent in each target repository. The call returns immediately — use `cloud_polygraph_child_status` to poll for completion with backoff.
@@ -610,6 +646,8 @@ If the session has a `plan` or `agentSessionId`, also display:
 {%- if platform == "claude" %}
 
 1. **Delegate via background subagents** — Use `Task(run_in_background: true)` for each repo delegation. This keeps polling noise out of the main conversation.
+   {%- elsif platform == "opencode" %}
+1. **Delegate via subagents** — Use `@polygraph-delegate-subagent` for each repo delegation. The subagent handles the delegate-and-poll cycle.
    {%- else %}
 1. **Delegate asynchronously** — Use `cloud_polygraph_delegate` which returns immediately, then poll with `cloud_polygraph_child_status`.
    {%- endif %}
@@ -620,6 +658,8 @@ If the session has a `plan` or `agentSessionId`, also display:
 1. **Coordinate merge order** if there are deployment dependencies
    {%- if platform == "claude" %}
 1. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
+   {%- elsif platform == "opencode" %}
+1. **Always delegate via `@polygraph-delegate-subagent`**. Never call `cloud_polygraph_delegate` directly in the main conversation.
    {%- endif %}
 1. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
 1. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
