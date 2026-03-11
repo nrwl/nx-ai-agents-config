@@ -6,7 +6,7 @@ description: Import, merge, or combine repositories into an Nx workspace using n
 ---
 
 name: nx-import
-description: Import, merge, or combine repositories into an Nx workspace using nx import. USE WHEN the user asks to adopt Nx across repos, move projects into a monorepo, or bring code/history from another repository.
+description: Import, merge, or combine repositories into an Nx workspace using nx import. Covers adopting Nx across repos, moving projects into a monorepo, and bringing code/history from another repository. Also helps troubleshoot post-import issues like 'Cannot find module', typecheck failures, pnpm workspace errors, missing dependencies, or ESLint config problems in imported projects.
 
 ---
 
@@ -15,15 +15,15 @@ description: Import, merge, or combine repositories into an Nx workspace using n
 - `nx import` brings code from a source repository or folder into the current workspace, preserving commit history.
 - After nx `22.6.0`, `nx import` responds with .ndjson outputs and follow-up questions. For earlier versions, always run with `--no-interactive` and specify all flags directly.
 - Run `nx import --help` for available options.
-- Make sure the destination directory is empty before importing.
-  EXAMPLE: target has `libs/utils` and `libs/models`; source has `libs/ui` and `libs/data-access` — you cannot import `libs/` into `libs/` directly. Import each source library individually.
+- The destination directory must be empty — `nx import` will fail or produce conflicts otherwise.
+  For example, if the target has `libs/utils` and `libs/models` while the source has `libs/ui` and `libs/data-access`, you cannot import `libs/` into `libs/` directly. Import each source library individually instead.
 
 Primary docs:
 
 - https://nx.dev/docs/guides/adopting-nx/import-project
 - https://nx.dev/docs/guides/adopting-nx/preserving-git-histories
 
-Read the nx docs if you have the tools for it.
+If the nx-docs tool is available, query it for the latest guidance — import behavior evolves across Nx versions.
 
 ## Import Strategy
 
@@ -41,7 +41,7 @@ Read the nx docs if you have the tools for it.
 
 ### Directory Conventions
 
-- **Always prefer the destination's existing conventions.** Source uses `libs/`but dest uses `packages/`? Import into `packages/` (`nx import <source> packages/foo --source=libs/foo`).
+- **Prefer the destination's existing conventions** to keep the workspace consistent. If the source uses `libs/` but the dest uses `packages/`, import into `packages/` (`nx import <source> packages/foo --source=libs/foo`).
 - If dest has no convention (empty workspace), ask the user.
 
 ## Common Issues
@@ -73,9 +73,9 @@ Inferred targets (via Nx plugins) resolve config relative to project root — no
 
 ### Plugin Detection
 
-- **Whole-repo import**: `nx import` detects and offers to install plugins. Accept them.
+- **Whole-repo import**: `nx import` detects and offers to install plugins. Accept them — these plugins enable Nx to infer targets from config files rather than requiring manual executor setup.
 - **Subdirectory import**: Plugins NOT auto-detected. Manually add with `npx nx add @nx/PLUGIN`. Check `include`/`exclude` patterns — defaults won't match alternate directories (e.g. `apps-beta/`).
-- Run `npx nx reset` after any plugin config changes.
+- Run `npx nx reset` after any plugin config changes — Nx caches the project graph, so config changes won't take effect until the cache is cleared.
 
 ### Redundant Root Files (Whole-Repo Only)
 
@@ -88,7 +88,7 @@ Whole-repo import brings ALL source root files into the dest subdirectory. Clean
 - `nx.json` — source Nx config; dest has its own
 - `README.md` — optional; keep or remove
 
-**Don't blindly delete** `tsconfig.base.json` — imported projects may extend it via relative paths.
+**Do not delete** `tsconfig.base.json` without checking first — imported projects may extend it via relative paths, and removing it would break their builds.
 
 ### Root ESLint Config Missing (Subdirectory Import)
 
@@ -181,7 +181,7 @@ When the source is a plain pnpm/npm workspace without `nx.json`.
 
 ### npm Script Rewriting (Critical)
 
-Nx rewrites `package.json` scripts during init, creating broken commands (e.g. `vitest run` → `nx test run`). **Fix**: Remove all rewritten scripts — Nx plugins infer targets from config files.
+Nx rewrites `package.json` scripts during init, creating broken commands (e.g. `vitest run` → `nx test run`). **Fix**: Remove all rewritten scripts. This is safe because Nx plugins infer targets from config files (e.g. `vite.config.ts`, `jest.config.ts`) without needing npm scripts.
 
 ### `noEmit` → `composite` + `emitDeclarationOnly` (Critical)
 
