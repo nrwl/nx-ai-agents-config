@@ -91,7 +91,7 @@ describe('transformContent', () => {
       const input = [
         '# Multi-Repo Coordination with Polygraph',
         '',
-        'Use the mcp__plugin_nx_nx-mcp__cloud_polygraph_init tool.',
+        'Use the cloud_polygraph_init tool.',
         '',
         'Launch via Claude Code:',
         '',
@@ -103,16 +103,14 @@ describe('transformContent', () => {
         ')',
         '```',
         '',
-        'After init, use mcp__plugin_nx_nx-mcp__cloud_polygraph_delegate.',
+        'After init, use cloud_polygraph_delegate.',
       ].join('\n');
 
       const result = transformContent(input, 'opencode');
 
-      // MCP prefixes are preserved (same protocol for all agents)
-      expect(result).toContain('mcp__plugin_nx_nx-mcp__cloud_polygraph_init');
-      expect(result).toContain(
-        'mcp__plugin_nx_nx-mcp__cloud_polygraph_delegate'
-      );
+      // Base tool names are preserved
+      expect(result).toContain('cloud_polygraph_init');
+      expect(result).toContain('cloud_polygraph_delegate');
 
       // Task() blocks removed
       expect(result).not.toMatch(/\bTask\s*\(/);
