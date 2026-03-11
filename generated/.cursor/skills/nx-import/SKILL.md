@@ -211,6 +211,7 @@ Identify technologies in the source repo, then read and apply the matching refer
 
 Available references:
 
+- `references/ESLINT.md` — ESLint projects: duplicate `lint`/`eslint:lint` targets, legacy `.eslintrc.*` linting generated files, flat config `.cjs` self-linting, `typescript-eslint` v7/v9 peer dep conflict, mixed ESLint v8+v9 in one workspace.
 - `references/GRADLE.md`
 - `references/JEST.md` — Jest testing: `@nx/jest/plugin` setup, jest.preset.js, testing deps by framework, tsconfig.spec.json, Jest vs Vitest coexistence, Babel transforms, CI atomization.
 - `references/NEXT.md` — Next.js projects: `@nx/next/plugin` targets, `withNx`, Next.js TS config (`noEmit`, `jsx: "preserve"`), auto-installing deps via wrong PM, non-Nx `create-next-app` imports, mixed Next.js+Vite coexistence.
