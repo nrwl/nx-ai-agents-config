@@ -12,6 +12,7 @@ import { join, basename, dirname } from 'path';
 import { execSync } from 'child_process';
 import yaml from 'js-yaml';
 import * as TOML from 'smol-toml';
+import { Liquid } from 'liquidjs';
 
 const rootDir = join(import.meta.dirname, '..');
 const artifactsDir = join(rootDir, 'artifacts');
@@ -433,26 +434,38 @@ function writeGeminiSkill(destPath, content, meta) {
 
 // ============== Content Transformation ==============
 
+const liquid = new Liquid();
+
 /**
  * Transform skill content for agent-specific output.
- * For OpenCode: rewrites Claude-specific patterns to agent-appropriate equivalents.
- * For all other agents: returns content unchanged.
+ * Uses LiquidJS templating to render platform-specific content.
+ *
+ * Source content uses Liquid conditionals:
+ *   {%- if platform == "claude" %}...{%- else %}...{%- endif %}
+ *
+ * @param {string} content - The raw skill/agent content (Liquid template)
+ * @param {object} config - Platform config from createPlatformConfigs
  */
-export function transformContent(content, agentName) {
-  if (agentName !== 'opencode') return content;
+export function transformContent(content, platformKey) {
+  if (!platformKey) {
+    throw new Error('transformContent: platformKey is required');
+  }
 
-  let result = content;
+  let result;
+  try {
+    result = liquid.parseAndRenderSync(content, {
+      platform: platformKey,
+    });
+  } catch (err) {
+    throw new Error(
+      `Liquid template error (platform: ${platformKey}): ${err.message}`
+    );
+  }
 
-  // Strip Task() subagent invocation blocks - these are Claude-specific orchestration
-  // Remove lines that contain Task( patterns (subagent spawning)
-  result = result.replace(/^.*\bTask\s*\([\s\S]*?\).*$/gm, '');
-
-  // Replace "Claude Code" references with "AI agent" in instructional text
-  result = result.replace(/Claude Code/g, 'AI agent');
-
-  // Clean up multiple consecutive blank lines left by removals
+  if (platformKey !== 'claude') {
+    result = result.replace(/Claude Code/g, 'AI agent');
+  }
   result = result.replace(/\n{3,}/g, '\n\n');
-
   return result;
 }
 
@@ -731,8 +744,11 @@ function runSync() {
   console.log('\n[polygraph:codex] Generating config...');
   writeCodexConfig(polygraphArtifactsDir, polygraphGeneratedDir);
 
-  console.log('\nRunning nx format....');
-  execSync('npx nx format --fix', { stdio: 'inherit' });
+  console.log('\nRunning nx format on generated files....');
+  execSync(
+    'npx nx format --fix --files "generated/**/*,skills/**/*,agents/**/*,.mcp.json"',
+    { stdio: 'inherit' }
+  );
 
   console.log('\nSync complete!');
 }

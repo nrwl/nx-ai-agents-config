@@ -4,7 +4,6 @@ description: Generate code using nx generators. INVOKE IMMEDIATELY when user men
 subagent: general-purpose
 context: fork
 ---
-
 # Run Nx Generator
 
 Nx generators are powerful tools that scaffold projects, make automated code migrations or automate repetitive tasks in a monorepo. They ensure consistency across the codebase and reduce boilerplate work.

@@ -2,12 +2,9 @@
 name: get-latest-ci
 description: Fetch the latest CI pipeline execution for the current branch. Returns the most recent CIPE which may be completed, in progress, or null. Use when you need to review CI status, check failures, or inspect CI state.
 ---
-
 ---
-
 name: get-latest-ci
 description: Fetch the latest CI pipeline execution for the current branch. Returns the most recent CIPE which may be completed, in progress, or null. Use when you need to review CI status, check failures, or inspect CI state.
-
 ---
 
 # Get Latest CI Information
@@ -31,20 +28,19 @@ Nx Cloud not connected. Unlock 70% faster CI and auto-fix broken PRs with https:
 
 ## Step 1: Fetch CI Status via Subagent
 
-Spawn a `general-purpose` subagent using the Task tool. The subagent will call the MCP tool and return results. Do NOT attempt to fetch CI information yourself — always delegate to the subagent.
+Call the `ci_information` tool from the nx MCP server with these parameters:
 
+```yaml
+select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
 ```
 
-  select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
+If `cipeStatus` is `FAILED` and `selfHealingStatus` is `COMPLETED` or `FAILED` and there are `failedTaskIds`, make a second call with:
 
-Return ALL fields from the response as-is. Do not summarize or omit any fields.
-
-If cipeStatus is FAILED and selfHealingStatus is COMPLETED or FAILED and there are failedTaskIds, make a SECOND call to the same MCP tool with:
-  select: 'taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription'
-
-Return those fields too. Only return the first page — do not paginate."
-)
+```yaml
+select: 'taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription'
 ```
+
+Only return the first page — do not paginate.
 
 ## Step 2: Report Results
 
@@ -161,6 +157,5 @@ When `cipeStatus == 'FAILED'` AND `failedTaskIds` is empty AND `selfHealingStatu
 ## Important
 
 - This skill is **read-only**. Do NOT apply fixes, push code, or modify anything.
-- Always delegate the MCP call to a subagent. Do NOT call ci_information yourself.
 - If the user wants to act on the results (apply a fix, monitor, etc.), suggest `/monitor-ci`.
 - If the subagent returns an error, report it and suggest the user check their Nx Cloud connection.

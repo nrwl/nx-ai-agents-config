@@ -2,12 +2,9 @@
 name: get-latest-ci
 description: Fetch the latest CI pipeline execution for the current branch. Returns the most recent CIPE which may be completed, in progress, or null. Use when you need to review CI status, check failures, or inspect CI state.
 ---
-
 ---
-
 name: get-latest-ci
 description: Fetch the latest CI pipeline execution for the current branch. Returns the most recent CIPE which may be completed, in progress, or null. Use when you need to review CI status, check failures, or inspect CI state.
-
 ---
 
 # Get Latest CI Information
@@ -39,15 +36,15 @@ Task(
   description: "Fetch latest CI status",
   prompt: "Fetch the latest CI pipeline execution status. Do NOT use Bash for this.
 
-Use the mcp__nx-mcp__ci_information MCP tool (or mcp__plugin_nx_nx-mcp__ci_information) with these parameters:
-  select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
+    Use the ci_information tool from the nx MCP server with these parameters:
+      select: 'cipeStatus,cipeUrl,branch,commitSha,selfHealingStatus,verificationStatus,userAction,failedTaskIds,verifiedTaskIds,selfHealingEnabled,failureClassification,couldAutoApplyTasks,shortLink,confidence,confidenceReasoning,hints'
 
-Return ALL fields from the response as-is. Do not summarize or omit any fields.
+    Return ALL fields from the response as-is. Do not summarize or omit any fields.
 
-If cipeStatus is FAILED and selfHealingStatus is COMPLETED or FAILED and there are failedTaskIds, make a SECOND call to the same MCP tool with:
-  select: 'taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription'
+    If cipeStatus is FAILED and selfHealingStatus is COMPLETED or FAILED and there are failedTaskIds, make a SECOND call to the same tool with:
+      select: 'taskOutputSummary,suggestedFix,suggestedFixReasoning,suggestedFixDescription'
 
-Return those fields too. Only return the first page — do not paginate."
+    Return those fields too. Only return the first page — do not paginate."
 )
 ```
 

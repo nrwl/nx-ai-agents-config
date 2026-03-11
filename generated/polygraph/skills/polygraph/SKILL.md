@@ -2,7 +2,6 @@
 name: polygraph
 description: Guidance for coordinating changes across multiple repositories using Polygraph. When the request implies that some information from another repo has to be read, another repo has to be updated, or the user asks about what other repos are doing with shared code/APIs/endpoints, use this skill.
 ---
-
 # Multi-Repo Coordination with Polygraph
 
 **IMPORTANT:** NEVER `cd` into cloned repositories or access their files directly. ALWAYS use the `cloud_polygraph_delegate` tool to perform work in other repositories.
@@ -32,11 +31,6 @@ This skill applies when the user mentions:
 
 **CRITICAL:** These are **MCP tool function calls**, NOT CLI commands. You MUST invoke them as tool calls (the same way you call `Read`, `Edit`, `Bash`, etc.). Do NOT run them via Bash, `npx`, `nx`, or any CLI.
 
-The tools have one of two MCP prefixes. Try the first prefix, and if it fails, use the second:
-
-**Prefix 1:** `mcp__nx-mcp__`
-**Prefix 2:** `mcp__plugin_nx_nx-mcp__`
-
 | Tool Name (use with prefix above) | Description                                                                                                                                                                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `cloud_polygraph_candidates`      | Discover candidate workspaces with descriptions and graph relationships                                                                                                                                                                             |
@@ -59,10 +53,10 @@ These are MCP tool calls. Invoke them the same way you invoke `Read`, `Bash`, `G
 **Correct — MCP tool function call:**
 
 ```
-mcp__nx-mcp__cloud_polygraph_init()
-mcp__nx-mcp__cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
-mcp__nx-mcp__cloud_polygraph_child_status(sessionId: "...", target: "repo")
-mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
+cloud_polygraph_init()
+cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
+cloud_polygraph_child_status(sessionId: "...", target: "repo")
+cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 ```
 
 **WRONG — Do NOT do any of these:**
@@ -71,7 +65,7 @@ mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 # ❌ Do NOT run as a Bash/CLI command
 npx nx mcp cloud_polygraph_init
 nx run cloud_polygraph_init
-bash: mcp__nx-mcp__cloud_polygraph_init
+bash: cloud_polygraph_init
 ```
 
 **Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools (not wrapped in Task). `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
