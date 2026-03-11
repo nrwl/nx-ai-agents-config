@@ -2,6 +2,7 @@
 name: polygraph
 description: Guidance for coordinating changes across multiple repositories using Polygraph. When the request implies that some information from another repo has to be read, another repo has to be updated, or the user asks about what other repos are doing with shared code/APIs/endpoints, use this skill.
 ---
+
 # Multi-Repo Coordination with Polygraph
 
 **IMPORTANT:** NEVER `cd` into cloned repositories or access their files directly. ALWAYS use the `cloud_polygraph_delegate` tool to perform work in other repositories.
@@ -487,12 +488,13 @@ If the session has a `plan` or `agentSessionId`, also display:
 - AGENT_SESSION_ID: from `agentSessionId`
 
 ## Best Practices
+
 1. **Delegate asynchronously** — Use `cloud_polygraph_delegate` which returns immediately, then poll with `cloud_polygraph_child_status`.
 2. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
 3. **Link PRs in descriptions** - Reference related PRs in each PR body
 4. **Keep PRs as drafts** until all repos are ready
 5. **Test integration** before marking PRs ready
 6. **Coordinate merge order** if there are deployment dependencies
-8. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
-9. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
-10. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.
+7. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
+8. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
+9. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.

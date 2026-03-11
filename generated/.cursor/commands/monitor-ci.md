@@ -10,7 +10,6 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 
 ## User Instructions
 
-
 **Important:** If user provides specific instructions, respect them over default behaviors described below.
 
 ## Configuration Defaults
@@ -25,7 +24,6 @@ You are the orchestrator for monitoring Nx Cloud CI pipeline executions and hand
 | `--auto-fix-workflow`     | false         | Attempt common fixes for pre-CI-Attempt failures (e.g., lockfile updates) |
 | `--new-cipe-timeout`      | 10            | Minutes to wait for new CI Attempt after action                           |
 | `--local-verify-attempts` | 3             | Max local verification + enhance cycles before pushing to CI              |
-
 
 ## Nx Cloud Connection Check
 

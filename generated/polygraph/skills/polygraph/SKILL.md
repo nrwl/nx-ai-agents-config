@@ -2,6 +2,7 @@
 name: polygraph
 description: Guidance for coordinating changes across multiple repositories using Polygraph. When the request implies that some information from another repo has to be read, another repo has to be updated, or the user asks about what other repos are doing with shared code/APIs/endpoints, use this skill.
 ---
+
 # Multi-Repo Coordination with Polygraph
 
 **IMPORTANT:** NEVER `cd` into cloned repositories or access their files directly. ALWAYS use the `cloud_polygraph_delegate` tool to perform work in other repositories.

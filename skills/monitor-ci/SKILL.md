@@ -10,6 +10,7 @@ allowed-tools:
   - mcp__plugin_nx_nx-mcp__ci_information
   - mcp__plugin_nx_nx-mcp__update_self_healing_fix
 ---
+
 # Monitor CI Command
 
 You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You spawn subagents to interact with Nx Cloud, run deterministic decision scripts, and take action based on the results.

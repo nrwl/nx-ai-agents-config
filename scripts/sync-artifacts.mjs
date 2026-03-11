@@ -744,11 +744,8 @@ function runSync() {
   console.log('\n[polygraph:codex] Generating config...');
   writeCodexConfig(polygraphArtifactsDir, polygraphGeneratedDir);
 
-  console.log('\nRunning nx format on generated files....');
-  execSync(
-    'npx nx format --fix --files "generated/**/*,skills/**/*,agents/**/*,.mcp.json"',
-    { stdio: 'inherit' }
-  );
+  console.log('\nRunning nx format....');
+  execSync('npx nx format --fix', { stdio: 'inherit' });
 
   console.log('\nSync complete!');
 }

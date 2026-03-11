@@ -169,16 +169,20 @@ Determine select fields based on mode:
 
 - **Wait mode**: use WAIT_FIELDS (`cipeUrl,commitSha,cipeStatus`)
 - **Normal mode (first poll or after newCipeDetected)**: use LIGHT_FIELDS
-{%- if platform == "claude" %}
+  {%- if platform == "claude" %}
 
-{% raw %}```
+{% raw %}
+
+```
 Task(
   agent: "ci-monitor-subagent",
   model: haiku,
   prompt: "FETCH_STATUS for branch '<branch>'.
            select: '<fields>'"
 )
-```{% endraw %}
+```
+
+{% endraw %}
 
 The subagent calls `ci_information` and returns a JSON object with the requested fields. This is a **foreground** call — wait for the result.
 {%- else %}
@@ -237,7 +241,7 @@ When decision script returns `action == "done"`:
 5. Execute the appropriate action
 6. **If action expects new CI Attempt**, update tracking (see Step 3a)
 7. If action results in looping, go to Step 2
-{%- if platform == "claude" %}
+   {%- if platform == "claude" %}
 
 #### Spawning subagents for actions
 
