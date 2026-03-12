@@ -32,11 +32,6 @@ This skill applies when the user mentions:
 
 **CRITICAL:** These are **MCP tool function calls**, NOT CLI commands. You MUST invoke them as tool calls (the same way you call `Read`, `Edit`, `Bash`, etc.). Do NOT run them via Bash, `npx`, `nx`, or any CLI.
 
-The tools have one of two MCP prefixes. Try the first prefix, and if it fails, use the second:
-
-**Prefix 1:** `mcp__nx-mcp__`
-**Prefix 2:** `mcp__plugin_nx_nx-mcp__`
-
 | Tool Name (use with prefix above) | Description                                                                                                                                                                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `cloud_polygraph_candidates`      | Discover candidate workspaces with descriptions and graph relationships                                                                                                                                                                             |
@@ -59,10 +54,10 @@ These are MCP tool calls. Invoke them the same way you invoke `Read`, `Bash`, `G
 **Correct — MCP tool function call:**
 
 ```
-mcp__nx-mcp__cloud_polygraph_init()
-mcp__nx-mcp__cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
-mcp__nx-mcp__cloud_polygraph_child_status(sessionId: "...", target: "repo")
-mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
+cloud_polygraph_init()
+cloud_polygraph_delegate(sessionId: "...", target: "repo", instruction: "...")
+cloud_polygraph_child_status(sessionId: "...", target: "repo")
+cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 ```
 
 **WRONG — Do NOT do any of these:**
@@ -71,21 +66,21 @@ mcp__nx-mcp__cloud_polygraph_stop_child(sessionId: "...", target: "repo")
 # ❌ Do NOT run as a Bash/CLI command
 npx nx mcp cloud_polygraph_init
 nx run cloud_polygraph_init
-bash: mcp__nx-mcp__cloud_polygraph_init
+bash: cloud_polygraph_init
 ```
 
-**Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools (not wrapped in Task). `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
+**Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools. `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
 
 If the first prefix fails, retry with the second prefix:
 
 ```
-mcp__plugin_nx_nx-mcp__cloud_polygraph_init()
+cloud_polygraph_init()
 ```
 
 ## Workflow Overview
 
 0. **Initialize Polygraph session** - Launch the `polygraph-init-subagent` to discover candidate repos, select relevant workspaces, and initialize the session. The subagent returns a summary with session details.
-1. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
+1. **Delegate work to each repo** - Use the `polygraph-delegate-subagent` to start child agents in other repositories.
 2. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
 3. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
 4. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
@@ -558,12 +553,12 @@ If the session has a `plan` or `agentSessionId`, also display:
 ## Best Practices
 
 1. **Delegate via background subagents** — Use `Task(run_in_background: true)` for each repo delegation. This keeps polling noise out of the main conversation.
-2. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
-3. **Link PRs in descriptions** - Reference related PRs in each PR body
-4. **Keep PRs as drafts** until all repos are ready
-5. **Test integration** before marking PRs ready
-6. **Coordinate merge order** if there are deployment dependencies
-7. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
-8. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
-9. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
-10. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.
+1. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
+1. **Link PRs in descriptions** - Reference related PRs in each PR body
+1. **Keep PRs as drafts** until all repos are ready
+1. **Test integration** before marking PRs ready
+1. **Coordinate merge order** if there are deployment dependencies
+1. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
+1. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
+1. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
+1. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.

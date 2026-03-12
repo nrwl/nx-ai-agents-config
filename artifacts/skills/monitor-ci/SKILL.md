@@ -82,7 +82,10 @@ If the user previously ran `/monitor-ci` in this session, you may have prior sta
 
 ## MCP Tool Reference
 
+{%- if platform == "claude" %}
+
 The `ci_information` and `update_self_healing_fix` tools are called via the **ci-monitor-subagent**, not directly from the orchestrator. Calling MCP tools directly wastes main agent context with large response payloads. The field sets below are for composing subagent prompts (see Step 2a).
+{%- endif %}
 
 Three field sets control polling efficiency — use the lightest set that gives you what you need:
 
@@ -166,6 +169,9 @@ Determine select fields based on mode:
 
 - **Wait mode**: use WAIT_FIELDS (`cipeUrl,commitSha,cipeStatus`)
 - **Normal mode (first poll or after newCipeDetected)**: use LIGHT_FIELDS
+  {%- if platform == "claude" %}
+
+{% raw %}
 
 ```
 Task(
@@ -176,7 +182,13 @@ Task(
 )
 ```
 
+{% endraw %}
+
 The subagent calls `ci_information` and returns a JSON object with the requested fields. This is a **foreground** call — wait for the result.
+{%- else %}
+
+Call the `ci_information` tool with the determined `select` fields for the current branch. Wait for the result before proceeding.
+{%- endif %}
 
 #### 2b. Run decision script
 
@@ -229,6 +241,7 @@ When decision script returns `action == "done"`:
 5. Execute the appropriate action
 6. **If action expects new CI Attempt**, update tracking (see Step 3a)
 7. If action results in looping, go to Step 2
+   {%- if platform == "claude" %}
 
 #### Spawning subagents for actions
 
@@ -240,6 +253,19 @@ Several statuses require fetching heavy data or calling MCP:
 - **fix_failed / no_fix**: Spawn FETCH_HEAVY subagent → get `taskFailureSummaries` for local fix context
 - **environment_issue**: Spawn UPDATE_FIX subagent with `RERUN_ENVIRONMENT_STATE`
 - **self_healing_throttled**: Spawn FETCH_HEAVY subagent → get `selfHealingSkipMessage`; then FETCH_THROTTLE_INFO + UPDATE_FIX for each old fix
+  {%- else %}
+
+#### Tool calls for actions
+
+Several statuses require fetching additional data or calling tools:
+
+- **fix_apply_ready**: Call `update_self_healing_fix` with action `APPLY`
+- **fix_needs_local_verify**: Call `ci_information` with HEAVY_FIELDS for fix details before local verification
+- **fix_needs_review**: Call `ci_information` with HEAVY_FIELDS → get `suggestedFixDescription`, `suggestedFixSummary`, `taskFailureSummaries`
+- **fix_failed / no_fix**: Call `ci_information` with HEAVY_FIELDS → get `taskFailureSummaries` for local fix context
+- **environment_issue**: Call `update_self_healing_fix` with action `RERUN_ENVIRONMENT_STATE`
+- **self_healing_throttled**: Call `ci_information` with HEAVY_FIELDS → get `selfHealingSkipMessage`; then call `update_self_healing_fix` for each old fix
+  {%- endif %}
 
 ### Step 3a: Track State for New-CI-Attempt Detection
 

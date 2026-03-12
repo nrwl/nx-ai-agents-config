@@ -12,6 +12,7 @@ import { join, basename, dirname } from 'path';
 import { execSync } from 'child_process';
 import yaml from 'js-yaml';
 import * as TOML from 'smol-toml';
+import { Liquid } from 'liquidjs';
 
 const rootDir = join(import.meta.dirname, '..');
 const artifactsDir = join(rootDir, 'artifacts');
@@ -431,6 +432,43 @@ function writeGeminiSkill(destPath, content, meta) {
   writeFileSync(destPath, output);
 }
 
+// ============== Content Transformation ==============
+
+const liquid = new Liquid();
+
+/**
+ * Transform skill content for agent-specific output.
+ * Uses LiquidJS templating to render platform-specific content.
+ *
+ * Source content uses Liquid conditionals:
+ *   {%- if platform == "claude" %}...{%- else %}...{%- endif %}
+ *
+ * @param {string} content - The raw skill/agent content (Liquid template)
+ * @param {object} config - Platform config from createPlatformConfigs
+ */
+export function transformContent(content, platformKey) {
+  if (!platformKey) {
+    throw new Error('transformContent: platformKey is required');
+  }
+
+  let result;
+  try {
+    result = liquid.parseAndRenderSync(content, {
+      platform: platformKey,
+    });
+  } catch (err) {
+    throw new Error(
+      `Liquid template error (platform: ${platformKey}): ${err.message}`
+    );
+  }
+
+  if (platformKey !== 'claude') {
+    result = result.replace(/Claude Code/g, 'AI agent');
+  }
+  result = result.replace(/\n{3,}/g, '\n\n');
+  return result;
+}
+
 // ============== Utility Functions ==============
 
 /**
@@ -505,8 +543,9 @@ function processAgents(agentName, config, srcArtifactsDir) {
     const baseName = basename(file, '.md');
     const destPath = join(destDir, baseName + config.agentsExt);
 
-    const { content, meta } = readArtifact(srcPath);
+    const { content: rawContent, meta } = readArtifact(srcPath);
     validateAgentMeta(meta, srcPath);
+    const content = transformContent(rawContent, agentName);
     config.writeAgent(destPath, content, meta);
   }
 
@@ -537,8 +576,9 @@ function processSkills(agentName, config, srcArtifactsDir) {
     const srcSkillFile = join(srcDir, skillDir, 'SKILL.md');
     if (!existsSync(srcSkillFile)) continue;
 
-    const { content, meta } = readArtifact(srcSkillFile);
+    const { content: rawContent, meta } = readArtifact(srcSkillFile);
     validateSkillMeta(meta, srcSkillFile);
+    const content = transformContent(rawContent, agentName);
 
     // Skip monitor-ci for Codex (relies on subagent orchestration)
     if (agentName === 'codex' && meta.name === 'monitor-ci') {
@@ -740,9 +780,14 @@ function runCheck() {
   console.log('\nAll generated artifacts are up to date!');
 }
 
-// Run appropriate mode
-if (isCheckMode) {
-  runCheck();
-} else {
-  runSync();
+// Run appropriate mode (only when executed directly, not when imported)
+const isMainModule =
+  process.argv[1] &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+if (isMainModule) {
+  if (isCheckMode) {
+    runCheck();
+  } else {
+    runSync();
+  }
 }
