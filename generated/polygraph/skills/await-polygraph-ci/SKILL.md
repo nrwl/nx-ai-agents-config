@@ -24,11 +24,14 @@ Wait for all CI pipelines in a Polygraph session to reach a stable state (succee
 
 ## Phase 1: Session Discovery
 
-1. Get the current branch name: !`git branch --show-current`
-2. Use the branch name as the session ID. If on `main`, `master`, or `dev`, ask the user for an explicit session ID.
-3. Fetch session: `cloud_polygraph_get_session(sessionId: <session-id>)`
-4. Record `monitorStartedAt` = current timestamp (epoch millis).
-5. Build a tracking table of all repos with PRs. For each PR, record:
+1. Determine the session ID by checking local Polygraph state (session IDs are auto-generated, NOT branch names):
+   a. Check for `polygraph.json` in the current directory: !`cat polygraph.json 2>/dev/null`. If it exists and contains a `sessionId` field, use that value.
+   b. Otherwise, list existing sessions: !`ls .nx/polygraph/ 2>/dev/null`. If exactly one session directory exists, use its name as the session ID.
+   c. If multiple session directories exist, list them and ask the user to choose.
+   d. If no local session state is found, ask the user for an explicit session ID.
+2. Fetch session: `cloud_polygraph_get_session(sessionId: <session-id>)`
+3. Record `monitorStartedAt` = current timestamp (epoch millis).
+4. Build a tracking table of all repos with PRs. For each PR, record:
    - `repo`: repository name
    - `prUrl`: PR URL
    - `prStatus`: DRAFT / OPEN / MERGED / CLOSED
@@ -37,11 +40,11 @@ Wait for all CI pipelines in a Polygraph session to reach a stable state (succee
    - `cipeCompletedAt`: `completedAt` from session (epoch millis, null if CIPE is active or absent)
    - `selfHealingStatus`: self-healing fix status (null if none)
    - `firstSeenAt`: current timestamp
-6. If no PRs found, report "No PRs in session" and exit.
-7. **Stale detection**: For each PR, determine if its CI status is **stale** — meaning it reflects a previous run, not a current one. A PR's CI status is stale if:
+5. If no PRs found, report "No PRs in session" and exit.
+6. **Stale detection**: For each PR, determine if its CI status is **stale** — meaning it reflects a previous run, not a current one. A PR's CI status is stale if:
    - `cipeCompletedAt` is non-null AND `cipeCompletedAt < monitorStartedAt` (the CIPE finished before the monitor started)
    - Mark these PRs as `stale: true`
-8. Display the initial status table, annotating stale PRs:
+7. Display the initial status table, annotating stale PRs:
    ```
    backend: SUCCEEDED (stale) | frontend: SUCCEEDED (stale) | shared-lib: NOT_STARTED
    ```
