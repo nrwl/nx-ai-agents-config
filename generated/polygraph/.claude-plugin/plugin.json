@@ -1,6 +1,6 @@
 {
   "name": "polygraph",
-  "version": "0.2.25-pr.98",
+  "version": "0.2.25",
   "description": "Coordinate changes across multiple repositories using Polygraph. Delegate work to child agents, monitor CI across repos, and manage multi-repo sessions. Includes skills, subagents, and an MCP server.",
   "author": {
     "name": "Narwhal Technologies Inc",
