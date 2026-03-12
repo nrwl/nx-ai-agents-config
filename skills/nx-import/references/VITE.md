@@ -309,7 +309,7 @@ Do **not** remove React Router 7 scripts. They use the framework CLI (`react-rou
 
 ### Non-Nx Source (additional steps)
 
-0. Ensure `apps/*` is in workspace definition and `apps/` dir exists (see SKILL.md: "Directory Conventions"); import into `apps/<name>`
+0. Import into `apps/<name>` (see SKILL.md: "Application vs Library Detection")
 1. Generic fixes from SKILL.md (stale files cleanup, pnpm globs, rewritten scripts, target name prefixing, noEmit→composite, ESLint handling)
 2. Fix `noEmit` in **all** tsconfigs (app, node, etc. — non-Nx projects often have multiple)
 3. Add `extends` to solution-style tsconfigs so root settings apply
@@ -327,26 +327,24 @@ See SKILL.md for generic multi-import (name collisions, dep refs). Vite-specific
 ### Non-Nx Source: React Router 7
 
 1. Ensure source has at least one commit (see SKILL.md: "Source Repo Has No Commits")
-2. Ensure `apps/*` is in workspace definition and `apps/` dir exists (see SKILL.md: "Directory Conventions")
-3. `nx import` whole-repo into `apps/<name>` → auto-installs `@nx/vite`, `@nx/react`
-4. Stale file cleanup: `node_modules/`, `package-lock.json`, `.gitignore`
-5. Fix `tsconfig.json`: `noEmit` → `composite + emitDeclarationOnly + outDir + tsBuildInfoFile`
-6. Add `build` and `.react-router` to dest root `.gitignore`
-7. **Keep all npm scripts** — React Router 7 uses framework CLI (`react-router build/dev`), not plain vite (see "Redundant npm Scripts" above)
-8. `npm install && nx reset && nx sync --yes`
+2. `nx import` whole-repo into `apps/<name>` (see SKILL.md: "Application vs Library Detection") → auto-installs `@nx/vite`, `@nx/react`
+3. Stale file cleanup: `node_modules/`, `package-lock.json`, `.gitignore`
+4. Fix `tsconfig.json`: `noEmit` → `composite + emitDeclarationOnly + outDir + tsBuildInfoFile`
+5. Add `build` and `.react-router` to dest root `.gitignore`
+6. **Keep all npm scripts** — React Router 7 uses framework CLI (`react-router build/dev`), not plain vite (see "Redundant npm Scripts" above)
+7. `npm install && nx reset && nx sync --yes`
 
 ### Non-Nx Source: TanStack Start
 
 1. Ensure source has at least one commit — `create-tan-stack` does NOT auto-commit (see SKILL.md)
-2. Ensure `apps/*` is in workspace definition and `apps/` dir exists (see SKILL.md: "Directory Conventions")
-3. `nx import` whole-repo into `apps/<name>` → auto-installs `@nx/vite`, `@nx/vitest`
-4. Stale file cleanup: `node_modules/`, `package-lock.json`, `.gitignore`
-5. Fix `tsconfig.json`: `noEmit` → `composite + emitDeclarationOnly + outDir + tsBuildInfoFile`
-6. Keep `allowImportingTsExtensions` — compatible with `emitDeclarationOnly: true`
-7. Add `.vinxi`, `.tanstack`, `.nitro`, `.output` to dest root `.gitignore`
-8. Move hardcoded `--port` from `dev` script into `vite.config.ts` (`server: { port: N }`)
-9. Remove redundant npm scripts — `@nx/vite/plugin` infers `build`, `dev`, `preview`, `test` (see "Redundant npm Scripts" above)
-10. `npm install && nx reset && nx sync --yes`
+2. `nx import` whole-repo into `apps/<name>` (see SKILL.md: "Application vs Library Detection") → auto-installs `@nx/vite`, `@nx/vitest`
+3. Stale file cleanup: `node_modules/`, `package-lock.json`, `.gitignore`
+4. Fix `tsconfig.json`: `noEmit` → `composite + emitDeclarationOnly + outDir + tsBuildInfoFile`
+5. Keep `allowImportingTsExtensions` — compatible with `emitDeclarationOnly: true`
+6. Add `.vinxi`, `.tanstack`, `.nitro`, `.output` to dest root `.gitignore`
+7. Move hardcoded `--port` from `dev` script into `vite.config.ts` (`server: { port: N }`)
+8. Remove redundant npm scripts — `@nx/vite/plugin` infers `build`, `dev`, `preview`, `test` (see "Redundant npm Scripts" above)
+9. `npm install && nx reset && nx sync --yes`
 
 ### Quick Reference: React vs Vue
 

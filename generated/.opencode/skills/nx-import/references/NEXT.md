@@ -141,7 +141,7 @@ No naming conflicts between frameworks.
 
 ## Fix Order — Nx Source (Subdirectory Import)
 
-1. Ensure `apps/*` is in workspace definition and `apps/` dir exists (see SKILL.md: "Directory Conventions"); import Next.js apps into `apps/<name>`
+1. Import Next.js apps into `apps/<name>` (see SKILL.md: "Application vs Library Detection")
 2. Generic fixes from SKILL.md (pnpm globs, root deps, `.gitkeep` removal, frontend tsconfig base settings, `@nx/react` typings)
 3. Install Next.js-specific deps: `pnpm add -wD @next/eslint-plugin-next`
 4. ESLint setup (see SKILL.md: "Root ESLint Config Missing")
@@ -150,7 +150,7 @@ No naming conflicts between frameworks.
 
 ## Fix Order — Non-Nx Source (create-next-app)
 
-1. Ensure `apps/*` is in workspace definition and `apps/` dir exists (see SKILL.md: "Directory Conventions"); import into `apps/<name>`
+1. Import into `apps/<name>` (see SKILL.md: "Application vs Library Detection")
 2. Generic fixes from SKILL.md (pnpm globs, stale files cleanup, script rewriting, target name prefixing)
 3. (Optional) If app needs to export types for other workspace projects: fix `noEmit` → `composite` (see SKILL.md)
 4. `nx reset && nx run-many -t next:build,eslint:lint` (or unprefixed names if renamed)

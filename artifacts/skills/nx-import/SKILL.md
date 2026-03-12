@@ -32,6 +32,25 @@ Read the nx docs if you have the tools for it.
 - **Always prefer the destination's existing conventions.** Source uses `libs/`but dest uses `packages/`? Import into `packages/` (`nx import <source> packages/foo --source=libs/foo`).
 - If dest has no convention (empty workspace), ask the user.
 
+### Application vs Library Detection
+
+Before importing, identify whether the source is an **application** or a **library**:
+
+- **Applications**: Deployable end products. Common indicators:
+  - _Frontend_: `next.config.*`, `vite.config.*` with a build entry point, framework-specific app scaffolding (CRA, Angular CLI app, etc.)
+  - _Backend (Node.js)_: Express/Fastify/NestJS server entrypoint, no `"exports"` field in `package.json`
+  - _JVM_: Maven `pom.xml` with `<packaging>jar</packaging>` or `<packaging>war</packaging>` and a `main` class; Gradle `application` plugin or `mainClass` setting
+  - _.NET_: `.csproj`/`.fsproj` with `<OutputType>Exe</OutputType>` or `<OutputType>WinExe</OutputType>`
+  - _General_: Dockerfile, a runnable entrypoint, no public API surface intended for import by other projects
+- **Libraries**: Reusable packages consumed by other projects. Common indicators: `"main"`/`"exports"` in `package.json`, Maven/Gradle packaging as a library jar, .NET `<OutputType>Library</OutputType>`, named exports intended for import by other packages.
+
+**Destination directory rules**:
+
+- Applications → `apps/<name>`. Check workspace globs (e.g. `pnpm-workspace.yaml`, `workspaces` in root `package.json`) for an existing `apps/*` entry.
+  - If `apps/*` is **not** present, add it before importing: update the workspace glob config and commit (or stage) the change.
+  - Example: `nx import <source> apps/my-app --source=packages/my-app`
+- Libraries → follow the dest's existing convention (`packages/`, `libs/`, etc.).
+
 ## Common Issues
 
 ### pnpm Workspace Globs (Critical)
