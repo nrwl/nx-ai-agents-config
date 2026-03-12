@@ -77,16 +77,16 @@ cloud_polygraph_init()
 
 ## Workflow Overview
 
-0. **Initialize Polygraph session** - Discover candidate repos, select relevant workspaces, and initialize the session via `cloud_polygraph_candidates` and `cloud_polygraph_init`.
-1. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
-2. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
-3. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
-4. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
-5. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Both `plan` and `agentSessionId` are required.
-6. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
-7. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
-8. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
-9. **Complete session** - Use `cloud_polygraph_modify_session` with `complete: true` to mark the session as completed when the user requests it.
+2. **Initialize Polygraph session** - Discover candidate repos, select relevant workspaces, and initialize the session via `cloud_polygraph_candidates` and `cloud_polygraph_init`.
+3. **Delegate work to each repo** - Use `cloud_polygraph_delegate` to start child agents in other repositories (returns immediately).
+4. **Monitor child agents** - Use `cloud_polygraph_child_status` to poll progress and get output from child agents.
+5. **Stop child agents** (if needed) - Use `cloud_polygraph_stop_child` to cancel an in-progress child agent.
+6. **Push branches** - Use `cloud_polygraph_push_branch` after making commits.
+7. **Create draft PRs** - Use `cloud_polygraph_create_prs` to create linked draft PRs. Both `plan` and `agentSessionId` are required.
+8. **Associate existing PRs** (optional) - Use `cloud_polygraph_associate_pr` to link PRs created outside Polygraph.
+9. **Query PR status** - Use `cloud_polygraph_get_session` to check progress.
+10. **Mark PRs ready** - Use `cloud_polygraph_mark_ready` when work is complete.
+11. **Complete session** - Use `cloud_polygraph_modify_session` with `complete: true` to mark the session as completed when the user requests it.
 
 ## Step-by-Step Guide
 
@@ -490,11 +490,11 @@ If the session has a `plan` or `agentSessionId`, also display:
 ## Best Practices
 
 1. **Delegate asynchronously** — Use `cloud_polygraph_delegate` which returns immediately, then poll with `cloud_polygraph_child_status`.
-2. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
-3. **Link PRs in descriptions** - Reference related PRs in each PR body
-4. **Keep PRs as drafts** until all repos are ready
-5. **Test integration** before marking PRs ready
-6. **Coordinate merge order** if there are deployment dependencies
-7. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
-8. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
-9. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.
+1. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
+1. **Link PRs in descriptions** - Reference related PRs in each PR body
+1. **Keep PRs as drafts** until all repos are ready
+1. **Test integration** before marking PRs ready
+1. **Coordinate merge order** if there are deployment dependencies
+1. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
+1. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later.
+1. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.
