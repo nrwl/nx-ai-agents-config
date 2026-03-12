@@ -69,7 +69,7 @@ nx run cloud_polygraph_init
 bash: cloud_polygraph_init
 ```
 
-**Note:** `cloud_polygraph_candidates` and `cloud_polygraph_init` should be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools. `cloud_polygraph_delegate` and `cloud_polygraph_child_status` should be called via the `polygraph-delegate-subagent` as described in step 1.
+**CRITICAL — Delegation rules:** `cloud_polygraph_candidates` and `cloud_polygraph_init` MUST be called via the `polygraph-init-subagent` as described in step 0. `cloud_polygraph_get_session`, `cloud_polygraph_push_branch`, `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, `cloud_polygraph_associate_pr`, and `cloud_polygraph_modify_session` should be called directly as MCP tools. `cloud_polygraph_delegate` and `cloud_polygraph_child_status` MUST ALWAYS be called via background Task subagents (`run_in_background: true`) as described in step 1 — NEVER call them directly in the main conversation.
 
 If the first prefix fails, retry with the second prefix:
 
@@ -141,6 +141,8 @@ The subagent will:
 
 ### 1. Delegate Work to Each Repository
 
+**CRITICAL:** `cloud_polygraph_delegate` and `cloud_polygraph_child_status` MUST ALWAYS be called via background Task subagents (`run_in_background: true`), NEVER directly from the main conversation. Direct calls flood the context window with polling noise and degrade the user experience. This is a hard requirement, not a suggestion.
+
 To delegate work to another repository, use the `Task` tool with `run_in_background: true` to launch a **background subagent** that handles the entire delegate-and-poll cycle. This keeps the noisy polling output hidden from the user — they only see a clean summary when the work completes.
 
 **How it works:**
@@ -183,7 +185,7 @@ Read(output_file_from_task_1)
 Read(output_file_from_task_2)
 ```
 
-ALWAYS USE background Task subagents for delegation. Don't call `cloud_polygraph_delegate` or `cloud_polygraph_child_status` directly in the main conversation.
+You MUST ALWAYS use background Task subagents for delegation. NEVER call `cloud_polygraph_delegate` or `cloud_polygraph_child_status` directly in the main conversation — doing so floods the context window with polling output.
 
 ### 1a. Check on Background Subagents
 
@@ -199,7 +201,7 @@ Or use Bash to see recent output:
 Bash("tail -50 <output_file_path>")
 ```
 
-If you need to check the raw child agent status directly (e.g., for debugging), you can call `cloud_polygraph_child_status` as an MCP tool:
+In rare cases where you need to check the raw child agent status directly (e.g., debugging a stuck subagent), you may call `cloud_polygraph_child_status` as a one-off MCP tool call. Do NOT use this for regular polling — that MUST happen in background subagents:
 
 ```
 cloud_polygraph_child_status(sessionId: "<session-id>", target: "org/repo-name", tail: 5)
@@ -552,13 +554,13 @@ If the session has a `plan` or `agentSessionId`, also display:
 
 ## Best Practices
 
-1. **Delegate via background subagents** — Use `Task(run_in_background: true)` for each repo delegation. This keeps polling noise out of the main conversation.
+1. **MUST delegate via background subagents** — You MUST use `Task(run_in_background: true)` for every `cloud_polygraph_delegate` and `cloud_polygraph_child_status` call. NEVER call these directly in the main conversation — it floods the context window with polling noise.
 1. **Poll child status before proceeding** — Always verify child agents have completed via `cloud_polygraph_child_status` before pushing branches or creating PRs
 1. **Link PRs in descriptions** - Reference related PRs in each PR body
 1. **Keep PRs as drafts** until all repos are ready
 1. **Test integration** before marking PRs ready
 1. **Coordinate merge order** if there are deployment dependencies
-1. **Always delegate via background Task subagents**. Never call `cloud_polygraph_delegate` directly in the main conversation.
+1. **NEVER call `cloud_polygraph_delegate` or `cloud_polygraph_child_status` directly**. These MUST ALWAYS go through background Task subagents (`run_in_background: true`).
 1. **Use `cloud_polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
 1. **Always provide `plan` and `agentSessionId`** — These are required on `cloud_polygraph_create_prs`, `cloud_polygraph_mark_ready`, and `cloud_polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
 1. **Only complete sessions when asked** — Only call `cloud_polygraph_modify_session` with `complete: true` when the user explicitly requests it. Completing a session closes all open/draft PRs and seals the session. Do not automatically complete sessions.
