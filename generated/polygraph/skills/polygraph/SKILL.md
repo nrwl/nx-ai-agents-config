@@ -104,11 +104,9 @@ The `cloud_polygraph_init` tool automatically generates a unique session ID. You
 
 ```
 Task(
-  subagent_type: "general-purpose",
+  subagent_type: "polygraph-init-subagent",
   description: "Init Polygraph session",
   prompt: """
-    You are a Polygraph init subagent. Follow the instructions in the polygraph-init-subagent agent definition.
-
     Parameters:
     - userContext: "<description of what the user wants to do>"
 
@@ -156,12 +154,10 @@ To delegate work to another repository, use the `Task` tool with `run_in_backgro
 
 ```
 Task(
-  subagent_type: "general-purpose",
+  subagent_type: "polygraph-delegate-subagent",
   run_in_background: true,
   description: "Delegate to <repo-name>",
   prompt: """
-    You are a Polygraph delegate subagent. Follow the instructions in the polygraph-delegate-subagent agent definition.
-
     Parameters:
     - sessionId: "<session-id>"
     - target: "<org/repo-name>"
