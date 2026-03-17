@@ -23,10 +23,10 @@ The main agent provides these parameters in the prompt:
 
 ### Step 1: Delegate Work
 
-Call the `cloud_polygraph_delegate` tool to start a child agent in the target repository:
+Call the `polygraph_delegate` tool to start a child agent in the target repository:
 
 ```
-cloud_polygraph_delegate(
+polygraph_delegate(
   sessionId: "<sessionId>",
   target: "<target>",
   instruction: "<instruction>",
@@ -38,10 +38,10 @@ This returns immediately — the child agent runs asynchronously.
 
 ### Step 2: Poll for Completion
 
-Poll `cloud_polygraph_child_status` with exponential backoff until the child agent completes:
+Poll `polygraph_child_status` with exponential backoff until the child agent completes:
 
 ```
-cloud_polygraph_child_status(
+polygraph_child_status(
   sessionId: "<sessionId>",
   target: "<target>",
   tail: 5
@@ -61,7 +61,7 @@ Use `sleep` in Bash between polls. Always run sleep in the **foreground** (never
 
 ### Step 3: Parse Status from NDJSON Logs
 
-The `cloud_polygraph_child_status` response contains NDJSON log entries. Parse the last entry to determine status:
+The `polygraph_child_status` response contains NDJSON log entries. Parse the last entry to determine status:
 
 | Condition                                                | Status      |
 | -------------------------------------------------------- | ----------- |
@@ -99,15 +99,15 @@ If polling exceeds **30 minutes**, return with a timeout status:
 **Elapsed:** <minutes>m
 
 ### Suggestions
-- Check child agent status manually via `cloud_polygraph_child_status`
-- Consider stopping the child agent via `cloud_polygraph_stop_child`
+- Check child agent status manually via `polygraph_child_status`
+- Consider stopping the child agent via `polygraph_stop_child`
 ```
 
 ## Important Notes
 
 - You run in the background — write clear status lines so the main agent can parse your output file
 - Do NOT make decisions about the work — only delegate and monitor
-- Do NOT call `cloud_polygraph_push_branch` or `cloud_polygraph_create_prs` — those are the main agent's responsibility
-- If `cloud_polygraph_delegate` fails, return the error immediately
-- If `cloud_polygraph_child_status` returns an error, wait and retry (count as failed poll)
+- Do NOT call `polygraph_push_branch` or `polygraph_create_prs` — those are the main agent's responsibility
+- If `polygraph_delegate` fails, return the error immediately
+- If `polygraph_child_status` returns an error, wait and retry (count as failed poll)
 - After 5 consecutive poll failures, return with `status: error`

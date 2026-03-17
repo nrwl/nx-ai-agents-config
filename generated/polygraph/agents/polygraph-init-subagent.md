@@ -3,9 +3,9 @@ name: polygraph-init-subagent
 description: Discovers candidate repositories and initializes a Polygraph session. Returns a structured summary of the session with repos, workspace IDs, and session URL.
 model: haiku
 allowed-tools:
-  - cloud_polygraph_candidates
-  - cloud_polygraph_init
-  - cloud_polygraph_get_session
+  - polygraph_candidates
+  - polygraph_init
+  - polygraph_get_session
 ---
 
 # Polygraph Init Subagent
@@ -26,10 +26,10 @@ The main agent provides these parameters in the prompt:
 
 ### Step 1: Discover Candidate Repos
 
-Call the `cloud_polygraph_candidates` tool to discover available workspaces:
+Call the `polygraph_candidates` tool to discover available workspaces:
 
 ```
-cloud_polygraph_candidates()
+polygraph_candidates()
 ```
 
 This returns:
@@ -59,24 +59,24 @@ Otherwise, analyze the candidates using the `userContext` to determine which rep
 
 ### Step 3: Initialize Polygraph Session
 
-Call the `cloud_polygraph_init` tool:
+Call the `polygraph_init` tool:
 
 ```
-cloud_polygraph_init(selectedWorkspaceIds: [...])
+polygraph_init(selectedWorkspaceIds: [...])
 ```
 
 If no repos were filtered (all candidates included), omit `selectedWorkspaceIds`:
 
 ```
-cloud_polygraph_init()
+polygraph_init()
 ```
 
 ### Step 4: Get Session Details
 
-Call `cloud_polygraph_get_session` to retrieve full session information:
+Call `polygraph_get_session` to retrieve full session information:
 
 ```
-cloud_polygraph_get_session(sessionId: "<sessionId>")
+polygraph_get_session(sessionId: "<sessionId>")
 ```
 
 ### Step 5: Return Summary
@@ -109,6 +109,6 @@ Return a structured summary in this format:
 ## Important Notes
 
 - Do NOT delegate work to repos — that is the main agent's responsibility
-- Do NOT call `cloud_polygraph_delegate` — only initialize the session
-- If `cloud_polygraph_init` fails, return the error details so the main agent can handle it
-- Always call `cloud_polygraph_get_session` after init to get the session URL
+- Do NOT call `polygraph_delegate` — only initialize the session
+- If `polygraph_init` fails, return the error details so the main agent can handle it
+- Always call `polygraph_get_session` after init to get the session URL
