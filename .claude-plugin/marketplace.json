@@ -1,5 +1,6 @@
 {
   "name": "nx-claude-plugins",
+  "description": "Official Nx plugins for Claude Code.",
   "owner": {
     "name": "Nx",
     "email": "hello@nrwl.io"
