@@ -67,31 +67,33 @@ function createPlatformConfigs(outputDir, genDir) {
     },
     cursor: {
       outputDir: join(genDir, '.cursor'),
+      skillsOutputDir: join(genDir, '.agents'), // Share .agents/skills with Codex
       agentsDir: 'agents',
       agentsExt: '.md',
-      commandsDir: 'commands',
-      commandsExt: '.md',
+      commandsDir: null, // Skills are automatically commands in Cursor
+      commandsExt: null,
       skillsDir: 'skills',
       skillsFile: 'SKILL.md',
       supportsAgents: true,
       argumentsPlaceholder: null, // strip entirely
       writeAgent: writeCursorAgent,
-      writeCommand: writeCursorCommand,
+      writeCommand: null,
       writeSkill: writeBasicSkill,
     },
     gemini: {
       outputDir: join(genDir, '.gemini'),
+      skillsOutputDir: join(genDir, '.agents'), // Share .agents/skills with Codex
       agentsDir: null, // Gemini doesn't support agents
       agentsExt: null,
       commandsDir: 'commands',
       commandsExt: '.toml',
       skillsDir: 'skills',
-      skillsFile: 'skill.md', // Lowercase for Gemini
+      skillsFile: 'SKILL.md',
       supportsAgents: false,
       argumentsPlaceholder: '{{args}}',
       writeAgent: null,
       writeCommand: writeGeminiCommand,
-      writeSkill: writeGeminiSkill,
+      writeSkill: writeBasicSkill,
     },
     codex: {
       outputDir: join(genDir, '.agents'),
@@ -580,13 +582,9 @@ function processSkills(agentName, config, srcArtifactsDir) {
     validateSkillMeta(meta, srcSkillFile);
     const content = transformContent(rawContent, agentName);
 
-    // Skip monitor-ci for Codex (relies on subagent orchestration)
-    if (agentName === 'codex' && meta.name === 'monitor-ci') {
-      continue;
-    }
-
     // Always write as skill
-    const destDir = join(config.outputDir, config.skillsDir);
+    const skillBaseDir = config.skillsOutputDir || config.outputDir;
+    const destDir = join(skillBaseDir, config.skillsDir);
     const destSkillDir = join(destDir, skillDir);
     mkdirSync(destSkillDir, { recursive: true });
     const destSkillFile = join(destSkillDir, config.skillsFile);
