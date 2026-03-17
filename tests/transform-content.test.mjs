@@ -208,7 +208,7 @@ describe('transformContent', () => {
     });
 
     it('preserves mcp__nx-mcp__ prefix unchanged', () => {
-      const content = 'Call mcp__nx-mcp__cloud_polygraph_init()';
+      const content = 'Call mcp__nx-mcp__polygraph_init()';
       const result = transformContent(content, configs.opencode);
       expect(result).toBe(content);
     });

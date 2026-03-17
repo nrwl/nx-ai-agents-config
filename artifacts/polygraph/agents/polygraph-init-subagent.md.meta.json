@@ -3,8 +3,8 @@
   "description": "Discovers candidate repositories and initializes a Polygraph session. Returns a structured summary of the session with repos, workspace IDs, and session URL.",
   "model": "haiku",
   "allowed-tools": [
-    "cloud_polygraph_candidates",
-    "cloud_polygraph_init",
-    "cloud_polygraph_get_session"
+    "polygraph_candidates",
+    "polygraph_init",
+    "polygraph_get_session"
   ]
 }
