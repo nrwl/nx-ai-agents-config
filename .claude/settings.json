@@ -1,6 +1,7 @@
 {
   "enabledPlugins": {
     "nx@nx-claude-plugins": true,
+    "polygraph@nx-claude-plugins": true,
     "code-simplifier@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
