@@ -105,14 +105,32 @@ describe('guards', () => {
     expect(result.action).toBe('done');
   });
 
-  it('circuit_breaker when noProgressCount >= 5', async () => {
-    // noProgressCount starts at inputNoProgressCount+1 when no state change
+  it('circuit_breaker when noProgressCount >= 5 and stagnation >= 20 min', async () => {
     const result = await runScript(ci(), 0, 'medium', [
       '--no-progress-count',
       '4',
+      '--no-progress-since',
+      String(Date.now() - 21 * 60 * 1000),
     ]);
-    // 4+1=5 >= 5
+    // 4+1=5 >= 5, and 21 min > 20 min threshold
     expect(result.code).toBe('circuit_breaker');
+    expect(result.action).toBe('done');
+  });
+
+  it('no circuit_breaker when noProgressCount >= 5 but stagnation < 20 min', async () => {
+    const result = await runScript(
+      ci({ selfHealingEnabled: false, failedTaskIds: ['proj:build'] }),
+      0,
+      'medium',
+      [
+        '--no-progress-count',
+        '4',
+        '--no-progress-since',
+        String(Date.now() - 5 * 60 * 1000),
+      ]
+    );
+    // 4+1=5 >= 5, but only 5 min < 20 min threshold — falls through to no_fix
+    expect(result.code).toBe('no_fix');
     expect(result.action).toBe('done');
   });
 });

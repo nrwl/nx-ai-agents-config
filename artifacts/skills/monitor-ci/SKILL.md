@@ -111,7 +111,7 @@ The decision script returns one of the following statuses. This table defines th
 | `cipe_canceled`         | Exit, CI was canceled                                                                                            |
 | `cipe_timed_out`        | Exit, CI timed out                                                                                               |
 | `polling_timeout`       | Exit, polling timeout reached                                                                                    |
-| `circuit_breaker`       | Exit, no progress after 5 consecutive polls                                                                      |
+| `circuit_breaker`       | Exit, no progress for 20+ minutes across 5+ consecutive polls                                                    |
 | `environment_rerun_cap` | Exit, environment reruns exhausted                                                                               |
 | `fix_auto_applying`     | Self-healing is handling it — just record `last_cipe_url`, enter wait mode. No MCP call or local git ops needed. |
 | `error`                 | Wait 60s and loop                                                                                                |
@@ -145,6 +145,7 @@ The decision script returns one of the following statuses. This table defines th
 cycle_count = 0            # Only incremented for agent-initiated cycles (counted against --max-cycles)
 start_time = now()
 no_progress_count = 0
+no_progress_since = 0
 local_verify_count = 0
 env_rerun_count = 0
 last_cipe_url = null
@@ -202,6 +203,7 @@ node <skill_dir>/scripts/ci-poll-decide.mjs '<subagent_result_json>' <poll_count
   [--new-cipe-timeout <new_cipe_timeout_seconds>] \
   [--env-rerun-count <env_rerun_count>] \
   [--no-progress-count <no_progress_count>] \
+  [--no-progress-since <no_progress_since>] \
   [--prev-cipe-status <prev_cipe_status>] \
   [--prev-sh-status <prev_sh_status>] \
   [--prev-verification-status <prev_verification_status>] \
@@ -215,6 +217,7 @@ The script outputs a single JSON line: `{ action, code, message, delay?, noProgr
 Parse the JSON output and update tracking state:
 
 - `no_progress_count = output.noProgressCount`
+- `no_progress_since = output.noProgressSince`
 - `env_rerun_count = output.envRerunCount`
 - `prev_cipe_status = subagent_result.cipeStatus`
 - `prev_sh_status = subagent_result.selfHealingStatus`
