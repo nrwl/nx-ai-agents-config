@@ -14,7 +14,7 @@
  *   node ci-poll-decide.mjs '<ci_info_json>' <poll_count> <verbosity> \
  *     [--wait-mode] [--prev-cipe-url <url>] [--expected-sha <sha>] \
  *     [--prev-status <status>] [--timeout <seconds>] [--new-cipe-timeout <seconds>] \
- *     [--env-rerun-count <n>] [--no-progress-count <n>] \
+ *     [--env-rerun-count <n>] [--no-progress-count <n>] [--no-progress-since <ms>] \
  *     [--prev-cipe-status <status>] [--prev-sh-status <status>] \
  *     [--prev-verification-status <status>] [--prev-failure-classification <status>]
  */
@@ -43,6 +43,7 @@ const timeoutSeconds = parseInt(getArg('--timeout') || '0', 10);
 const newCipeTimeoutSeconds = parseInt(getArg('--new-cipe-timeout') || '0', 10);
 const envRerunCount = parseInt(getArg('--env-rerun-count') || '0', 10);
 const inputNoProgressCount = parseInt(getArg('--no-progress-count') || '0', 10);
+const inputNoProgressSince = parseInt(getArg('--no-progress-since') || '0', 10);
 const prevCipeStatus = getArg('--prev-cipe-status');
 const prevShStatus = getArg('--prev-sh-status');
 const prevVerificationStatus = getArg('--prev-verification-status');
@@ -84,6 +85,9 @@ const {
 } = ci;
 
 const failureClassification = rawFailureClassification?.toLowerCase() ?? null;
+
+// 20 minutes minimum before circuit breaker breaks
+const MIN_STAGNATION_MS = 20 * 60 * 1000;
 
 // --- Helpers ---
 
@@ -185,7 +189,12 @@ function classify() {
 
   // --- Guards ---
   if (isTimedOut()) return { action: 'done', code: 'polling_timeout' };
-  if (noProgressCount >= 5) return { action: 'done', code: 'circuit_breaker' };
+  if (
+    noProgressCount >= 5 &&
+    noProgressSince > 0 &&
+    Date.now() - noProgressSince >= MIN_STAGNATION_MS
+  )
+    return { action: 'done', code: 'circuit_breaker' };
 
   // --- Terminal CI states ---
   if (cipeStatus === 'SUCCEEDED') return { action: 'done', code: 'ci_success' };
@@ -300,7 +309,8 @@ const messages = {
 
   // guards
   polling_timeout: () => 'Polling timeout exceeded.',
-  circuit_breaker: () => 'No progress after 5 consecutive polls. Stopping.',
+  circuit_breaker: () =>
+    'No progress for 20+ minutes across 5+ consecutive polls. Stopping.',
 
   // terminal
   ci_success: () => 'CI passed successfully!',
@@ -393,6 +403,7 @@ function buildOutput(decision) {
     code,
     message,
     noProgressCount: resetProgressCodes.has(code) ? 0 : noProgressCount,
+    noProgressSince,
     envRerunCount,
   };
 
@@ -423,6 +434,15 @@ const noProgressCount = (() => {
   if (waitMode) return isNewCipe() ? 0 : inputNoProgressCount;
   if (isNewCipe() || hasStateChanged()) return 0;
   return inputNoProgressCount + 1;
+})();
+
+// Compute noProgressSince: timestamp (epoch ms) when the no-progress streak began.
+// Reset on progress; set to now on streak start; preserved while streak continues.
+const noProgressSince = (() => {
+  if (waitMode) return isNewCipe() ? 0 : inputNoProgressSince;
+  if (isNewCipe() || hasStateChanged()) return 0;
+  if (inputNoProgressCount === 0) return Date.now();
+  return inputNoProgressSince;
 })();
 
 buildOutput(classify());
