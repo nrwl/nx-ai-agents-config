@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__.*polygraph_delegate|mcp__.*polygraph_child_status",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/remind-subagents.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}
