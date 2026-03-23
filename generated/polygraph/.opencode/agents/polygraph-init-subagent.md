@@ -29,14 +29,14 @@ polygraph_candidates()
 
 This returns:
 
-- **`initiator`**: The current workspace
+- **`initiator`**: The current workspace, or `null` if not running from a specific repo
 - **`candidates`**: All organization workspaces, each with:
   - `id`: Workspace ID
   - `name`: Workspace name
   - `description`: AI-generated description of what the workspace does (may be null)
   - `vcsConfiguration.repositoryFullName`: Full repo name (e.g., `org/repo`)
-  - `graphRelationship`: How this workspace relates to the initiator (`distance`, `direction`, `path`), or `null` if the workspace is not in the dependency graph
-- **`dependencyGraph`**: Graph of workspace dependency `edges`
+  - `graphRelationship`: How this workspace relates to the initiator (`distance`, `direction`, `path`), or `null` if the workspace is not in the dependency graph. When `initiator` is null, `graphRelationship` will be null for all candidates.
+- **`dependencyGraph`**: Graph of workspace dependency `edges` (always available, independent of initiator)
 
 ### Step 2: Select Relevant Repos
 
@@ -48,6 +48,7 @@ Otherwise, analyze the candidates using the `userContext` to determine which rep
 2. Match against the `userContext` — consider:
    - Workspace descriptions that mention relevant functionality
    - Graph relationships (closer repos are more likely relevant); note that `graphRelationship` may be `null` for workspaces not in the dependency graph — use their `description` to assess relevance
+   - When `graphRelationship` is null for all candidates (no initiator), rely on `description` fields and the raw `dependencyGraph` edges for selection instead
    - Direction (upstream/downstream based on the nature of the change)
 3. Select only the repos that are clearly relevant to the task
 4. If uncertain which repos are relevant, include all candidates (safe default)
@@ -97,6 +98,7 @@ Return a structured summary in this format:
 | REPO_FULL_NAME | WORKSPACE_ID | DESCRIPTION | Yes/No |
 
 ### Initiator
+(Only include this section if `initiator` is non-null in the candidates response)
 - **Name:** <initiator name>
 - **Repo:** <initiator repo full name>
 ```

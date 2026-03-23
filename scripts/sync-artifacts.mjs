@@ -488,7 +488,7 @@ function recreateDir(dir) {
  * Removes generated dirs/files but preserves marketplace.json and plugin.json.
  */
 function cleanClaudeOutput(outputDir) {
-  for (const dir of ['skills', 'agents']) {
+  for (const dir of ['skills', 'agents', 'hooks']) {
     const p = join(outputDir, dir);
     if (existsSync(p)) rmSync(p, { recursive: true });
   }
@@ -516,6 +516,14 @@ function copyClaudePluginConfigs(srcArtifactsDir, outputDir) {
   if (existsSync(claudePluginSrc)) {
     cpSync(claudePluginSrc, claudePluginDest, { recursive: true });
     console.log('  Copied .claude-plugin/');
+  }
+
+  // Copy hooks/ directory (convention-based hook discovery)
+  const hooksSrc = join(claudeConfigDir, 'hooks');
+  const hooksDest = join(outputDir, 'hooks');
+  if (existsSync(hooksSrc)) {
+    cpSync(hooksSrc, hooksDest, { recursive: true });
+    console.log('  Copied hooks/');
   }
 }
 
