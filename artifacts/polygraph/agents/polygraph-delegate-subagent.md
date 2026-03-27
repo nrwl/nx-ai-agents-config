@@ -8,12 +8,12 @@ You run in the background. The main agent checks your output file for progress.
 
 The main agent provides these parameters in the prompt:
 
-| Parameter     | Description                                              |
-| ------------- | -------------------------------------------------------- |
-| `sessionId`   | The Polygraph session ID                                 |
-| `target`      | Repository to delegate to (e.g., `org/repo-name`)        |
-| `instruction` | The task instruction for the child agent                 |
-| `context`     | (Optional) Additional context to pass to the child agent |
+| Parameter     | Description                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| `sessionId`   | The Polygraph session ID                                                                                |
+| `target`      | Repository to delegate to (e.g., `org/repo-name`)                                                       |
+| `instruction` | The task instruction for the child agent                                                                |
+| `context`     | (Optional) Additional context to pass to the child agent                                                |
 | `taskId`      | (Optional) Task ID from a prior delegate call — pass this to send a follow-up message to an active task |
 
 ## Workflow
@@ -45,7 +45,11 @@ polygraph_delegate(
 **Response format:**
 
 ```json
-{ "taskId": "task-1234-abc", "message": "Child agent started work on...", "status": "delegated" }
+{
+  "taskId": "task-1234-abc",
+  "message": "Child agent started work on...",
+  "status": "delegated"
+}
 ```
 
 Store the `taskId` from the response — you will need it to track the child's progress and send follow-up messages.
@@ -95,14 +99,14 @@ Use `sleep` in Bash between polls. Always run sleep in the **foreground** (never
 
 Check the `task.state` field in the `polygraph_child_status` response to determine the child's status:
 
-| `task.state`     | Meaning                                        | Action                                         |
-| ---------------- | ---------------------------------------------- | ---------------------------------------------- |
-| `submitted`      | Task queued, child not yet started              | Continue polling                               |
-| `working`        | Child is actively executing                     | Continue polling                                |
-| `input-required` | Child is paused, waiting for parent input       | Handle input request (see Step 3a)             |
-| `completed`      | Child finished successfully                     | Report `task.outputText` (see Step 4)          |
-| `failed`         | Child encountered an error                      | Report the error (see Step 4)                  |
-| `canceled`       | Child was canceled                              | Report cancellation (see Step 4)               |
+| `task.state`     | Meaning                                   | Action                                |
+| ---------------- | ----------------------------------------- | ------------------------------------- |
+| `submitted`      | Task queued, child not yet started        | Continue polling                      |
+| `working`        | Child is actively executing               | Continue polling                      |
+| `input-required` | Child is paused, waiting for parent input | Handle input request (see Step 3a)    |
+| `completed`      | Child finished successfully               | Report `task.outputText` (see Step 4) |
+| `failed`         | Child encountered an error                | Report the error (see Step 4)         |
+| `canceled`       | Child was canceled                        | Report cancellation (see Step 4)      |
 
 If the response still uses legacy NDJSON log format (no `task` field), fall back to parsing the last log entry:
 
@@ -165,7 +169,13 @@ polygraph_stop_child(
 **Response format:**
 
 ```json
-{ "taskId": "task-1234-abc", "state": "canceled", "sessionPreserved": true, "output": "...", "message": "Task canceled" }
+{
+  "taskId": "task-1234-abc",
+  "state": "canceled",
+  "sessionPreserved": true,
+  "output": "...",
+  "message": "Task canceled"
+}
 ```
 
 The child's session is preserved (`sessionPreserved: true`) — you can later resume by calling `polygraph_delegate` again with the same `taskId`.
