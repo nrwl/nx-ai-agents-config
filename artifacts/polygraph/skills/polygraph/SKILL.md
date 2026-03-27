@@ -35,9 +35,9 @@ This skill applies when the user mentions:
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `polygraph_candidates`            | Discover candidate workspaces with descriptions and graph relationships                                                                                                                                                                             |
 | `polygraph_init`                  | Initialize Polygraph for the Nx Cloud workspace                                                                                                                                                                                                     |
-| `polygraph_delegate`              | Start a task in a child agent in a dependent repository (non-blocking)                                                                                                                                                                              |
-| `polygraph_child_status`          | Get the status and recent output of child agents in a Polygraph session                                                                                                                                                                             |
-| `polygraph_stop_child`            | Stop an in-progress child agent in a Polygraph session                                                                                                                                                                                              |
+| `polygraph_delegate`              | Start a task in a child agent in a dependent repository (non-blocking). Returns `{ taskId, message, status }`. Pass optional `taskId` from a prior delegate call to send a follow-up message to an active task instead of starting a new one.       |
+| `polygraph_child_status`          | Get the status and recent output of child agents. Returns structured `task` object with `task.state` (`submitted`/`working`/`input-required`/`completed`/`failed`/`canceled`), `task.inputRequired` (question payload when state is `input-required`), `task.outputText`, and `task.id`. |
+| `polygraph_stop_child`            | Stop an in-progress child agent. Returns `{ taskId, state: "canceled", sessionPreserved: true }`. Session is preserved — you can resume later by calling `polygraph_delegate` with the same `taskId`.                                               |
 | `polygraph_push_branch`           | Push a local git branch to the remote repository                                                                                                                                                                                                    |
 | `polygraph_create_prs`            | Create draft pull requests with session metadata linking related PRs                                                                                                                                                                                |
 | `polygraph_get_session`           | Query status of the current polygraph session                                                                                                                                                                                                       |
@@ -177,8 +177,9 @@ To delegate work to another repository, use the `Task` tool with `run_in_backgro
 
 1. You launch a background `Task` subagent for each target repo
 2. The subagent calls `polygraph_delegate` to start the child agent, then polls `polygraph_child_status` with backoff until completion
-3. The subagent returns a summary of what happened
-4. You can check progress anytime by reading the subagent's output file
+3. If the child enters `input-required` state, the subagent surfaces the question — check the output file and send a follow-up via a new subagent with the same `taskId`
+4. The subagent returns a summary of what happened
+5. You can check progress anytime by reading the subagent's output file
 
 **Launch a background subagent per repo** using the `polygraph-delegate-subagent`:
 
@@ -195,8 +196,9 @@ Task(
     - target: "<org/repo-name>"
     - instruction: "<the task instruction>"
     - context: "<optional context>"
+    - taskId: "<optional — pass taskId from prior delegate call to send a follow-up to an active task>"
 
-    Delegate the work, poll for completion, and return a structured summary.
+    Delegate the work, poll for completion (handling input-required if the child asks questions), and return a structured summary.
   """
 )
 ```
@@ -324,6 +326,48 @@ To continue the work manually, run:
 ```
 
 Where `<path>` is the absolute path to the child repo clone (e.g., `/var/folders/.../polygraph/<session-id>/<repo>`).
+
+### 1c. Delegation Approaches
+
+Polygraph supports two delegation approaches. Choose based on task complexity:
+
+#### Fire-and-Forget (simple tasks)
+
+The default pattern — delegate a self-contained instruction and wait for the result. The child agent runs autonomously to completion with no interaction needed from the parent.
+
+1. Call `polygraph_delegate` with the instruction — store the returned `taskId`
+2. Poll `polygraph_child_status` with backoff until `task.state` is `completed` or `failed`
+3. Read the result from `task.outputText`
+4. Push branch and create PR
+
+Use fire-and-forget when: the task is well-defined, the child has all information it needs, and no clarification is expected.
+
+#### Multi-Turn (complex tasks with interaction)
+
+For tasks where the child agent may need clarification or the parent wants to interact with the child during execution. The child can pause and ask questions via the `input-required` state.
+
+1. Call `polygraph_delegate` with the initial instruction — store the returned `taskId`
+2. Poll `polygraph_child_status` with backoff
+3. If the child's `task.state` is `input-required`:
+   - Read `task.inputRequired.question` — this is the child's question
+   - Surface the question to the user/parent agent
+   - Get the answer, then call `polygraph_delegate` again with:
+     - `instruction`: the answer
+     - `taskId`: the same `taskId` from the original delegation (this routes the message to the active task)
+4. Resume polling — the child continues working with the new input
+5. Repeat steps 2-4 until `task.state` is `completed` or `failed`
+6. If you need to abort: call `polygraph_stop_child` — session is preserved for later resume via `polygraph_delegate` with the same `taskId`
+
+Use multi-turn when: the child may need clarification, the task is exploratory, or you want interactive collaboration with the child agent.
+
+**Child state machine:**
+
+```
+submitted → working → completed
+                   → failed
+                   → input-required → (parent sends follow-up) → working → ...
+                   → canceled (via polygraph_stop_child)
+```
 
 ### 2. Push Branches
 
@@ -662,7 +706,8 @@ If the session has a `plan` or `agentSessionId`, also display:
    {%- elsif platform == "opencode" %}
 1. **NEVER call `polygraph_delegate` or `polygraph_child_status` directly**. These MUST ALWAYS go through `@polygraph-delegate-subagent`.
    {%- endif %}
-1. **Use `polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed
+1. **Use `polygraph_stop_child` to clean up** — Stop child agents that are stuck or no longer needed. Canceled sessions are preserved and can be resumed later by passing the same `taskId` to `polygraph_delegate`
+1. **Handle `input-required` promptly** — When a child agent enters `input-required` state, it is paused and waiting. Surface the question to the user, get an answer, and send a follow-up via `polygraph_delegate` with the same `taskId`
    {%- if platform == "claude" %}
 1. **Always provide `plan` and `agentSessionId`** — These are required on `polygraph_create_prs`, `polygraph_mark_ready`, and `polygraph_associate_pr`. Always pass both values so the session can be resumed later with `claude --continue`
    {%- elsif platform == "opencode" %}
