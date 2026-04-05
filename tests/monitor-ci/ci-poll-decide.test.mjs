@@ -105,13 +105,13 @@ describe('guards', () => {
     expect(result.action).toBe('done');
   });
 
-  it('circuit_breaker when noProgressCount >= 5', async () => {
+  it('circuit_breaker when noProgressCount >= 13', async () => {
     // noProgressCount starts at inputNoProgressCount+1 when no state change
     const result = await runScript(ci(), 0, 'medium', [
       '--no-progress-count',
-      '4',
+      '12',
     ]);
-    // 4+1=5 >= 5
+    // 12+1=13 >= 13
     expect(result.code).toBe('circuit_breaker');
     expect(result.action).toBe('done');
   });
