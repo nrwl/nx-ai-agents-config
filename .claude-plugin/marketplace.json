@@ -11,19 +11,12 @@
     {
       "name": "nx",
       "description": "Claude Code plugin for Nx - helps with generators, documentation, and CI monitoring with self-healing integration",
-      "source": {
-        "source": "github",
-        "repo": "nrwl/nx-ai-agents-config"
-      }
+      "source": "./"
     },
     {
       "name": "polygraph",
       "description": "Coordinate changes across multiple repositories using Polygraph - delegate work to child agents, monitor CI across repos, and manage multi-repo sessions",
-      "source": {
-        "source": "git-subdir",
-        "url": "nrwl/nx-ai-agents-config",
-        "path": "generated/polygraph"
-      }
+      "source": "./generated/polygraph"
     }
   ]
 }
