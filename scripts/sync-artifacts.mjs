@@ -472,41 +472,11 @@ export function transformContent(content, platformKey) {
 // ============== Utility Functions ==============
 
 /**
- * Recursively remove a directory's contents, skipping files that cannot be
- * deleted (e.g. .mcp.json files protected by the sandbox). Empty directories
- * are removed after their contents are cleared.
- */
-function safeRmRecursive(p) {
-  let stat;
-  try {
-    stat = statSync(p);
-  } catch {
-    return; // already gone
-  }
-  if (stat.isDirectory()) {
-    for (const entry of readdirSync(p)) {
-      safeRmRecursive(join(p, entry));
-    }
-    try {
-      rmSync(p); // remove now-empty dir (non-recursive)
-    } catch {
-      /* ignore – dir may still contain undeletable files */
-    }
-  } else {
-    try {
-      rmSync(p);
-    } catch {
-      /* ignore protected files */
-    }
-  }
-}
-
-/**
  * Clear and recreate a directory
  */
 function recreateDir(dir) {
   if (existsSync(dir)) {
-    safeRmRecursive(dir);
+    rmSync(dir, { recursive: true });
   }
   mkdirSync(dir, { recursive: true });
 }
@@ -520,7 +490,8 @@ function cleanClaudeOutput(outputDir) {
     const p = join(outputDir, dir);
     if (existsSync(p)) rmSync(p, { recursive: true });
   }
-  // .mcp.json is overwritten by copyClaudePluginConfigs; no need to delete first
+  const mcpJson = join(outputDir, '.mcp.json');
+  if (existsSync(mcpJson)) rmSync(mcpJson);
 }
 
 /**
@@ -529,18 +500,11 @@ function cleanClaudeOutput(outputDir) {
 function copyClaudePluginConfigs(srcArtifactsDir, outputDir) {
   const claudeConfigDir = join(srcArtifactsDir, 'claude-config');
 
-  // Copy .mcp.json – skip when destination already has identical content
-  // (sandbox environments may protect this file from being overwritten).
+  // Copy .mcp.json
   const mcpJsonSrc = join(claudeConfigDir, '.mcp.json');
   const mcpJsonDest = join(outputDir, '.mcp.json');
   if (existsSync(mcpJsonSrc)) {
-    const srcContent = readFileSync(mcpJsonSrc, 'utf8');
-    const destContent = existsSync(mcpJsonDest)
-      ? readFileSync(mcpJsonDest, 'utf8')
-      : null;
-    if (srcContent !== destContent) {
-      writeFileSync(mcpJsonDest, srcContent);
-    }
+    cpSync(mcpJsonSrc, mcpJsonDest);
     console.log('  Copied .mcp.json');
   }
 
