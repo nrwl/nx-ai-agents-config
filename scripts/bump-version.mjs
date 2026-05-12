@@ -5,7 +5,6 @@ const rootDir = join(import.meta.dirname, '..');
 const pluginJsonPaths = [
   join(rootDir, '.claude-plugin/plugin.json'),
   join(rootDir, '.cursor-plugin/plugin.json'),
-  join(rootDir, 'artifacts/polygraph/claude-config/.claude-plugin/plugin.json'),
 ];
 
 // Parse --version argument

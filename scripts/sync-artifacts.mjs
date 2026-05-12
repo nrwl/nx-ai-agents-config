@@ -16,9 +16,7 @@ import { Liquid } from 'liquidjs';
 
 const rootDir = join(import.meta.dirname, '..');
 const artifactsDir = join(rootDir, 'artifacts');
-const polygraphArtifactsDir = join(artifactsDir, 'polygraph');
 const generatedDir = join(rootDir, 'generated');
-const polygraphGeneratedDir = join(generatedDir, 'polygraph');
 
 // Agent output configurations for the main nx plugin
 function createPlatformConfigs(outputDir, genDir) {
@@ -736,19 +734,6 @@ function runSync() {
 
   console.log('\n[nx:codex] Generating config...');
   writeCodexConfig(artifactsDir, generatedDir);
-
-  // ---- Polygraph artifacts ----
-  const polygraphConfigs = createPlatformConfigs(
-    polygraphGeneratedDir,
-    polygraphGeneratedDir
-  );
-  processArtifacts('polygraph', polygraphArtifactsDir, polygraphConfigs);
-
-  console.log('\n[polygraph:claude] Copying plugin config files...');
-  copyClaudePluginConfigs(polygraphArtifactsDir, polygraphGeneratedDir);
-
-  console.log('\n[polygraph:codex] Generating config...');
-  writeCodexConfig(polygraphArtifactsDir, polygraphGeneratedDir);
 
   console.log('\nRunning nx format....');
   execSync('npx nx format --fix', { stdio: 'inherit' });
