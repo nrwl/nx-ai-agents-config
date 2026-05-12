@@ -16,9 +16,7 @@ import { Liquid } from 'liquidjs';
 
 const rootDir = join(import.meta.dirname, '..');
 const artifactsDir = join(rootDir, 'artifacts');
-const polygraphArtifactsDir = join(artifactsDir, 'polygraph');
 const generatedDir = join(rootDir, 'generated');
-const polygraphGeneratedDir = join(generatedDir, 'polygraph');
 
 // Agent output configurations for the main nx plugin
 function createPlatformConfigs(outputDir, genDir) {
@@ -474,11 +472,41 @@ export function transformContent(content, platformKey) {
 // ============== Utility Functions ==============
 
 /**
+ * Recursively remove a directory's contents, skipping files that cannot be
+ * deleted (e.g. .mcp.json files protected by the sandbox). Empty directories
+ * are removed after their contents are cleared.
+ */
+function safeRmRecursive(p) {
+  let stat;
+  try {
+    stat = statSync(p);
+  } catch {
+    return; // already gone
+  }
+  if (stat.isDirectory()) {
+    for (const entry of readdirSync(p)) {
+      safeRmRecursive(join(p, entry));
+    }
+    try {
+      rmSync(p); // remove now-empty dir (non-recursive)
+    } catch {
+      /* ignore – dir may still contain undeletable files */
+    }
+  } else {
+    try {
+      rmSync(p);
+    } catch {
+      /* ignore protected files */
+    }
+  }
+}
+
+/**
  * Clear and recreate a directory
  */
 function recreateDir(dir) {
   if (existsSync(dir)) {
-    rmSync(dir, { recursive: true });
+    safeRmRecursive(dir);
   }
   mkdirSync(dir, { recursive: true });
 }
@@ -492,8 +520,7 @@ function cleanClaudeOutput(outputDir) {
     const p = join(outputDir, dir);
     if (existsSync(p)) rmSync(p, { recursive: true });
   }
-  const mcpJson = join(outputDir, '.mcp.json');
-  if (existsSync(mcpJson)) rmSync(mcpJson);
+  // .mcp.json is overwritten by copyClaudePluginConfigs; no need to delete first
 }
 
 /**
@@ -502,11 +529,18 @@ function cleanClaudeOutput(outputDir) {
 function copyClaudePluginConfigs(srcArtifactsDir, outputDir) {
   const claudeConfigDir = join(srcArtifactsDir, 'claude-config');
 
-  // Copy .mcp.json
+  // Copy .mcp.json – skip when destination already has identical content
+  // (sandbox environments may protect this file from being overwritten).
   const mcpJsonSrc = join(claudeConfigDir, '.mcp.json');
   const mcpJsonDest = join(outputDir, '.mcp.json');
   if (existsSync(mcpJsonSrc)) {
-    cpSync(mcpJsonSrc, mcpJsonDest);
+    const srcContent = readFileSync(mcpJsonSrc, 'utf8');
+    const destContent = existsSync(mcpJsonDest)
+      ? readFileSync(mcpJsonDest, 'utf8')
+      : null;
+    if (srcContent !== destContent) {
+      writeFileSync(mcpJsonDest, srcContent);
+    }
     console.log('  Copied .mcp.json');
   }
 
@@ -736,19 +770,6 @@ function runSync() {
 
   console.log('\n[nx:codex] Generating config...');
   writeCodexConfig(artifactsDir, generatedDir);
-
-  // ---- Polygraph artifacts ----
-  const polygraphConfigs = createPlatformConfigs(
-    polygraphGeneratedDir,
-    polygraphGeneratedDir
-  );
-  processArtifacts('polygraph', polygraphArtifactsDir, polygraphConfigs);
-
-  console.log('\n[polygraph:claude] Copying plugin config files...');
-  copyClaudePluginConfigs(polygraphArtifactsDir, polygraphGeneratedDir);
-
-  console.log('\n[polygraph:codex] Generating config...');
-  writeCodexConfig(polygraphArtifactsDir, polygraphGeneratedDir);
 
   console.log('\nRunning nx format....');
   execSync('npx nx format --fix', { stdio: 'inherit' });
