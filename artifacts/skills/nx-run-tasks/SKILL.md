@@ -1,6 +1,6 @@
 You can run tasks with Nx in the following way.
 
-Keep in mind that you might have to prefix things with npx/pnpx/yarn if the user doesn't have nx installed globally. Look at the package.json or lockfile to determine which package manager is in use.
+<% if (pm) { %>This workspace uses **<%= pm.name %>**. Run nx with `<%= pm.nx %>` (e.g. `<%= pm.nx %> run-many -t build`) — nx is not assumed to be installed globally.<% } else { %>Keep in mind that you might have to prefix things with npx/pnpx/yarn if the user doesn't have nx installed globally. Look at the package.json or lockfile to determine which package manager is in use.<% } %>
 
 For more details on any command, run it with `--help` (e.g. `nx run-many --help`, `nx affected --help`).
 

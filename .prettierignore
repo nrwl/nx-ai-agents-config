@@ -3,3 +3,10 @@
 /coverage
 /.nx/cache
 /.nx/workspace-data
+
+# Anything holding unresolved EJS workspace-context tokens. Prettier reflows markdown and
+# cannot see that `<% if (pm) { %>` is a conditional rather than prose — it merges list
+# items into one another and indents the closing tag into a code block. `generated/` and
+# `skills/` are still formatted: the tokens are resolved out of them before that runs.
+/artifacts
+/templates

@@ -2,7 +2,7 @@
 
 This skill provides read-only exploration of Nx workspaces. Use it to understand workspace structure, project configuration, available targets, and dependencies.
 
-Keep in mind that you might have to prefix commands with `npx`/`pnpx`/`yarn` if nx isn't installed globally. Check the lockfile to determine the package manager in use.
+<% if (pm) { %>This workspace uses **<%= pm.name %>**. Run nx with `<%= pm.nx %>` (e.g. `<%= pm.nx %> show projects`) — nx is not assumed to be installed globally.<% } else { %>Keep in mind that you might have to prefix commands with `npx`/`pnpx`/`yarn` if nx isn't installed globally. Check the lockfile to determine the package manager in use.<% } %>
 
 ## Listing Projects
 

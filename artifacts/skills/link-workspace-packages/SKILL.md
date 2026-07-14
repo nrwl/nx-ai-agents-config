@@ -2,8 +2,15 @@
 
 Add dependencies between packages in a monorepo. All package managers support workspaces but with different syntax.
 
-## Detect Package Manager
-
+## Package Manager
+<% if (pm) { %>
+This workspace uses **<%= pm.name %>**. Use the `<%= pm.name %>` section below — the other sections are reference only.
+<% if (pm.supportsWorkspaceProtocol) { %>
+It supports the `workspace:` protocol, so a dependency is only symlinked when declared with it.
+<% } else { %>
+It does not use the `workspace:` protocol — see its section for the equivalent syntax.
+<% } %>
+<% } else { %>
 Check whether there's a `packageManager` field in the root-level `package.json`.
 
 Alternatively check lockfile in repo root:
@@ -12,7 +19,7 @@ Alternatively check lockfile in repo root:
 - `yarn.lock` → yarn
 - `bun.lock` / `bun.lockb` → bun
 - `package-lock.json` → npm
-
+<% } %>
 ## Workflow
 
 1. Identify consumer package (the one importing)

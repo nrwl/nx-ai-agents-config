@@ -7,7 +7,7 @@ description: 'Link workspace packages in monorepos (npm, yarn, pnpm, bun). USE W
 
 Add dependencies between packages in a monorepo. All package managers support workspaces but with different syntax.
 
-## Detect Package Manager
+## Package Manager
 
 Check whether there's a `packageManager` field in the root-level `package.json`.
 

@@ -46,7 +46,7 @@ Before importing, identify whether the source is an **application** or a **libra
 
 **Destination directory rules**:
 
-- Applications → `apps/<name>`. Check workspace globs (e.g. `pnpm-workspace.yaml`, `workspaces` in root `package.json`) for an existing `apps/*` entry.
+- Applications → `apps/<name>`. Check the workspace globs in <% if (pm) { %>`<%= pm.workspaceGlobFile %>`<% } else { %>the workspace glob config (e.g. `pnpm-workspace.yaml`, or `workspaces` in root `package.json`)<% } %> for an existing `apps/*` entry.
   - If `apps/*` is **not** present, add it before importing: update the workspace glob config and commit (or stage) the change.
   - Example: `nx import <source> apps/my-app --source=packages/my-app`
 - Libraries → follow the dest's existing convention (`packages/`, `libs/`, etc.).

@@ -54,7 +54,7 @@ Spawn FETCH_HEAVY subagent for `selfHealingSkipMessage`.
 ### no_new_cipe
 
 1. Report to user: no CI attempt found, suggest checking CI provider
-2. If `--auto-fix-workflow`: detect package manager, run install, commit lockfile if changed, enter wait mode
+2. If `--auto-fix-workflow`: run install with the detected package manager, commit lockfile if changed, enter wait mode
 3. Otherwise: exit with guidance
 
 ### cipe_no_tasks
