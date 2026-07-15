@@ -76,9 +76,9 @@ describe('wait mode', () => {
     const result = await runScript(ci(), 10, 'medium', [
       '--wait-mode',
       '--new-cipe-timeout',
-      '100',
+      '1',
     ]);
-    // 10 * 30 = 300 >= 100
+    // --new-cipe-timeout is minutes: 1 min = 60s; 10 * 30 = 300 >= 60
     expect(result.code).toBe('no_new_cipe');
     expect(result.action).toBe('done');
   });
@@ -87,20 +87,56 @@ describe('wait mode', () => {
     const result = await runScript(ci(), 0, 'medium', [
       '--wait-mode',
       '--new-cipe-timeout',
-      '600',
+      '10',
     ]);
     expect(result.code).toBe('waiting_for_cipe');
     expect(result.action).toBe('wait');
     expect(result.delay).toBe(30);
+  });
+
+  it('new-cipe-timeout is minutes: not timed out below the converted threshold', async () => {
+    // 10 min = 600s; 10 * 30 = 300 < 600 → still waiting (would be a false
+    // timeout if the flag were treated as raw seconds)
+    const result = await runScript(ci(), 10, 'medium', [
+      '--wait-mode',
+      '--new-cipe-timeout',
+      '10',
+    ]);
+    expect(result.code).toBe('waiting_for_cipe');
   });
 });
 
 // ─── Guards ───
 
 describe('guards', () => {
-  it('polling_timeout when elapsed exceeds timeout', async () => {
-    // pollCount=10, backoff(5)=120, 10*120=1200 >= 100
-    const result = await runScript(ci(), 10, 'medium', ['--timeout', '100']);
+  it('polling_timeout when elapsed-seconds exceeds timeout', async () => {
+    // --timeout is minutes: 2 min = 120s; elapsed 200s >= 120s
+    const result = await runScript(ci(), 0, 'medium', [
+      '--timeout',
+      '2',
+      '--elapsed-seconds',
+      '200',
+    ]);
+    expect(result.code).toBe('polling_timeout');
+    expect(result.action).toBe('done');
+  });
+
+  it('no polling_timeout when elapsed-seconds is below the timeout', async () => {
+    // 5 min = 300s; elapsed 100s < 300s — the high pollCount must NOT trip the
+    // timeout, because real elapsed wall-clock is authoritative when supplied
+    const result = await runScript(
+      ci({ cipeStatus: 'IN_PROGRESS' }),
+      50,
+      'medium',
+      ['--timeout', '5', '--elapsed-seconds', '100']
+    );
+    expect(result.code).not.toBe('polling_timeout');
+  });
+
+  it('polling_timeout falls back to poll-cadence estimate when elapsed-seconds absent', async () => {
+    // No --elapsed-seconds: estimate from pollCount. 1 min = 60s;
+    // pollCount=10, backoff(5)=120, 10*120=1200 >= 60
+    const result = await runScript(ci(), 10, 'medium', ['--timeout', '1']);
     expect(result.code).toBe('polling_timeout');
     expect(result.action).toBe('done');
   });

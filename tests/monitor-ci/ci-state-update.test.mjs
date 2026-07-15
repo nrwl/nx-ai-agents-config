@@ -291,7 +291,56 @@ describe('cycle-check', () => {
       '10',
     ]);
     expect(result.approachingLimit).toBe(false);
+    expect(result.limitReached).toBe(false);
     expect(result.message).toBeNull();
+  });
+
+  it('limitReached when cycleCount reaches max after increment', async () => {
+    // cycle-count 9 + agent-triggered increment = 10 >= max 10
+    const result = await runScript([
+      'cycle-check',
+      '--code',
+      'fix_apply_ready',
+      '--agent-triggered',
+      '--cycle-count',
+      '9',
+      '--max-cycles',
+      '10',
+    ]);
+    expect(result.cycleCount).toBe(10);
+    expect(result.limitReached).toBe(true);
+    expect(result.approachingLimit).toBe(true);
+    expect(result.message).toContain('Cycle limit reached');
+    expect(result.message).toContain('10/10');
+  });
+
+  it('limitReached when cycleCount exceeds max', async () => {
+    const result = await runScript([
+      'cycle-check',
+      '--code',
+      'fix_apply_ready',
+      '--cycle-count',
+      '12',
+      '--max-cycles',
+      '10',
+    ]);
+    expect(result.cycleCount).toBe(12);
+    expect(result.limitReached).toBe(true);
+  });
+
+  it('not limitReached one cycle before max', async () => {
+    const result = await runScript([
+      'cycle-check',
+      '--code',
+      'fix_apply_ready',
+      '--cycle-count',
+      '9',
+      '--max-cycles',
+      '10',
+    ]);
+    expect(result.cycleCount).toBe(9);
+    expect(result.limitReached).toBe(false);
+    expect(result.approachingLimit).toBe(true);
   });
 });
 
