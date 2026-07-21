@@ -104,6 +104,53 @@ describe('wait mode', () => {
     ]);
     expect(result.code).toBe('waiting_for_cipe');
   });
+
+  it('polling_timeout wins over new-cipe-timeout when total --timeout exceeded', async () => {
+    // Total budget: --timeout 5min = 300s, elapsed 400s >= 300s. The
+    // new-cipe-timeout (10min) has NOT tripped, but the overall --timeout must
+    // still stop the monitor rather than keep waiting.
+    const result = await runScript(ci(), 0, 'medium', [
+      '--wait-mode',
+      '--new-cipe-timeout',
+      '10',
+      '--timeout',
+      '5',
+      '--elapsed-seconds',
+      '400',
+    ]);
+    expect(result.code).toBe('polling_timeout');
+    expect(result.action).toBe('done');
+  });
+
+  it('new_cipe_detected still wins over an exceeded --timeout', async () => {
+    // A spawned CI Attempt is detected on the same poll the timeout would
+    // trip; detecting it takes priority so normal-mode termination handles it.
+    const result = await runScript(ci({ cipeUrl: 'url-new' }), 0, 'medium', [
+      '--wait-mode',
+      '--prev-cipe-url',
+      'url-old',
+      '--timeout',
+      '5',
+      '--elapsed-seconds',
+      '400',
+    ]);
+    expect(result.code).toBe('new_cipe_detected');
+  });
+
+  it('keeps waiting when total --timeout not yet exceeded', async () => {
+    // elapsed 100s < --timeout 5min (300s) and new-cipe-timeout not tripped.
+    const result = await runScript(ci(), 0, 'medium', [
+      '--wait-mode',
+      '--new-cipe-timeout',
+      '10',
+      '--timeout',
+      '5',
+      '--elapsed-seconds',
+      '100',
+    ]);
+    expect(result.code).toBe('waiting_for_cipe');
+    expect(result.action).toBe('wait');
+  });
 });
 
 // ─── Guards ───

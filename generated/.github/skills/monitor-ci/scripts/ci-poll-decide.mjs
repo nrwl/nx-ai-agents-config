@@ -195,6 +195,10 @@ function classify() {
   // --- Wait mode ---
   if (waitMode) {
     if (isNewCipe()) return { action: 'poll', code: 'new_cipe_detected' };
+    // The total --timeout budget also caps time spent waiting for a new CI
+    // Attempt, so it must win over --new-cipe-timeout here; otherwise a long
+    // wait (or a sequence of apply→wait cycles) could run past --timeout.
+    if (isTimedOut()) return { action: 'done', code: 'polling_timeout' };
     if (isWaitTimedOut()) return { action: 'done', code: 'no_new_cipe' };
     return { action: 'wait', code: 'waiting_for_cipe' };
   }
