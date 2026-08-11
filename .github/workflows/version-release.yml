@@ -30,7 +30,7 @@ jobs:
         id: check
         run: |
           # Check if the merge to main changed any plugin content
-          PLUGIN_DIFF=$(git diff HEAD~1..HEAD -- 'skills/' 'agents/' '.mcp.json' '.claude-plugin/plugin.json' '.cursor-plugin/plugin.json' 'generated/polygraph/')
+          PLUGIN_DIFF=$(git diff HEAD~1..HEAD -- 'skills/' 'agents/' '.mcp.json' '.claude-plugin/plugin.json' '.cursor-plugin/plugin.json')
           if [ -z "$PLUGIN_DIFF" ]; then
             echo "No plugin content changes detected. Skipping version bump."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
