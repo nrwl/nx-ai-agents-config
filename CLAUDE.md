@@ -25,26 +25,23 @@ Do this instead: "Use the ci-information tool from the nx MCP server" (you don't
 This repository generates extensibility artifacts (commands, skills, subagents) for multiple AI agents.
 
 - Run `npx nx sync-artifacts` to generate outputs for all agents
-- Two plugins are built from this repo:
-  - **nx** (main plugin): Source in `artifacts/`, output to repo root (`skills/`, `agents/`, `.mcp.json`) and `generated/`
-  - **polygraph** plugin: Source in `artifacts/polygraph/`, output to `generated/polygraph/`
-- Generated files per plugin:
+- One plugin is built from this repo: **nx**, with source in `artifacts/` and output to the repo root (`skills/`, `agents/`, `.mcp.json`) and `generated/`
+- Generated files:
   - Claude Code and Cursor plugins share output: `skills/`, `agents/`, `.mcp.json`
-    - Main Claude plugin manifest: `.claude-plugin/plugin.json`
-    - Polygraph Claude plugin manifest: `generated/polygraph/.claude-plugin/plugin.json`
+    - Claude plugin manifest: `.claude-plugin/plugin.json`
     - Cursor plugin manifest: `.cursor-plugin/plugin.json` (uses convention-based discovery of root `skills/` and `agents/`)
-  - Other agents output to `generated/` (main) and `generated/polygraph/` (polygraph):
+  - Other agents output to `generated/`:
     - `.opencode/` - OpenCode
     - `.github/` - GitHub Copilot
     - `.cursor/` - Cursor
     - `.gemini/` - Gemini
     - `.agents/` - Codex (skills only)
     - `.codex/` - Codex (MCP config)
-- Both plugins are registered in `.claude-plugin/marketplace.json`
+- The plugin is registered in `.claude-plugin/marketplace.json`
 
 # Plugin Versioning
 
-Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrored to `.cursor-plugin/plugin.json` and `artifacts/polygraph/claude-config/.claude-plugin/plugin.json`.
+Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrored to `.cursor-plugin/plugin.json`.
 
 ## How it works
 
