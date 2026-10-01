@@ -27,33 +27,35 @@ One does not prove the other.
 ## Resume a pending investigation
 
 Arrange one same-session wake only when a known task is non-terminal, an API
-request returns HTTP 409 or 429, or the user starts a controlled diagnostic run.
-Preserve the run, task, `batchId`, endpoint, and filters. Re-query once after the
+request returns HTTP 409 (`not_terminal`), or the user starts a controlled
+diagnostic run. Preserve the run, task, `batchId`, link, and filters. Re-query once after the
 known delay or expected run completion. Stop at a terminal result or the retry
 limit. Do not poll or monitor a live CI run.
 
 ## Gather only relevant API evidence
 
-Use `nx-cloud-api` for every read. Run `describe` for a known route. Use `catalog`
-only when the route is unknown or ambiguous. Follow documented fields and returned
-links; do not construct routes from internal IDs.
+Use `nx-cloud-api` (`npx nx-cloud api`) for every read. Run `--describe` for a
+known route. Use `--list-operations` only when the route is unknown or
+ambiguous. Follow documented fields and returned links; do not construct routes
+from internal IDs.
 
-Save every live API response with `--out <private-file>`. Use `jq` to select one
-row and only the fields needed for this investigation. Do not print, read, or paste
-a raw collection into model context. Keep the selected row's `batchId` and
-`links.self` in the projection. Use the bundled `nx-cloud-api` client. Do not
-invent commands such as `nx-cloud-api get` or `nx-cloud-api describe tasks`:
+Save every live API response to a private file with `-o`. Use `jq` to select one
+row and only the fields needed for this investigation. Do not print, read, or
+paste a raw collection into model context. Keep the selected row's `batchId` and
+`links.self` in the projection:
 
 ```sh
-node <nx-cloud-api-skill-dir>/scripts/nx-cloud-api.mjs describe 'runs/{runId}/tasks' --workspace .
-node <nx-cloud-api-skill-dir>/scripts/nx-cloud-api.mjs request 'runs/{runId}/tasks' \
-  --workspace . --path runId="$run_id" --pages 1 \
-  --out /tmp/nx-cloud-tasks.json
+npx nx-cloud api --describe 'runs/{runId}/tasks'
+npx nx-cloud api "$run_tasks_link" -o "$dir/tasks.json"
 jq --arg task "$task_id" --arg batch "$batch_id" \
   '.items[] | select(.id == $task and .batchId == $batch) |
    {id, batchId, status, cacheStatus, hash, cacheable,
-    links: {self: .links.self}}' /tmp/nx-cloud-tasks.json
+    links: {self: .links.self}}' "$dir/tasks.json"
 ```
+
+Here `$run_tasks_link` is the tasks link from the selected run and `$dir` is a
+private directory from `mktemp -d`. Check `nextCursor` before concluding that a
+task is absent from the list.
 
 For a selected execution, record run and task IDs, `batchId`, project, target,
 configuration, command, parameters, branch, commit, CI context, timestamps,

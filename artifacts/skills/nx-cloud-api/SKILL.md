@@ -1,22 +1,27 @@
 # Nx Cloud API
 
-This skill requires Node.js 18+, network access, and read access to the target Nx Cloud workspace. Its client is at `<skill_dir>/scripts/nx-cloud-api.mjs`. Use the workspace root only for the `--workspace` option.
+Answer a defined workspace-data question with `npx nx-cloud api`, the read-only
+Nx Cloud Public API command. This is an API access skill, not a report generator
+or configuration editor. Run every command from the workspace root so the
+command finds `nx.json`.
 
-Answer a defined workspace-data question with the bundled read-only client. This
-is an API access skill, not a report generator or configuration editor.
+Run `npx nx-cloud api --help` once for syntax and options. This skill covers the
+workflow around it.
 
 ## Non-negotiable rules
 
-- Run `describe` before an unfamiliar named request. Use `catalog` only when you
-  need to discover or disambiguate a route. The client reads the live OpenAPI
-  document. Do not use remembered routes, fields, or parameters.
-- Use only `request`. It permits documented `GET` operations only.
+- Discover endpoints from the live spec. Use `npx nx-cloud api --list-operations`
+  to find a route and `npx nx-cloud api --describe <operationId | path | link>`
+  for its parameters, response fields, and error statuses. Do not use
+  remembered routes, fields, filter names, or enum values.
+- Start at `cipes` and follow returned `links` values. Do not build child URLs by
+  hand or use an internal workflow ID as a route parameter.
 - Start with one filtered page. Ask for a workspace, scope, or time range when
   they are missing. Do not collect history by default.
-- Read the operation description. A dry run validates only formal OpenAPI
-  schema. It does not read credentials, contact the data endpoint, prove access,
-  or enforce prose-only server limits.
-- Do not put a token in a command, variable, chat message, or verbose log.
+- Read the operation description from `--describe`. It states server limits that
+  the command does not enforce.
+- Never put a token in a command, variable, chat message, or log.
+- Do not use this skill to poll or monitor live CI.
 
 ## Cache boundary
 
@@ -32,92 +37,91 @@ pull request.
 
 ## Quick workflow
 
-Run these commands from the workspace root. Add `--workspace <directory>` when
-needed.
-
 ```sh
-# Use catalog only when the endpoint is unknown or ambiguous.
-node <skill_dir>/scripts/nx-cloud-api.mjs catalog --workspace .
-node <skill_dir>/scripts/nx-cloud-api.mjs describe cipes --workspace .
+npx nx-cloud api --describe cipes
 
-# Save one bounded response. Do not print raw API data.
-node <skill_dir>/scripts/nx-cloud-api.mjs request cipes \
-  --workspace . \
-  --query createdAfter=2026-08-01T00:00:00Z \
-  --query statuses=FAILED \
-  --pages 1 \
-  --out /tmp/nx-cloud-cipes.json
+# Save one bounded page to a private file, then project only what you need.
+dir="$(mktemp -d)"
+npx nx-cloud api cipes \
+  -f createdAfter=2026-08-01T00:00:00Z \
+  -f statuses=FAILED -f statuses=CANCELED \
+  -o "$dir/cipes.json"
+echo "exit $?"
+jq '{nextCursor, items: [.items[] | {id, status, createdAt, links}]}' "$dir/cipes.json"
 
-# Fill a path parameter. Repeat an array filter.
-node <skill_dir>/scripts/nx-cloud-api.mjs request 'runs/{runId}/tasks' \
-  --workspace . \
-  --path runId=<run-id> \
-  --query statuses=FAILED \
-  --query statuses=CANCELED \
-  --pages 1
+# Follow a link from a previous response as-is.
+npx nx-cloud api "<link from a previous response>" -o "$dir/next.json"
 ```
 
-Use `describe` output for every selector, filter, status, and response field.
-Follow a returned `links.*` URL directly. Do not reconstruct child URLs or use
-an internal workflow ID as a route parameter. A relative link keeps the selected
-server and filters. Check `source.cloudUrl` when a local `nx.json` and supplied
-link can name different servers.
+Pass a `links.*` value exactly as returned; it may already carry query
+parameters, and `-f` adds more. Full URLs are accepted only on the configured
+Nx Cloud host.
 
 ## Keep API output compact
 
-For every live data request, use `--out <private-file>`. Do not let raw JSON or
-NDJSON print to the terminal unless the user explicitly requests it. Read only a
-question-specific projection with `jq`:
+Write every live data response to a private file with `-o` (for example under a
+`mktemp -d` directory) and read a question-specific `jq` projection. Do not let
+a raw collection print into the conversation unless the user asks for it.
+Choose projected fields from `--describe`. For one row, select it first, then
+project only the needed fields. Delete saved data when the task is done unless
+the user asks to keep it.
 
-```sh
-jq '{pageCount, fetchedItemCount, pageLimitReached,
-  items: [.items[] | {id, status, createdAt}]}' /tmp/nx-cloud-cipes.json
-```
+`--describe` output is usually small. Pipe it through `jq` only when you need
+part of a large operation.
 
-Choose fields from `describe`. For one row, select it first, then project only
-needed fields. For a single-resource response, project `.response` fields. Do
-not read or paste the complete saved response into the model context.
+## Exit codes and errors
 
-Use `describe --json | jq '<small projection>'` when the normal description is
-larger than the question needs. The default human-readable `catalog` output is
-small; do not request catalog JSON unless you need to filter it.
+Always check the exit code. Error bodies go to stderr unchanged; do not hide
+stderr with `2>/dev/null`.
 
-## Authentication and failures
+| Exit | Meaning                | Safe next action                                                                           |
+| ---- | ---------------------- | ------------------------------------------------------------------------------------------ |
+| 0    | Success                | Read the saved output.                                                                     |
+| 1    | Usage or network error | Read stderr. Check the path, flags, host (`NX_CLOUD_API` or `nxCloudUrl`), proxy, and VPN. |
+| 4    | Client error (4xx)     | Read the status and body on stderr (`-i` prints the status line). See the table below.     |
+| 5    | Server error (5xx)     | Retry once after a short wait. Keep the endpoint, filters, and time range for support.     |
 
-The client resolves the cloud URL and one credential set. It does not print a
-token. Use `--token-file` for a workspace access token file. For PAT access, run
-`nx login --status` from the workspace root. Run `nx login` there only when the
-status check has no usable PAT.
+| Status | Safe next action                                                                                                                                                                                                                                                                                                              |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 401    | The command needs an access token: a personal access token from `npx nx-cloud login` together with `nxCloudId` in `nx.json`, or a workspace token in `NX_CLOUD_ACCESS_TOKEN`. A stored personal access token takes precedence, so a stale one fails even when a valid workspace token is set; run `npx nx-cloud login` again. |
+| 403    | Confirm the workspace. Ask its administrator for access. Do not use another person's token.                                                                                                                                                                                                                                   |
+| 404    | Check the route with `--list-operations` and `--describe`, then the resource ID.                                                                                                                                                                                                                                              |
+| 409    | `not_terminal`: the entity is still running. Its data is not final yet.                                                                                                                                                                                                                                                       |
+| 429    | Already retried by the command. Narrow filters or wait before another request.                                                                                                                                                                                                                                                |
 
-Read [references/authentication.md](references/authentication.md) only when you
-need credential precedence, a custom config file, or recovery from an
-authentication, access, rate-limit, or network error.
+`--list-operations`, `--describe`, and `--print-api-spec` do not need
+credentials, so they succeed even when data requests fail with 401.
+
+Do not alter workspace configuration or credentials without the user's explicit
+request.
 
 ## Same-session retry
 
-Arrange one same-session wake only for a known request that the server cannot yet
-complete: HTTP 409 while a named parent is non-terminal, or HTTP 429 with a retry
-delay. Preserve the endpoint, IDs, filters, and page limit. Retry once after the
-known delay. Stop at a terminal response or the retry limit. Do not use this skill
-to poll or monitor live CI.
+The command already retries 429 and 503. For a 409 on a known request, arrange
+at most one same-session wake after the named parent is expected to finish.
+Preserve the link and filters. Stop at a terminal response.
 
-## Pagination and saved data
+## Pagination
 
-The default is one page. Set `--pages` only after the first response. Stop when
-`pageLimitReached: true` unless the user accepts incomplete data. Do not fetch
-all `flaky-tasks` or `task-stats` pages without a narrow filter.
+Without `--paginate` the command returns one page as JSON. A non-null
+`nextCursor` means more results exist; state that the data is incomplete or
+fetch more only when the question needs it.
 
-For large or multi-range extraction, NDJSON, binary assets, or a calculation,
-read [references/extraction-and-calculation.md](references/extraction-and-calculation.md)
-before the request. That reference defines safe pagination, data-file metadata,
-redirect downloads, and reproducible calculations.
+With `--paginate` the command follows `nextCursor` and writes one item per line
+(NDJSON) with no page metadata. Always set `--max-items` to a bound you can
+justify, and use narrow filters. Do not fetch all `flaky-tasks` or `task-stats`
+pages without one. If the item count equals `--max-items`, assume more data
+exists. A non-zero exit leaves partial NDJSON behind; treat it as incomplete.
+
+For multi-range extraction, task or log assets, or a calculation, read
+[references/extraction-and-calculation.md](references/extraction-and-calculation.md)
+first.
 
 ## Interpret responses
 
-`catalog` and `describe` return their server in `cloudUrl`. Collection rows are
-in top-level `items`. A single-resource API object is in `response`; request
-metadata is in `source`. Do not infer a field meaning from its name. Inspect its
-live schema and a live record first.
+Collection responses have top-level `items` and `nextCursor`. Single resources
+are returned as-is. Do not infer a field meaning from its name; check
+`--describe` and a live record first.
 
 Label cache statements by evidence source:
 
@@ -135,7 +139,7 @@ log-capture or archive defect.
 
 ## Report
 
-State the APIs queried, filters, page count, and only material limits. State
-whether a result is recorded API data, a local target query, or a hypothesis.
-Never claim that an API-only read proved configuration provenance or tool-native
-cache state.
+State the operations queried, filters, item counts, and whether the data is
+complete. State whether a result is recorded API data, a local target query, or
+a hypothesis. Never claim that an API-only read proved configuration provenance
+or tool-native cache state.
