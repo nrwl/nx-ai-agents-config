@@ -91,6 +91,7 @@ stderr unchanged and adds no recovery hints; do not hide stderr with
 | 4    | 401  | none (plain-text body)                                                                               | Run `npx nx-cloud login --status` from the workspace root. The command needs a personal access token from `npx nx-cloud login` with `nxCloudId` in `nx.json`, or a workspace token in `NX_CLOUD_ACCESS_TOKEN`. A stored personal access token takes precedence, so a stale one fails even when a valid workspace token is set. Run `npx nx-cloud login` only when the status check reports no usable login. |
 | 4    | 403  | `plan_not_allowed`                                                                                   | The organization's plan does not include the Nx Cloud Public API. Tell the user; do not retry or use another person's token.                                                                                                                                                                                                                                                                                |
 | 4    | 404  | `not_found`                                                                                          | The ID in the path or in a parent-ID filter (`cipeId`, `runGroup`, `stepId`, `agentName`) is wrong. An unknown parent is never an empty result. Recheck the ID, or follow a link instead.                                                                                                                                                                                                                   |
+| 4    | 404  | none (empty body)                                                                                    | The path matched no route, usually because a raw ID containing `/` (such as `@scope/app:build`) was pasted into it. Use the `{placeholder}` path with `-p`, or follow `links`, and check the path with `--describe`.                                                                                                                                                                                        |
 | 4    | 409  | `not_terminal`                                                                                       | The entity is still running. This is not a failure; its data is not final yet. See same-session retry below.                                                                                                                                                                                                                                                                                                |
 | 4    | 429  | `rate_limit_exceeded` or empty body                                                                  | The organization-wide quota is exhausted. The command already retried 3 times honoring `Retry-After`. Back off, narrow filters, and make fewer requests.                                                                                                                                                                                                                                                    |
 | 5    | 503  | `data_api_at_capacity`, `query_deadline_exceeded`, `audit_log_unavailable`, `rate_limit_unavailable` | No data was returned. The command already retried 3 times. Back off before one more attempt; for `query_deadline_exceeded`, narrow the time range or filters.                                                                                                                                                                                                                                               |
@@ -117,10 +118,14 @@ state that the data is incomplete, or continue with `-f cursor=<nextCursor>` on
 the same path and filters.
 
 Without `--paginate` the command returns one page. With `--paginate` it follows
-`nextCursor` and merges the pages into one object. For a workspace-wide scan,
-always set `--max-items` to a bound you can justify, and use narrow filters. Do
-not fetch all `flaky-tasks` or `task-stats` pages without one. The returned
-`nextCursor` resumes exactly after the last returned item. If a later page
+`nextCursor` and merges the pages into one object, stopping at 10000 items by
+default. Pass a smaller `--max-items` when a sample answers the question. Use
+`--max-items 0` (no cap) only when you truly need every item, and use narrow
+filters either way; do not fetch all `flaky-tasks` or `task-stats` pages
+unfiltered. Leave `limit` unset with `--paginate` so the command uses 500 per
+page; every page costs one unit of the organization's rate limit, so a small
+`-f limit` multiplies requests. The returned `nextCursor` resumes exactly after
+the last returned item. If a later page
 fails, stdout still holds the items read so far and the cursor of the failed
 page, and the exit code is 4 or 5; resume from that cursor after handling the
 error.

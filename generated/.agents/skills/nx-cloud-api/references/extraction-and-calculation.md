@@ -8,7 +8,7 @@ calculation.
 1. Run `npx nx-cloud api --describe <operation>`. Use only its documented
    filters.
 2. Request one filtered page. Use its item count and `nextCursor` to decide
-   whether `--paginate` is needed and to choose `--max-items`.
+   whether `--paginate` is needed and whether the default 10000-item cap fits.
 3. Split periods only with documented, non-overlapping time boundaries.
 4. Run ranges in sequence. Save each range to its own file and record its exit
    code.
@@ -19,14 +19,15 @@ dir="$(mktemp -d)"
 npx nx-cloud api task-stats \
   -f dateAfter=2026-08-01 -f dateBefore=2026-08-07 \
   -f percentiles=50 -f percentiles=95 \
-  --paginate --max-items 2000 \
+  --paginate \
   -o "$dir/task-stats-2026-08-01.json"
 echo "exit $?"
 jq '{count: (.items | length), nextCursor}' "$dir/task-stats-2026-08-01.json"
 ```
 
-A non-null `nextCursor` means the range is incomplete: either `--max-items` was
-reached or a later page failed (non-zero exit). To continue, rerun the same
+A non-null `nextCursor` means the range is incomplete: either the item cap
+(`--max-items`, default 10000) was reached or a later page failed (non-zero
+exit). To continue, rerun the same
 command with `-f cursor=<nextCursor>` into a new file. Do not calculate a
 complete result while any range is incomplete. Record each time range, filters,
 file, exit code, item count, and final `nextCursor` in a manifest.

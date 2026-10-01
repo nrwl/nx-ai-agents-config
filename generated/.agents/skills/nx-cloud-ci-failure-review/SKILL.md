@@ -26,7 +26,8 @@ failures from the last 24 hours by default. CIPE and run-group list filters use
 normal six-hour CI duration. State the intended 24-hour review period and the
 30-hour creation window.
 
-Query `statuses=FAILED`, `statuses=TIMED_OUT`, and `statuses=CANCELED`. State the
+Query `statuses=FAILED`, `statuses=TIMED_OUT`, and `statuses=CANCELED` (the
+`cipes` filter accepts only terminal statuses). State the
 branches, CI contexts, statuses, endpoints, and record counts. Ask before widening
 the window or mixing unrelated repositories/workspaces.
 
@@ -41,7 +42,7 @@ fields. Fetch one narrow page first and check `nextCursor` before continuing.
 Collect in this order:
 
 1. Failed, timed-out, and canceled CIPEs with status, timestamps, branch, and CI
-   context. Use `--paginate` with a stated `--max-items` bound. Rank groups
+   context. Use `--paginate` and state the item cap (default 10000). Rank groups
    workspace-wide only after a zero exit with `nextCursor: null`; otherwise
    report the data as incomplete.
 2. Linked run groups and their documented critical-error fields.

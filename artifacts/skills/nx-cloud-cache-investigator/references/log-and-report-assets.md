@@ -1,7 +1,7 @@
 # Log and report assets
 
 Read this file before you inspect an Nx Cloud task log, sandbox report, or other
-report asset.
+report asset. Task assets are typed `logs`, `artifact`, or `sandbox-report`.
 
 These assets are compressed binary payloads. Treat each as an archive, not
 terminal text. Download the exact row-provided link with
