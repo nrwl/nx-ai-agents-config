@@ -20,7 +20,10 @@ workflow around it.
   for its parameters, response fields, and error statuses. Do not use
   remembered routes, fields, filter names, or enum values.
 - Start at `cipes` and follow returned `links` values. Do not build child URLs by
-  hand or use an internal workflow ID as a route parameter.
+  hand or use an internal workflow ID as a route parameter. When you must
+  address an entity by ID, use the `{placeholder}` path from `--describe` and
+  fill it with `-p name=value`. Never paste an ID into a path: IDs are raw and
+  can contain `/` or `:` (task IDs like `@scope/app:build`).
 - Start with one filtered page. Ask for a workspace, scope, or time range when
   they are missing. Do not collect history by default.
 - Read the operation description from `--describe`. It states server limits that
@@ -56,6 +59,9 @@ jq '{nextCursor, items: [.items[] | {id, status, createdAt, links}]}' "$dir/cipe
 
 # Follow a link from a previous response as-is.
 npx nx-cloud api "<link from a previous response>" -o "$dir/next.json"
+
+# Address an entity by ID only through a path parameter.
+npx nx-cloud api 'runs/{runId}/tasks' -p runId="$run_id" -o "$dir/tasks.json"
 ```
 
 Pass a `links.*` value exactly as returned; it may already carry query
@@ -76,23 +82,24 @@ part of a large operation.
 
 ## Exit codes and errors
 
-Always check the exit code. Error bodies go to stderr unchanged; do not hide
-stderr with `2>/dev/null`.
+Always check the exit code. The command passes the server's error body to
+stderr unchanged and adds no recovery hints; do not hide stderr with
+`2>/dev/null`. Exit 4 and 5 bodies are JSON with a stable `code` field (except
+401 and an empty-body 429); branch on `code`, not on the prose `message`.
 
-| Exit | Meaning                | Safe next action                                                                           |
-| ---- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| 0    | Success                | Read the saved output.                                                                     |
-| 1    | Usage or network error | Read stderr. Check the path, flags, host (`NX_CLOUD_API` or `nxCloudUrl`), proxy, and VPN. |
-| 4    | Client error (4xx)     | Read the status and body on stderr (`-i` prints the status line). See the table below.     |
-| 5    | Server error (5xx)     | Retry once after a short wait. Keep the endpoint, filters, and time range for support.     |
-
-| Status | Safe next action                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 401    | The command needs an access token: a personal access token from `npx nx-cloud login` together with `nxCloudId` in `nx.json`, or a workspace token in `NX_CLOUD_ACCESS_TOKEN`. First run `npx nx-cloud login --status` from the workspace root. A stored personal access token takes precedence, so a stale one fails even when a valid workspace token is set. Run `npx nx-cloud login` only when the status check reports no usable login. |
-| 403    | Confirm the workspace. Ask its administrator for access. Do not use another person's token.                                                                                                                                                                                                                                                                                                                                                 |
-| 404    | Check the route with `--list-operations` and `--describe`, then the resource ID.                                                                                                                                                                                                                                                                                                                                                            |
-| 409    | `not_terminal`: the entity is still running. Its data is not final yet.                                                                                                                                                                                                                                                                                                                                                                     |
-| 429    | Already retried by the command. Narrow filters or wait before another request.                                                                                                                                                                                                                                                                                                                                                              |
+| Exit | HTTP | `code`                                                                                               | Next action                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---- | ---- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | —    | —                                                                                                    | Usage or network error; nothing reached the API. Read the `nx-cloud api:` message on stderr. Fix the flags, path, or `-p` values, or check the host (`NX_CLOUD_API` or `nxCloudUrl`), proxy, and VPN.                                                                                                                                                                                                       |
+| 4    | 400  | `invalid_parameter`                                                                                  | Run `npx nx-cloud api --describe <same path>` and fix the named parameter. Unknown query parameters are always rejected.                                                                                                                                                                                                                                                                                    |
+| 4    | 400  | `invalid_limit`, `invalid_timestamp`, `invalid_date_range`, `invalid_filter`                         | Fix the value or filter combination named in `message`, using `--describe` for formats and limits.                                                                                                                                                                                                                                                                                                          |
+| 4    | 400  | `invalid_cursor`                                                                                     | A cursor is valid only for the list that minted it. Resume with the same path and filters, or restart without `cursor`.                                                                                                                                                                                                                                                                                     |
+| 4    | 401  | none (plain-text body)                                                                               | Run `npx nx-cloud login --status` from the workspace root. The command needs a personal access token from `npx nx-cloud login` with `nxCloudId` in `nx.json`, or a workspace token in `NX_CLOUD_ACCESS_TOKEN`. A stored personal access token takes precedence, so a stale one fails even when a valid workspace token is set. Run `npx nx-cloud login` only when the status check reports no usable login. |
+| 4    | 403  | `plan_not_allowed`                                                                                   | The organization's plan does not include the Nx Cloud Public API. Tell the user; do not retry or use another person's token.                                                                                                                                                                                                                                                                                |
+| 4    | 404  | `not_found`                                                                                          | The ID in the path or in a parent-ID filter (`cipeId`, `runGroup`, `stepId`, `agentName`) is wrong. An unknown parent is never an empty result. Recheck the ID, or follow a link instead.                                                                                                                                                                                                                   |
+| 4    | 409  | `not_terminal`                                                                                       | The entity is still running. This is not a failure; its data is not final yet. See same-session retry below.                                                                                                                                                                                                                                                                                                |
+| 4    | 429  | `rate_limit_exceeded` or empty body                                                                  | The organization-wide quota is exhausted. The command already retried 3 times honoring `Retry-After`. Back off, narrow filters, and make fewer requests.                                                                                                                                                                                                                                                    |
+| 5    | 503  | `data_api_at_capacity`, `query_deadline_exceeded`, `audit_log_unavailable`, `rate_limit_unavailable` | No data was returned. The command already retried 3 times. Back off before one more attempt; for `query_deadline_exceeded`, narrow the time range or filters.                                                                                                                                                                                                                                               |
+| 5    | 5xx  | other                                                                                                | Retry once after a short wait. Keep the endpoint, filters, time range, and `traceId` from the body for support.                                                                                                                                                                                                                                                                                             |
 
 `--list-operations`, `--describe`, and `--print-api-spec` do not need
 credentials, so they succeed even when data requests fail with 401.
@@ -102,21 +109,26 @@ request.
 
 ## Same-session retry
 
-The command already retries 429 and 503. For a 409 on a known request, arrange
-at most one same-session wake after the named parent is expected to finish.
-Preserve the link and filters. Stop at a terminal response.
+For a 409 `not_terminal` on a known request, arrange at most one same-session
+wake after the entity is expected to finish. Preserve the link and filters.
+Stop at a terminal response.
 
 ## Pagination
 
-Without `--paginate` the command returns one page as JSON. A non-null
-`nextCursor` means more results exist; state that the data is incomplete or
-fetch more only when the question needs it.
+Every list response, with or without `--paginate`, is one JSON object
+`{"items": [...], "nextCursor": ...}`. Read rows with `jq '.items[]'`. The list
+is complete only when the exit code is 0 and `nextCursor` is `null`. Otherwise
+state that the data is incomplete, or continue with `-f cursor=<nextCursor>` on
+the same path and filters.
 
-With `--paginate` the command follows `nextCursor` and writes one item per line
-(NDJSON) with no page metadata. Always set `--max-items` to a bound you can
-justify, and use narrow filters. Do not fetch all `flaky-tasks` or `task-stats`
-pages without one. If the item count equals `--max-items`, assume more data
-exists. A non-zero exit leaves partial NDJSON behind; treat it as incomplete.
+Without `--paginate` the command returns one page. With `--paginate` it follows
+`nextCursor` and merges the pages into one object. For a workspace-wide scan,
+always set `--max-items` to a bound you can justify, and use narrow filters. Do
+not fetch all `flaky-tasks` or `task-stats` pages without one. The returned
+`nextCursor` resumes exactly after the last returned item. If a later page
+fails, stdout still holds the items read so far and the cursor of the failed
+page, and the exit code is 4 or 5; resume from that cursor after handling the
+error.
 
 For multi-range extraction, task or log assets, or a calculation, read
 [references/extraction-and-calculation.md](references/extraction-and-calculation.md)

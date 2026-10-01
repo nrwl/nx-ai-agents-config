@@ -12,8 +12,7 @@ calculation.
 3. Split periods only with documented, non-overlapping time boundaries.
 4. Run ranges in sequence. Save each range to its own file and record its exit
    code.
-5. Combine data only when every range exited 0 and returned fewer items than its
-   `--max-items` bound.
+5. Combine data only when every range exited 0 with `nextCursor: null`.
 
 ```sh
 dir="$(mktemp -d)"
@@ -21,13 +20,16 @@ npx nx-cloud api task-stats \
   -f dateAfter=2026-08-01 -f dateBefore=2026-08-07 \
   -f percentiles=50 -f percentiles=95 \
   --paginate --max-items 2000 \
-  -o "$dir/task-stats-2026-08-01.ndjson"
-echo "exit $? items $(wc -l < "$dir/task-stats-2026-08-01.ndjson")"
+  -o "$dir/task-stats-2026-08-01.json"
+echo "exit $?"
+jq '{count: (.items | length), nextCursor}' "$dir/task-stats-2026-08-01.json"
 ```
 
-A non-zero exit leaves a partial file. A failed range makes the extraction
-incomplete; do not calculate a complete result from the other ranges. Record
-each time range, filters, file, exit code, and item count in a manifest.
+A non-null `nextCursor` means the range is incomplete: either `--max-items` was
+reached or a later page failed (non-zero exit). To continue, rerun the same
+command with `-f cursor=<nextCursor>` into a new file. Do not calculate a
+complete result while any range is incomplete. Record each time range, filters,
+file, exit code, item count, and final `nextCursor` in a manifest.
 
 ## Assets
 
@@ -64,7 +66,7 @@ should exist.
 
 Save the bounded input. Use a script that:
 
-1. Reads the saved JSON or NDJSON.
+1. Reads the saved JSON.
 2. States fields, filters, time range, and formula in a code comment.
 3. Prints machine-readable JSON before prose.
 4. Uses numeric timestamps and weighted counts for rates.

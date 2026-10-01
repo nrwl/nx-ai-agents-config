@@ -49,7 +49,9 @@ jq --arg task "$task_id" --arg batch "$batch_id" \
 ```
 
 Here `$run_tasks_link` is the tasks link from the selected run and `$dir` is a
-private directory from `mktemp -d`. Check `nextCursor` before concluding that a
+private directory from `mktemp -d`. Without a link, use
+`npx nx-cloud api 'runs/{runId}/tasks' -p runId="$run_id"`; never paste an ID
+into the path. Check `nextCursor` before concluding that a
 task is absent from the list.
 
 For a selected execution, record run and task IDs, `batchId`, project, target,
