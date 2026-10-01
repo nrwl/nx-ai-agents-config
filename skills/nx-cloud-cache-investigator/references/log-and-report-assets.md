@@ -1,10 +1,11 @@
 # Log and report assets
 
 Read this file before you inspect an Nx Cloud task log, sandbox report, or other
-report asset.
+report asset. Task assets are typed `logs`, `artifact`, or `sandbox-report`.
 
 These assets are compressed binary payloads. Treat each as an archive, not
-terminal text. Save the exact row-provided link with `--out`. Identify its format
+terminal text. Download the exact row-provided link with
+`npx nx-cloud api "<link>" -o <private-file>`. Identify its format
 from bytes, not its URL or file name. Decode it with a matching local tool into a
 second private file. Do not stream, print, or expand it in the workspace.
 

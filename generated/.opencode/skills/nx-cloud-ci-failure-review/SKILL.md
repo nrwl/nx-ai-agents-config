@@ -26,21 +26,25 @@ failures from the last 24 hours by default. CIPE and run-group list filters use
 normal six-hour CI duration. State the intended 24-hour review period and the
 30-hour creation window.
 
-Query `statuses=FAILED`, `statuses=TIMED_OUT`, and `statuses=CANCELED`. State the
+Query `statuses=FAILED`, `statuses=TIMED_OUT`, and `statuses=CANCELED` (the
+`cipes` filter accepts only terminal statuses). State the
 branches, CI contexts, statuses, endpoints, and record counts. Ask before widening
 the window or mixing unrelated repositories/workspaces.
 
-Use **nx-cloud-api** for every read. Inspect the live schemas for `cipes`,
-`run-groups`, `run-groups/{runGroupId}`, `runs`, `runs/{runId}/tasks`, and the
-linked `steps` and `instances` endpoints. The public API has no separate workflow
-routes. Start with supplied CIPEs in focused investigation mode. Start with failed CIPEs
+Use **nx-cloud-api** (`npx nx-cloud api`) for every read. Inspect the live
+schemas with `--describe` for `cipes`, `run-groups`, `run-groups/{runGroupId}`,
+`runs`, `runs/{runId}/tasks`, and the linked `steps` and `instances` endpoints.
+Use `--list-operations` to confirm the routes; the public API has no separate
+workflow routes. Reach child records by following returned `links`. Start with supplied CIPEs in focused investigation mode. Start with failed CIPEs
 and their linked run groups in review mode. Use only live documented filters and
-fields. Fetch one narrow page first and check pagination metadata before continuing.
+fields. Fetch one narrow page first and check `nextCursor` before continuing.
 
 Collect in this order:
 
 1. Failed, timed-out, and canceled CIPEs with status, timestamps, branch, and CI
-   context. Follow cursors to the end before a workspace-wide group ranking.
+   context. Use `--paginate` and state the item cap (default 10000). Rank groups
+   workspace-wide only after a zero exit with `nextCursor: null`; otherwise
+   report the data as incomplete.
 2. Linked run groups and their documented critical-error fields.
 3. Runs and terminal task rows for each selected group.
 4. Workflow and instance status only when task data does not explain the group.
