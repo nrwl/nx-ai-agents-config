@@ -43,7 +43,7 @@ pull request.
 ```sh
 npx nx-cloud api --describe cipes
 
-# Save one bounded page to a private file, then project only what you need.
+# Save one bounded page to a scratch file, then project only what you need.
 dir="$(mktemp -d)"
 npx nx-cloud api cipes \
   -f createdAfter=2026-08-01T00:00:00Z \
@@ -65,8 +65,9 @@ Nx Cloud host.
 
 ## Keep API output compact
 
-Write every live data response to a private file with `-o` (for example under a
-`mktemp -d` directory) and read a question-specific `jq` projection. Do not let
+Write every live data response to a file with `-o` (files are created
+owner-only) in a scratch directory outside the workspace, such as one from
+`mktemp -d`, and read a question-specific `jq` projection. Do not let
 a raw collection print into the conversation unless the user asks for it.
 Choose projected fields from `--describe`. For one row, select it first, then
 project only the needed fields. Delete saved data when the task is done unless
@@ -130,6 +131,12 @@ limit, and `--page-size` (which sets `limit`, max 500) only helps when raised.
 If a later page fails, the command still prints what it fetched, with
 `nextCursor` at the failed page, and exits 4 or 5. Handle the error, then
 resume from that cursor.
+
+`--format ndjson` prints only the rows, one per line, with no metadata. Use it
+only when you need the rows and can accept that completeness is signalled just
+by the exit code and the stderr notice "Stopped after N page(s). More results
+are available…". When you need completeness or a resume cursor, use the default
+JSON output.
 
 For multi-range extraction, task or log assets, or a calculation, read
 [references/extraction-and-calculation.md](references/extraction-and-calculation.md)

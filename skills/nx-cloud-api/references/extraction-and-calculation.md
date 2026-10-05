@@ -14,26 +14,28 @@ calculation.
    code.
 5. Combine data only when every range exited 0 with `nextCursor: null`.
 
-For large extracts, stream items as NDJSON and save the metadata separately:
+Use the default JSON output for extraction; only it carries the completion
+state and resume cursor:
 
 ```sh
 dir="$(mktemp -d)"
 npx nx-cloud api task-stats \
   -f dateAfter=2026-08-01 -f dateBefore=2026-08-07 \
   -f percentiles=50 -f percentiles=95 \
-  --pages 3 --format ndjson \
-  -o "$dir/task-stats-2026-08-01.ndjson" \
-  --metadata-out "$dir/task-stats-2026-08-01.meta.json"
+  --pages 3 \
+  -o "$dir/task-stats-2026-08-01.json"
 echo "exit $?"
-jq '{fetchedItemCount, pageLimitReached, nextCursor}' "$dir/task-stats-2026-08-01.meta.json"
+jq '{fetchedItemCount, pageLimitReached, nextCursor}' "$dir/task-stats-2026-08-01.json"
+jq -c '.items[]' "$dir/task-stats-2026-08-01.json"   # rows, one per line
 ```
 
-Always pass `--metadata-out` with `--format ndjson`; the NDJSON file has no
-completion state. A non-null `nextCursor` means the range is incomplete: either
-`--pages` stopped it (`pageLimitReached: true`) or a later page failed (non-zero
-exit; streamed items stay in the file). To continue, rerun the same
+A non-null `nextCursor` means the range is incomplete: either `--pages` stopped
+it (`pageLimitReached: true`) or a later page failed (non-zero exit; the file
+holds the pages fetched before the failure). To continue, rerun the same
 command with `-f cursor=<nextCursor>` into a new file. Do not calculate a
-complete result while any range is incomplete. Record each time range, filters,
+complete result while any range is incomplete. Use `--format ndjson` only when
+you need the rows and can rely on the exit code and the stderr "Stopped after N
+page(s)" notice alone for completeness; it records no resume cursor. Record each time range, filters,
 file, exit code, item count, and final `nextCursor` in a manifest.
 
 ## Assets
@@ -71,7 +73,7 @@ should exist.
 
 Save the bounded input. Use a script that:
 
-1. Reads the saved JSON or NDJSON.
+1. Reads the saved JSON (rows in `.items`).
 2. States fields, filters, time range, and formula in a code comment.
 3. Prints machine-readable JSON before prose.
 4. Uses numeric timestamps and weighted counts for rates.
