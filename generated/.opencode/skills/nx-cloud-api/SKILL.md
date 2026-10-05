@@ -55,7 +55,7 @@ npx nx-cloud api cipes \
   -f statuses=FAILED -f statuses=CANCELED \
   -o "$dir/cipes.json"
 echo "exit $?"
-jq '{nextCursor, items: [.items[] | {id, status, createdAt, links}]}' "$dir/cipes.json"
+jq '{pageLimitReached, nextCursor, items: [.items[] | {id, status, createdAt, links}]}' "$dir/cipes.json"
 
 # Follow a link from a previous response as-is.
 npx nx-cloud api "<link from a previous response>" -o "$dir/next.json"
@@ -116,24 +116,25 @@ Stop at a terminal response.
 
 ## Pagination
 
-Every list response, with or without `--paginate`, is one JSON object
-`{"items": [...], "nextCursor": ...}`. Read rows with `jq '.items[]'`. The list
-is complete only when the exit code is 0 and `nextCursor` is `null`. Otherwise
-state that the data is incomplete, or continue with `-f cursor=<nextCursor>` on
-the same path and filters.
+Every list response is wrapped, even a single page:
+`{source, pagesFetched, fetchedItemCount, pageLimitReached, nextCursor, items}`.
+`source` records the origin, endpoint, and original query. Read rows with
+`jq '.items[]'`. Non-list responses are returned as-is.
 
-Without `--paginate` the command returns one page. With `--paginate` it follows
-`nextCursor` and merges the pages into one object, stopping at 10000 items by
-default. Pass a smaller `--max-items` when a sample answers the question. Use
-`--max-items 0` (no cap) only when you truly need every item, and use narrow
-filters either way; do not fetch all `flaky-tasks` or `task-stats` pages
-unfiltered. Leave `limit` unset with `--paginate` so the command uses 500 per
-page; every page costs one unit of the organization's rate limit, so a small
-`-f limit` multiplies requests. The returned `nextCursor` resumes exactly after
-the last returned item. If a later page
-fails, stdout still holds the items read so far and the cursor of the failed
-page, and the exit code is 4 or 5; resume from that cursor after handling the
-error.
+The list is complete only when the exit code is 0 and `nextCursor` is `null`.
+`pageLimitReached: true` means `--pages` stopped the run while more results
+exist. To continue, rerun the same path and filters with
+`-f cursor=<nextCursor>`, or state that the data is incomplete.
+
+The command fetches one page by default. Raise `--pages` deliberately and keep
+it small; prefer narrower filters over more pages. Do not fetch many
+`flaky-tasks` or `task-stats` pages without a narrow filter. Leave the page size
+alone unless needed: every page costs one unit of the organization's rate
+limit, and `--page-size` (which sets `limit`, max 500) only helps when raised.
+
+If a later page fails, the command still prints what it fetched, with
+`nextCursor` at the failed page, and exits 4 or 5. Handle the error, then
+resume from that cursor.
 
 For multi-range extraction, task or log assets, or a calculation, read
 [references/extraction-and-calculation.md](references/extraction-and-calculation.md)

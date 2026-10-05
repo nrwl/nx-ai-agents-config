@@ -7,27 +7,31 @@ calculation.
 
 1. Run `npx nx-cloud api --describe <operation>`. Use only its documented
    filters.
-2. Request one filtered page. Use its item count and `nextCursor` to decide
-   whether `--paginate` is needed and whether the default 10000-item cap fits.
+2. Request one filtered page. Use `fetchedItemCount` and `nextCursor` to choose
+   a small `--pages` value, or narrower filters.
 3. Split periods only with documented, non-overlapping time boundaries.
 4. Run ranges in sequence. Save each range to its own file and record its exit
    code.
 5. Combine data only when every range exited 0 with `nextCursor: null`.
+
+For large extracts, stream items as NDJSON and save the metadata separately:
 
 ```sh
 dir="$(mktemp -d)"
 npx nx-cloud api task-stats \
   -f dateAfter=2026-08-01 -f dateBefore=2026-08-07 \
   -f percentiles=50 -f percentiles=95 \
-  --paginate \
-  -o "$dir/task-stats-2026-08-01.json"
+  --pages 3 --format ndjson \
+  -o "$dir/task-stats-2026-08-01.ndjson" \
+  --metadata-out "$dir/task-stats-2026-08-01.meta.json"
 echo "exit $?"
-jq '{count: (.items | length), nextCursor}' "$dir/task-stats-2026-08-01.json"
+jq '{fetchedItemCount, pageLimitReached, nextCursor}' "$dir/task-stats-2026-08-01.meta.json"
 ```
 
-A non-null `nextCursor` means the range is incomplete: either the item cap
-(`--max-items`, default 10000) was reached or a later page failed (non-zero
-exit). To continue, rerun the same
+Always pass `--metadata-out` with `--format ndjson`; the NDJSON file has no
+completion state. A non-null `nextCursor` means the range is incomplete: either
+`--pages` stopped it (`pageLimitReached: true`) or a later page failed (non-zero
+exit; streamed items stay in the file). To continue, rerun the same
 command with `-f cursor=<nextCursor>` into a new file. Do not calculate a
 complete result while any range is incomplete. Record each time range, filters,
 file, exit code, item count, and final `nextCursor` in a manifest.
@@ -67,7 +71,7 @@ should exist.
 
 Save the bounded input. Use a script that:
 
-1. Reads the saved JSON.
+1. Reads the saved JSON or NDJSON.
 2. States fields, filters, time range, and formula in a code comment.
 3. Prints machine-readable JSON before prose.
 4. Uses numeric timestamps and weighted counts for rates.

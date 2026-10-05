@@ -37,8 +37,8 @@ fields. Fetch one narrow page first and check `nextCursor` before continuing.
 Collect in this order:
 
 1. Failed, timed-out, and canceled CIPEs with status, timestamps, branch, and CI
-   context. Use `--paginate` and state the item cap (default 10000). Rank groups
-   workspace-wide only after a zero exit with `nextCursor: null`; otherwise
+   context. Use a small, stated `--pages` value. Rank groups workspace-wide
+   only after a zero exit with `nextCursor: null`; otherwise
    report the data as incomplete.
 2. Linked run groups and their documented critical-error fields.
 3. Runs and terminal task rows for each selected group.
