@@ -4,7 +4,7 @@ Read this file only when a run-group or main-job error names artifact download,
 validation, decompression, or extraction.
 
 Download the exact task-row artifact link with
-`npx nx-cloud api "<link>" -o <private-file>`. Do not extract it in the
+`npx nx-cloud api "<link>" -o <private-file>.tar.gz`. Do not extract it in the
 workspace. If the artifact is encrypted, decrypt a copy with
 `npx nx-cloud decrypt-artifact` before you inspect its contents; run the byte and
 stream checks below on the downloaded bytes first.

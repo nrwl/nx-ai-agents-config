@@ -32,17 +32,19 @@ jq -c '.items[]' "$dir/task-stats-2026-08-01.json"   # rows, one per line
 A non-null `nextCursor` means the range is incomplete: either `--pages` stopped
 it (`pageLimitReached: true`) or a later page failed (non-zero exit; the file
 holds the pages fetched before the failure). To continue, rerun the same
-command with `-f cursor=<nextCursor>` into a new file. Do not calculate a
-complete result while any range is incomplete. Use `--format ndjson` only when
-you need the rows and can rely on the exit code and the stderr "Stopped after N
-page(s)" notice alone for completeness; it records no resume cursor. Record each time range, filters,
+command with `--cursor <nextCursor>` into a new file. Do not calculate a
+complete result while any range is incomplete. Do not use `--format ndjson` for
+extraction; it records neither completion state nor a resume cursor. Record each
+time range, filters,
 file, exit code, item count, and final `nextCursor` in a manifest.
 
 ## Assets
 
-Asset links (task logs, artifacts, reports) answer with a redirect. The command
-downloads the target without Nx Cloud credentials and writes the raw bytes. Use
-`-o <file>`; the command refuses to write binary data to a terminal. Encrypted
+Asset links (task logs, artifacts, reports) answer with a redirect;
+`--describe` shows them as `returns: file`. The command downloads the target
+without Nx Cloud credentials and writes the raw bytes, the only output that is
+not JSON. Use `-o <file>` with an explicit extension such as `.tar.gz`; the
+command refuses to write a download to a terminal. Encrypted
 artifacts can be decrypted with `npx nx-cloud decrypt-artifact`.
 
 A returned asset link proves only that a route was advertised. A successful
