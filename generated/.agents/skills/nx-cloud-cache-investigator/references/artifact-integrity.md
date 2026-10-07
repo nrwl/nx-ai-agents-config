@@ -3,8 +3,11 @@
 Read this file only when a run-group or main-job error names artifact download,
 validation, decompression, or extraction.
 
-Follow the exact task-row artifact link. Save it privately. Do not extract it in
-the workspace.
+Download the exact task-row artifact link with
+`npx nx-cloud api "<link>" -o <private-file>.tar.gz`. Do not extract it in the
+workspace. If the artifact is encrypted, decrypt a copy with
+`npx nx-cloud decrypt-artifact` before you inspect its contents; run the byte and
+stream checks below on the downloaded bytes first.
 
 1. Record byte count and SHA-256.
 2. Detect the format from bytes, not the extension.
