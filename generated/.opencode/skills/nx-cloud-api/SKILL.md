@@ -1,6 +1,6 @@
 ---
 name: nx-cloud-api
-description: Query the read-only Nx Cloud Public API for workspace data with `npx nx-cloud api`. Use this skill when a user asks to inspect or retrieve CIPEs, run groups, runs, tasks, workflows, agents, task statistics, flaky tasks, cache data, or API endpoint details. Use this skill before any Nx Cloud API call. It covers endpoint discovery, link navigation, pagination, asset downloads, and error recovery. Do not use it for live CI monitoring.
+description: Query the read-only Nx Cloud Public API for workspace data with `npx nx-cloud api`. Use this skill when a user asks to inspect or retrieve CIPEs, pipelines, run groups, runs, tasks, workflows, agents, task statistics, flaky tasks, cache data, or API endpoint details. Use this skill before any Nx Cloud API call. It covers endpoint discovery, link navigation, pagination, asset downloads, and error recovery. Do not use it for live CI monitoring.
 ---
 
 # Nx Cloud API
@@ -35,7 +35,6 @@ is an asset download, whose raw bytes go to the `-o` file.
   they are missing. Do not collect history by default.
 - Read the operation description from `--describe`. It states server limits that
   the command does not enforce.
-- Never put a token in a command, variable, chat message, or log.
 - Do not use this skill to poll or monitor live CI.
 
 ## Cache boundary
@@ -78,7 +77,7 @@ which resolve like the bare path `cipes/<id>`.
 
 ## Keep API output compact
 
-Write every live data response to a file with `-o` (files are created
+To preserve context, write every live data response to a file with `-o` (files are created
 owner-only) in a scratch directory outside the workspace. Give the file an
 extension. A name without one gets `.json`, `.ndjson`, or the download's own
 (such as `.tar.gz`), and the command reports the final path on stderr as
@@ -158,7 +157,7 @@ If a later page fails, the command still prints what it fetched, with
 resume from that cursor.
 
 `--format ndjson` prints only the rows, one per line, with no metadata. Nothing
-in its output says whether more pages exist, and it records no resume cursor.
+in its output says whether more pages exist, and it records no resume cursor. It prints each page as it is retrieved which can matter for responsiveness or very large responses.
 Use it only when completeness does not matter; otherwise use the default JSON
 output.
 
