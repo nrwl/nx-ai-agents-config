@@ -45,9 +45,8 @@ Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrore
 
 ## How it works
 
-- **PR branches** get pre-release versions automatically (e.g., `0.2.1-pr.42`) via `.github/workflows/version-pr.yml`
-- **Main** gets release versions on merge (e.g., `0.2.1`) via `.github/workflows/version-release.yml`
-- Versioning is always patch-level; for minor/major bumps, manually run the bump script
+- Merging to `main` does not change the version. Releases are cut manually.
+- To release, run the **Release PR** workflow (`.github/workflows/release-pr.yml`) from the Actions tab and pick `patch`, `minor` or `major`. It opens a `chore: release X.Y.Z` PR with the bumped manifests; merging that PR is the release.
 
 ## Manual version bump
 

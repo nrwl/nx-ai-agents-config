@@ -1,0 +1,62 @@
+name: Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Prepare release
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          RELEASE=$(node -e "
+            const { version } = require('./.claude-plugin/plugin.json');
+            let [major, minor, patch] = version.replace(/-.*/, '').split('.').map(Number);
+            if (process.env.BUMP === 'major') { major++; minor = 0; patch = 0; }
+            else if (process.env.BUMP === 'minor') { minor++; patch = 0; }
+            else { patch++; }
+            console.log([major, minor, patch].join('.'));
+          ")
+          echo "value=$RELEASE" >> "$GITHUB_OUTPUT"
+          node scripts/bump-version.mjs --version "$RELEASE"
+          npx nx sync-artifacts
+
+      - name: Open release pull request
+        uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
+        with:
+          branch: release/v${{ steps.version.outputs.value }}
+          base: main
+          title: 'chore: release ${{ steps.version.outputs.value }}'
+          commit-message: 'chore: release ${{ steps.version.outputs.value }}'
+          body: |
+            Automated release PR for `${{ steps.version.outputs.value }}`.
+
+            Merge this PR into `main` to release the plugin. The Claude Code and Cursor marketplaces pick up the new version from `main`.
+          delete-branch: true
