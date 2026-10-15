@@ -1,0 +1,97 @@
+name: Stage Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.release.outputs.should_publish }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect release version bump
+        id: release
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          read_version='JSON.parse(require("fs").readFileSync(0, "utf8")).version'
+          before_version="$(git show "$BEFORE:.claude-plugin/plugin.json" | node -p "$read_version")"
+          after_version="$(node -p "$read_version" < .claude-plugin/plugin.json)"
+
+          if [ "$before_version" = "$after_version" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          echo "version=$after_version" >> "$GITHUB_OUTPUT"
+
+  stage:
+    needs: detect
+    if: needs.detect.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    environment: release-approval
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm
+        # npm staged publishing requires npm 11.15.0 or newer.
+        run: npm install -g npm@11.15.0
+
+      - name: Build plugin packages
+        run: node scripts/package-plugins.mjs
+
+      - name: Create release tag
+        env:
+          VERSION: ${{ needs.detect.outputs.version }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists"
+            exit 1
+          fi
+          git tag "v$VERSION"
+
+      - name: Publish Claude Code plugin on npm
+        run: npm publish --provenance --access public
+        working-directory: dist/claude
+
+      - name: Publish Codex plugin on npm
+        run: npm publish --provenance --access public
+        working-directory: dist/codex
+
+      - name: Publish OpenCode plugin on npm
+        run: npm publish --provenance --access public
+        working-directory: dist/opencode
+
+      # Cursor installs the plugin straight from this repository at the tag
+      # (`.cursor/settings.json` → gitUrl + gitRef), so the tag is part of the
+      # release, not just a marker.
+      - name: Push release tag
+        env:
+          VERSION: ${{ needs.detect.outputs.version }}
+        run: git push origin "v$VERSION"

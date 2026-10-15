@@ -42,7 +42,28 @@
         "inputs": [
           "{workspaceRoot}/tests/**/*.test.mjs",
           "{workspaceRoot}/artifacts/skills/monitor-ci/**/*",
-          "{workspaceRoot}/vitest.config.mjs"
+          "{workspaceRoot}/vitest.config.mjs",
+          "{workspaceRoot}/plugins/**/*",
+          "{workspaceRoot}/scripts/package-plugins.mjs",
+          "{workspaceRoot}/generated/.opencode/**/*",
+          "{workspaceRoot}/generated/.agents/**/*",
+          "{workspaceRoot}/skills/**/*",
+          "{workspaceRoot}/agents/**/*"
+        ]
+      },
+      "package-plugins": {
+        "command": "node scripts/package-plugins.mjs",
+        "inputs": [
+          "{workspaceRoot}/scripts/package-plugins.mjs",
+          "{workspaceRoot}/plugins/**/*",
+          "{workspaceRoot}/skills/**/*",
+          "{workspaceRoot}/agents/**/*",
+          "{workspaceRoot}/generated/**/*",
+          "{workspaceRoot}/.claude-plugin/plugin.json",
+          "{workspaceRoot}/.mcp.json"
+        ],
+        "outputs": [
+          "{workspaceRoot}/dist"
         ]
       }
     }

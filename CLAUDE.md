@@ -39,6 +39,18 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
     - `.codex/` - Codex (MCP config)
 - The plugin is registered in `.claude-plugin/marketplace.json`
 
+# npm packages
+
+`node scripts/package-plugins.mjs` (nx target `package-plugins`) assembles the published packages into `dist/` (gitignored) from the generated outputs above plus the runtime code in `plugins/`:
+
+- `@nx/claude-plugin` (`dist/claude`): root `skills/`, `agents/`, `.mcp.json`, plus the SessionStart hook in `plugins/claude` and `plugins/shared/hooks`
+- `@nx/codex-plugin` (`dist/codex`): `generated/.agents/skills`, a `.codex-plugin/plugin.json`, the same SessionStart hook, and the `nx-codex-plugin` installer (`plugins/codex`). The installer caches the plugin in Codex without enabling it globally; workspaces enable it in `.codex/config.toml`.
+- `@nx/opencode-plugin` (`dist/opencode`): `generated/.opencode` content loaded by the plugin module in `plugins/opencode`
+
+The Nx guidelines that used to be written into AGENTS.md/CLAUDE.md live in `plugins/shared/hooks/nx-guidelines.md` and reach the agent through the SessionStart hook (Claude Code, Codex) or OpenCode `instructions`.
+
+Cursor has no npm package: Cursor project plugins are installed from this repository at a release tag (`.cursor/settings.json` → `gitUrl` + `gitRef`), using the root `.cursor-plugin/plugin.json`.
+
 # Plugin Versioning
 
 Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrored to `.cursor-plugin/plugin.json`.
@@ -46,7 +58,8 @@ Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrore
 ## How it works
 
 - Merging to `main` does not change the version. Releases are cut manually.
-- To release, run the **Release PR** workflow (`.github/workflows/release-pr.yml`) from the Actions tab and pick `patch`, `minor` or `major`. It opens a `chore: release X.Y.Z` PR with the bumped manifests; merging that PR is the release.
+- To release, run the **Release PR** workflow (`.github/workflows/release-pr.yml`) from the Actions tab and pick `patch`, `minor` or `major`. It opens a `chore: release X.Y.Z` PR with the bumped manifests.
+- Merging that PR triggers **Stage Release** (`.github/workflows/publish.yml`): it builds the npm packages, publishes them with provenance, and pushes the `vX.Y.Z` tag Cursor installs from. Each npm package needs a trusted publisher configured for that workflow.
 
 ## Manual version bump
 
