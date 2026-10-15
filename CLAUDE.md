@@ -70,16 +70,11 @@ npx nx sync-artifacts
 
 ## Testing a PR plugin version
 
-Coworkers can test a PR's plugin version by creating `.claude/settings.local.json` (gitignored) with:
+The marketplace installs the published `@nx/claude-plugin`, so a PR's changes are not picked up from its branch. Check out the branch, build the packages, and load the plugin for one session:
 
-```json
-{
-  "plugins": {
-    "nx": {
-      "ref": "pr-branch-name"
-    }
-  }
-}
+```bash
+npx nx package-plugins
+claude --plugin-dir dist/claude
 ```
 
-Restart Claude Code, test, then remove the override when done.
+For Codex, run `node dist/codex/bin/nx-codex-plugin.mjs install` from the same build.
