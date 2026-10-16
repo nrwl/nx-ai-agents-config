@@ -47,8 +47,24 @@ describe('removeTomlTable', () => {
   });
 
   it('leaves the text untouched when the table is absent', () => {
-    const input = '[projects."/repo"]\ntrust_level = "trusted"\n';
+    const input =
+      'model = "o3"\n\n\n\n[projects."/repo"]\ntrust_level = "trusted"\n';
     expect(removeTomlTable(input, `plugins."${PLUGIN_ID}"`)).toBe(input);
+  });
+
+  it('only touches the lines of the removed table', () => {
+    const input = [
+      '[a]',
+      'x = 1',
+      '[plugins."nx@nx-agent-plugins"]',
+      'enabled = true',
+      '[b]',
+      'y = 2',
+      '',
+    ].join('\n');
+    expect(removeTomlTable(input, `plugins."${PLUGIN_ID}"`)).toBe(
+      ['[a]', 'x = 1', '[b]', 'y = 2', ''].join('\n')
+    );
   });
 });
 
@@ -161,6 +177,21 @@ describe('installPlugin', () => {
       )
     ).toBe(true);
     expect(checkInstall({ packageRoot, env }).ok).toBe(true);
+  });
+
+  it('keeps a global enable the user already had', () => {
+    mkdirSync(env.CODEX_HOME, { recursive: true });
+    writeFileSync(
+      join(env.CODEX_HOME, 'config.toml'),
+      `[plugins."${PLUGIN_ID}"]\nenabled = true\n`
+    );
+
+    const result = installPlugin({ packageRoot, env, codex: fakeCodex([]) });
+
+    expect(result).toMatchObject({ ok: true, userEntryRemoved: false });
+    expect(readFileSync(join(env.CODEX_HOME, 'config.toml'), 'utf8')).toContain(
+      `[plugins."${PLUGIN_ID}"]`
+    );
   });
 
   it('reports a missing Codex CLI instead of throwing', () => {

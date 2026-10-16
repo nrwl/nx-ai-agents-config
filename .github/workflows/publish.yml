@@ -24,7 +24,8 @@ jobs:
         env:
           BEFORE: ${{ github.event.before }}
         run: |
-          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+          # New branch or rewritten history: nothing to compare against.
+          if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -33,7 +34,14 @@ jobs:
           before_version="$(git show "$BEFORE:.claude-plugin/plugin.json" | node -p "$read_version")"
           after_version="$(node -p "$read_version" < .claude-plugin/plugin.json)"
 
-          if [ "$before_version" = "$after_version" ]; then
+          # Publish only when the version went up, so a revert never republishes.
+          increased="$(node -p "
+            const parse = (v) => v.split('-')[0].split('.').map(Number);
+            const [a, b] = [parse('$before_version'), parse('$after_version')];
+            const i = b.findIndex((n, j) => n !== a[j]);
+            i !== -1 && b[i] > a[i]
+          ")"
+          if [ "$increased" != "true" ]; then
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -66,27 +74,52 @@ jobs:
       - name: Build plugin packages
         run: node scripts/package-plugins.mjs
 
+      # Every step below is safe to re-run after a partial failure.
       - name: Create release tag
         env:
           VERSION: ${{ needs.detect.outputs.version }}
         run: |
-          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
-            echo "Tag v$VERSION already exists"
-            exit 1
+          if tagged="$(git rev-parse -q --verify "refs/tags/v$VERSION^{commit}")"; then
+            if [ "$tagged" != "$(git rev-parse HEAD)" ]; then
+              echo "Tag v$VERSION already points at $tagged"
+              exit 1
+            fi
+          else
+            git tag "v$VERSION"
           fi
-          git tag "v$VERSION"
 
       - name: Publish Claude Code plugin on npm
-        run: npm publish --provenance --access public
         working-directory: dist/claude
+        run: |
+          name="$(node -p 'require("./package.json").name')"
+          version="$(node -p 'require("./package.json").version')"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already published"
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: Publish Codex plugin on npm
-        run: npm publish --provenance --access public
         working-directory: dist/codex
+        run: |
+          name="$(node -p 'require("./package.json").name')"
+          version="$(node -p 'require("./package.json").version')"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already published"
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: Publish OpenCode plugin on npm
-        run: npm publish --provenance --access public
         working-directory: dist/opencode
+        run: |
+          name="$(node -p 'require("./package.json").name')"
+          version="$(node -p 'require("./package.json").version')"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already published"
+          else
+            npm publish --provenance --access public
+          fi
 
       # Cursor installs the plugin straight from this repository at the tag
       # (`.cursor/settings.json` → gitUrl + gitRef), so the tag is part of the

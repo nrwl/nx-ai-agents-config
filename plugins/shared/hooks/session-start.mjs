@@ -8,7 +8,7 @@
 // Only Nx workspaces get the guidelines: the plugin is enabled per project,
 // but a user may also have enabled it globally.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -70,7 +70,8 @@ function main() {
 
 const isMainModule =
   process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  realpathSync(process.argv[1]) ===
+    realpathSync(fileURLToPath(import.meta.url));
 if (isMainModule) {
   try {
     main();

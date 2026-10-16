@@ -170,6 +170,9 @@ export function installPlugin({
     };
   }
 
+  // A user who enabled the plugin globally on purpose keeps that setting.
+  const enabledByUser = hasUserPluginEntry(codexHome);
+
   const add = codex(['plugin', 'add', PLUGIN_ID], env);
   if (!add.ok) {
     return {
@@ -180,7 +183,9 @@ export function installPlugin({
     };
   }
 
-  const userEntryRemoved = removeUserPluginEntry(codexHome);
+  const userEntryRemoved = enabledByUser
+    ? false
+    : removeUserPluginEntry(codexHome);
 
   return { ...base, ok: true, codexAvailable: true, userEntryRemoved };
 }
@@ -228,6 +233,14 @@ export function writeMarketplaceManifest({ marketplaceRoot, pluginPath }) {
  * subtables) from $CODEX_HOME/config.toml. Edits the text line by line so the
  * user's comments and formatting elsewhere in the file survive.
  */
+export function hasUserPluginEntry(codexHome) {
+  const configPath = join(codexHome, 'config.toml');
+  return (
+    existsSync(configPath) &&
+    hasTomlTable(readFileSync(configPath, 'utf8'), `plugins."${PLUGIN_ID}"`)
+  );
+}
+
 export function removeUserPluginEntry(codexHome) {
   const configPath = join(codexHome, 'config.toml');
   if (!existsSync(configPath)) {
@@ -242,29 +255,56 @@ export function removeUserPluginEntry(codexHome) {
   return true;
 }
 
+export function hasTomlTable(text, tableKey) {
+  return text.split('\n').some((line) => {
+    const key = parseTableHeader(line);
+    return key === tableKey || key?.startsWith(`${tableKey}.`);
+  });
+}
+
 export function removeTomlTable(text, tableKey) {
-  const lines = text.split('\n');
+  if (!hasTomlTable(text, tableKey)) {
+    return text;
+  }
+
   const kept = [];
   let skipping = false;
+  let separated = false;
 
-  for (const line of lines) {
-    const header = line.match(/^\s*\[\[?\s*([^\]]+?)\s*\]\]?\s*(#.*)?$/);
-    if (header) {
-      const key = header[1];
-      skipping = key === tableKey || key.startsWith(`${tableKey}.`);
-      if (skipping) {
+  for (const line of text.split('\n')) {
+    const key = parseTableHeader(line);
+    if (key !== null) {
+      const remove = key === tableKey || key.startsWith(`${tableKey}.`);
+      if (remove) {
+        if (!skipping) {
+          // Drop the blank lines in front of the removed table, and restore
+          // one separator before whatever table follows it.
+          separated = false;
+          while (kept.length && kept[kept.length - 1].trim() === '') {
+            kept.pop();
+            separated = true;
+          }
+        }
+        skipping = true;
         continue;
       }
+      if (skipping && separated && kept.length) {
+        kept.push('');
+      }
+      skipping = false;
     }
     if (!skipping) {
       kept.push(line);
     }
   }
 
-  return kept
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/^\n+/, '');
+  const result = kept.join('\n');
+  return text.endsWith('\n') && !result.endsWith('\n') ? `${result}\n` : result;
+}
+
+function parseTableHeader(line) {
+  const header = line.match(/^\s*\[\[?\s*([^\]]+?)\s*\]\]?\s*(#.*)?$/);
+  return header ? header[1] : null;
 }
 
 function getPackagePayloadPaths(packageRoot, packageJson) {

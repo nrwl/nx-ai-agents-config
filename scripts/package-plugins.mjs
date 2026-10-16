@@ -11,10 +11,12 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const rootDir = join(import.meta.dirname, '..');
 const pluginsDir = join(rootDir, 'plugins');
@@ -269,7 +271,8 @@ export function packagePlugins(distDir = join(rootDir, 'dist')) {
 
 const isMainModule =
   process.argv[1] &&
-  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+  realpathSync(process.argv[1]) ===
+    realpathSync(fileURLToPath(import.meta.url));
 if (isMainModule) {
   const { distDir, version } = packagePlugins();
   console.log(

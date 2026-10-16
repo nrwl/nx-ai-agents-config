@@ -60,7 +60,9 @@
           "{workspaceRoot}/agents/**/*",
           "{workspaceRoot}/generated/**/*",
           "{workspaceRoot}/.claude-plugin/plugin.json",
-          "{workspaceRoot}/.mcp.json"
+          "{workspaceRoot}/.mcp.json",
+          "{workspaceRoot}/package.json",
+          "{workspaceRoot}/LICENSE"
         ],
         "outputs": [
           "{workspaceRoot}/dist"
