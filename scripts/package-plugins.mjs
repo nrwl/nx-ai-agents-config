@@ -196,7 +196,7 @@ export function buildCodex(distDir, manifest) {
       ],
       {
         type: 'module',
-        bin: { 'nx-codex-plugin': './bin/nx-codex-plugin.mjs' },
+        bin: { 'nx-codex-plugin': 'bin/nx-codex-plugin.mjs' },
       }
     )
   );

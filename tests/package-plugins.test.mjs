@@ -64,7 +64,7 @@ describe('packagePlugins', () => {
       args: ['nx-mcp@latest', '--minimal'],
     });
     expect(readJson(join(dir, 'package.json')).bin).toEqual({
-      'nx-codex-plugin': './bin/nx-codex-plugin.mjs',
+      'nx-codex-plugin': 'bin/nx-codex-plugin.mjs',
     });
   });
 
