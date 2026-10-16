@@ -30,7 +30,7 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
   - Claude Code and Cursor plugins share output: `skills/`, `agents/`, `.mcp.json`
     - Claude plugin manifest: `.claude-plugin/plugin.json`
     - Cursor plugin manifest: `.cursor-plugin/plugin.json` (uses convention-based discovery of root `skills/` and `agents/`)
-  - Other agents output to `generated/`:
+  - Other agents output to `generated/`. Nx versions before 24 copy these into workspaces; newer versions install the npm packages instead and no longer configure Copilot or Gemini:
     - `.opencode/` - OpenCode
     - `.github/` - GitHub Copilot
     - `.cursor/` - Cursor
