@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - next
 
 permissions:
   contents: read
@@ -14,6 +15,7 @@ jobs:
     outputs:
       should_publish: ${{ steps.release.outputs.should_publish }}
       version: ${{ steps.release.outputs.version }}
+      dist_tag: ${{ steps.release.outputs.dist_tag }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -23,6 +25,7 @@ jobs:
         id: release
         env:
           BEFORE: ${{ github.event.before }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           # New branch or rewritten history: nothing to compare against.
           if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
@@ -34,20 +37,17 @@ jobs:
           before_version="$(git show "$BEFORE:.claude-plugin/plugin.json" | node -p "$read_version")"
           after_version="$(node -p "$read_version" < .claude-plugin/plugin.json)"
 
-          # Publish only when the version went up, so a revert never republishes.
-          increased="$(node -p "
-            const parse = (v) => v.split('-')[0].split('.').map(Number);
-            const [a, b] = [parse('$before_version'), parse('$after_version')];
-            const i = b.findIndex((n, j) => n !== a[j]);
-            i !== -1 && b[i] > a[i]
-          ")"
-          if [ "$increased" != "true" ]; then
+          # Empty unless the version went up, so a revert never republishes.
+          # Fails when the version belongs to the other branch's channel.
+          dist_tag="$(node scripts/release-version.mjs detect "$before_version" "$after_version" --branch "$BRANCH")"
+          if [ -z "$dist_tag" ]; then
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           echo "should_publish=true" >> "$GITHUB_OUTPUT"
           echo "version=$after_version" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=$dist_tag" >> "$GITHUB_OUTPUT"
 
   stage:
     needs: detect
@@ -90,41 +90,49 @@ jobs:
 
       - name: Publish Claude Code plugin on npm
         working-directory: dist/claude
+        env:
+          DIST_TAG: ${{ needs.detect.outputs.dist_tag }}
         run: |
           name="$(node -p 'require("./package.json").name')"
           version="$(node -p 'require("./package.json").version')"
           if npm view "$name@$version" version >/dev/null 2>&1; then
             echo "$name@$version is already published"
           else
-            npm publish --provenance --access public
+            npm publish --provenance --access public --tag "$DIST_TAG"
           fi
 
       - name: Publish Codex plugin on npm
         working-directory: dist/codex
+        env:
+          DIST_TAG: ${{ needs.detect.outputs.dist_tag }}
         run: |
           name="$(node -p 'require("./package.json").name')"
           version="$(node -p 'require("./package.json").version')"
           if npm view "$name@$version" version >/dev/null 2>&1; then
             echo "$name@$version is already published"
           else
-            npm publish --provenance --access public
+            npm publish --provenance --access public --tag "$DIST_TAG"
           fi
 
       - name: Publish OpenCode plugin on npm
         working-directory: dist/opencode
+        env:
+          DIST_TAG: ${{ needs.detect.outputs.dist_tag }}
         run: |
           name="$(node -p 'require("./package.json").name')"
           version="$(node -p 'require("./package.json").version')"
           if npm view "$name@$version" version >/dev/null 2>&1; then
             echo "$name@$version is already published"
           else
-            npm publish --provenance --access public
+            npm publish --provenance --access public --tag "$DIST_TAG"
           fi
 
-      # Cursor installs the plugin straight from this repository at the tag
-      # (`.cursor/settings.json` → gitUrl + gitRef), so the tag is part of the
-      # release, not just a marker.
-      - name: Push release tag
+      # Claude Code reads the marketplace and Cursor the plugin itself from
+      # `dist/<dist-tag>` (nx writes it as the marketplace `ref` and Cursor
+      # `gitRef`), so moving it is what ships the release to them. Holding a
+      # workspace on one release uses the tag. The branch only moves forward.
+      - name: Push release tag and branch
         env:
           VERSION: ${{ needs.detect.outputs.version }}
-        run: git push origin "v$VERSION"
+          DIST_TAG: ${{ needs.detect.outputs.dist_tag }}
+        run: git push origin "v$VERSION" "HEAD:refs/heads/dist/$DIST_TAG"

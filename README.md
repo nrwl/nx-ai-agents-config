@@ -35,13 +35,13 @@ The easiest way to add these AI agent configurations to your Nx workspace is by 
 nx configure-ai-agents
 ```
 
-It registers the Nx plugin for each AI tool you pick, scoped to the workspace. Nothing is written to your AGENTS.md or CLAUDE.md.
+It registers the Nx plugin for each AI tool you pick, scoped to the workspace. Nothing is written to your AGENTS.md or CLAUDE.md. Claude Code, Cursor and OpenCode pick up new releases on their own; Codex users rerun `nx configure-ai-agents` after a release.
 
 | Agent       | How the plugin is registered                                                                                                               |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Claude Code | `.claude/settings.json` enables `nx@nx-claude-plugins` ([`@nx/claude-plugin`](https://www.npmjs.com/package/@nx/claude-plugin))            |
 | Codex       | `.codex/config.toml` enables `nx@nx-agent-plugins`; `npx @nx/codex-plugin install` caches it once per machine without enabling it globally |
-| Cursor      | `.cursor/settings.json` installs the plugin from this repository at a release tag                                                          |
+| Cursor      | `.cursor/settings.json` installs the plugin from this repository's `dist/<dist-tag>` branch, which follows the releases of that channel    |
 | OpenCode    | `opencode.json` lists [`@nx/opencode-plugin`](https://www.npmjs.com/package/@nx/opencode-plugin)                                           |
 
 ## Features

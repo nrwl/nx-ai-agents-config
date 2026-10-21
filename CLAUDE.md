@@ -49,7 +49,7 @@ This repository generates extensibility artifacts (commands, skills, subagents) 
 
 The Nx guidelines that used to be written into AGENTS.md/CLAUDE.md live in `plugins/shared/hooks/nx-guidelines.md` and reach the agent through the SessionStart hook (Claude Code, Codex) or OpenCode `instructions`.
 
-Cursor has no npm package: Cursor project plugins are installed from this repository at a release tag (`.cursor/settings.json` → `gitUrl` + `gitRef`), using the root `.cursor-plugin/plugin.json`.
+Cursor has no npm package: Cursor project plugins are installed from this repository (`.cursor/settings.json` → `gitUrl` + `gitRef`), using the root `.cursor-plugin/plugin.json`. `nx configure-ai-agents` points them at the `dist/<dist-tag>` branch of the channel it follows, which Stage Release moves to each release; a `vX.Y.Z` tag holds a workspace on one release.
 
 # Plugin Versioning
 
@@ -57,9 +57,16 @@ Version is tracked in `.claude-plugin/plugin.json` (source of truth) and mirrore
 
 ## How it works
 
-- Merging to `main` does not change the version. Releases are cut manually.
-- To release, run the **Release PR** workflow (`.github/workflows/release-pr.yml`) from the Actions tab and pick `patch`, `minor` or `major`. It opens a `chore: release X.Y.Z` PR with the bumped manifests.
-- Merging that PR triggers **Stage Release** (`.github/workflows/publish.yml`): it builds the npm packages, publishes them with provenance, and pushes the `vX.Y.Z` tag Cursor installs from. Each npm package needs a trusted publisher configured for that workflow.
+There are two release channels:
+
+| Branch | Versions       | npm dist-tag | Release branch |
+| ------ | -------------- | ------------ | -------------- |
+| `main` | `X.Y.Z`        | `latest`     | `dist/latest`  |
+| `next` | `X.Y.Z-next.N` | `next`       | `dist/next`    |
+
+- Merging to `main` or `next` does not change the version. Releases are cut manually.
+- To release, run the **Release PR** workflow (`.github/workflows/release-pr.yml`) from the Actions tab on the branch to release from and pick `patch`, `minor` or `major` (`scripts/release-version.mjs` turns that into the version). It opens a `chore: release X.Y.Z` PR against that branch with the bumped manifests. On `next`, bumping a prerelease within the same release increments `N`; on `main`, `patch` or `minor` on top of `X.Y.Z-next.N` releases `X.Y.Z`.
+- Merging that PR triggers **Stage Release** (`.github/workflows/publish.yml`): it builds the npm packages, publishes them with provenance under the channel's dist-tag, and pushes the `vX.Y.Z` tag and the channel's release branch, which Claude Code (marketplace) and Cursor (plugin) read from. Each npm package needs a trusted publisher configured for that workflow.
 
 ## Manual version bump
 
