@@ -41,7 +41,10 @@
         "command": "npx vitest run",
         "inputs": [
           "{workspaceRoot}/tests/**/*.test.mjs",
-          "{workspaceRoot}/artifacts/skills/monitor-ci/**/*",
+          "{workspaceRoot}/plugins/**/*",
+          "{workspaceRoot}/.agents/plugins/**/*",
+          "{workspaceRoot}/generated/**/*",
+          "{workspaceRoot}/.claude-plugin/**/*",
           "{workspaceRoot}/vitest.config.mjs"
         ]
       }

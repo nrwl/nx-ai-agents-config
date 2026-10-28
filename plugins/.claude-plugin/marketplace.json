@@ -1,0 +1,20 @@
+{
+  "name": "nx-plugins",
+  "description": "Nx plugins for coding agents.",
+  "owner": {
+    "name": "Nx",
+    "email": "hello@nrwl.io"
+  },
+  "plugins": [
+    {
+      "name": "nx",
+      "source": "./nx",
+      "description": "Make your coding agent an effective Nx monorepo developer: explore the project graph, run tasks the Nx way, and scaffold with generators that follow workspace conventions."
+    },
+    {
+      "name": "nx-cloud",
+      "source": "./nx-cloud",
+      "description": "Work with Nx Cloud from your coding agent: monitor CI and act on self-healing fixes, review CI failures, investigate cache misses, and query the Nx Cloud API."
+    }
+  ]
+}

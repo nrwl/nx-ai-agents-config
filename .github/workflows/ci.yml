@@ -42,6 +42,9 @@ jobs:
       - name: Validate Claude marketplace listing
         run: npx nx-cloud record -- claude plugin validate .claude-plugin/marketplace.json
 
+      - name: Validate nx-plugins marketplace
+        run: npx nx-cloud record -- claude plugin validate plugins
+
       # Validate Cursor plugin against official schema
       - name: Validate Cursor plugin
         run: npx nx validate-cursor-plugin

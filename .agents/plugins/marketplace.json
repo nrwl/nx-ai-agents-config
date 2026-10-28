@@ -1,0 +1,32 @@
+{
+  "name": "nx-plugins",
+  "interface": {
+    "displayName": "Nx"
+  },
+  "plugins": [
+    {
+      "name": "nx",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nx"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "nx-cloud",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nx-cloud"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

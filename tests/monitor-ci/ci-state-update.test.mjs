@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 const SCRIPT = resolve(
   import.meta.dirname,
-  '../../artifacts/skills/monitor-ci/scripts/ci-state-update.mjs'
+  '../../plugins/nx-cloud/skills/monitor-ci/scripts/ci-state-update.mjs'
 );
 
 function runScript(args) {

@@ -12,6 +12,25 @@
 
 <!-- nx configuration end-->
 
+# Plugins
+
+`plugins/` holds the **nx** and **nx-cloud** plugins. Each plugin directory is what every agent installs as-is, with no build step:
+
+- `skills/<name>/SKILL.md`: the skills, edited directly. Frontmatter has only `name` and `description`.
+- `plugin.json` + `mcp.json`: the [Agent Plugins](https://agent-plugins.org) manifest and MCP config, read by Codex and Cursor
+- `.claude-plugin/plugin.json` + `.mcp.json`: the same for Claude Code, which uses its own formats (`type: "http"` instead of `"streamable-http"`)
+- Manifests carry no `version`, so installs follow the latest commit of the ref they come from
+
+Marketplaces: `plugins/.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json` (Codex), both named `nx-plugins`. `tests/plugins.test.mjs` keeps the manifests, MCP configs and marketplaces in agreement.
+
+Codex starts plugin MCP servers in the plugin's cache directory, without MCP roots or any hint of the workspace, so the nx MCP server only finds the workspace when the workspace's `.codex/config.toml` declares `[mcp_servers.nx-mcp]`, which overrides the plugin's server of the same name. Keep the server name `nx-mcp`.
+
+Skills must work in every agent: no per-agent templating, no `$ARGUMENTS` or `` !`cmd` `` placeholders, no custom subagents, and no agent-specific tool names. The nx-cloud skills reach Nx Cloud through `npx nx-cloud` and the hosted Nx Cloud MCP server; monitor-ci also uses the CI tools of the nx MCP server.
+
+# Legacy output for Nx 23 and older
+
+Everything below describes the files released Nx versions read: `artifacts/`, the root `skills/`, `agents/` and `.mcp.json`, and `generated/`. Leave them unchanged and make skill changes in `plugins/`.
+
 When writing regular skills and agents in this repo (in /artifacts), always use agent-agnostic language. There are many different ways of representing MCP tool formats, different default subagents et cetera. Since we generally support all these subagents from the same source files, always use descriptions that will make sense for different coding agents.
 Don't do this: "Use the mcp\_\_nx-mcp\_\_ci_information MCP tool"
 Do this instead: "Use the ci-information tool from the nx MCP server" (you don't always have to mention the mcp server if it's obvious)

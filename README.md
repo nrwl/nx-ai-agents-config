@@ -37,6 +37,55 @@ nx configure-ai-agents
 
 This will set up the appropriate configuration files for your preferred AI tools.
 
+### Preview: the nx and nx-cloud plugins
+
+`plugins/` holds two plugins that work across coding agents without any per-agent build: **nx** (workspace skills and the nx MCP server) and **nx-cloud** (CI monitoring, CI failure review, cache investigation, the Nx Cloud API, and the hosted Nx Cloud MCP server). They are not yet what `nx configure-ai-agents` installs.
+
+**Claude Code**: add the marketplace and enable the plugins in `.claude/settings.json`. Disable the current `nx@nx-claude-plugins` plugin in the same file, since both are named `nx`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "nx-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "nrwl/nx-ai-agents-config",
+        "path": "plugins/.claude-plugin/marketplace.json"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "nx@nx-plugins": true,
+    "nx-cloud@nx-plugins": true,
+    "nx@nx-claude-plugins": false
+  }
+}
+```
+
+**Codex**: add the marketplace once, then install or enable the plugins:
+
+```sh
+codex plugin marketplace add nrwl/nx-ai-agents-config
+codex plugin add nx@nx-plugins
+codex plugin add nx-cloud@nx-plugins
+```
+
+A repository can enable them for everyone who has added the marketplace in `.codex/config.toml`. Codex starts plugin MCP servers outside the workspace, so the repository also declares the nx MCP server there, which takes precedence over the plugin's copy (`nx configure-ai-agents` already writes this entry):
+
+```toml
+[plugins."nx@nx-plugins"]
+enabled = true
+
+[plugins."nx-cloud@nx-plugins"]
+enabled = true
+
+[mcp_servers.nx-mcp]
+command = "npx"
+args = ["nx-mcp@latest", "--minimal"]
+```
+
+**Cursor**: load the plugins from a checkout of this repository with `cursor-agent --plugin-dir <checkout>/plugins/nx --plugin-dir <checkout>/plugins/nx-cloud`.
+
 ## Features
 
 https://github.com/user-attachments/assets/edd45819-e955-4ba7-adba-8255f4174da6

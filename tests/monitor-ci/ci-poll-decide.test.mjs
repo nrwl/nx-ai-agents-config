@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 const SCRIPT = resolve(
   import.meta.dirname,
-  '../../artifacts/skills/monitor-ci/scripts/ci-poll-decide.mjs'
+  '../../plugins/nx-cloud/skills/monitor-ci/scripts/ci-poll-decide.mjs'
 );
 
 function runScript(ciInfo, pollCount = 0, verbosity = 'medium', flags = []) {
