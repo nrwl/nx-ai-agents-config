@@ -47,7 +47,15 @@ describe('plugins', () => {
   it('lists every plugin in both marketplaces', () => {
     const claude = readJson('plugins/.claude-plugin/marketplace.json');
     expect(claude.plugins.map((p) => [p.name, p.source]).sort()).toEqual(
-      pluginNames.map((name) => [name, `./${name}`])
+      pluginNames.map((name) => [
+        name,
+        {
+          source: 'git-subdir',
+          url: 'https://github.com/nrwl/nx-ai-agents-config.git',
+          path: `plugins/${name}`,
+          ref: 'main',
+        },
+      ])
     );
 
     const codex = readJson('.agents/plugins/marketplace.json');

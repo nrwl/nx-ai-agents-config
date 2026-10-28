@@ -21,7 +21,7 @@
 - `.claude-plugin/plugin.json` + `.mcp.json`: the same for Claude Code, which uses its own formats (`type: "http"` instead of `"streamable-http"`)
 - Manifests carry no `version`, so installs follow the latest commit of the ref they come from
 
-Marketplaces: `plugins/.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json` (Codex), both named `nx-plugins`. `tests/plugins.test.mjs` keeps the manifests, MCP configs and marketplaces in agreement.
+Marketplaces, both named `nx-plugins`: `.agents/plugins/marketplace.json` (Codex, relative sources) and `plugins/.claude-plugin/marketplace.json` (Claude Code). Claude Code reads only the root `.claude-plugin/marketplace.json` of a git repository, which belongs to the legacy plugin, so the Claude Code marketplace is added by its raw URL and its entries point at `plugins/<name>` on `main` with `git-subdir` sources. `tests/plugins.test.mjs` keeps the manifests, MCP configs and marketplaces in agreement.
 
 Codex starts plugin MCP servers in the plugin's cache directory, without MCP roots or any hint of the workspace, so the nx MCP server only finds the workspace when the workspace's `.codex/config.toml` declares `[mcp_servers.nx-mcp]`, which overrides the plugin's server of the same name. Keep the server name `nx-mcp`.
 

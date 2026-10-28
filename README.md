@@ -41,16 +41,15 @@ This will set up the appropriate configuration files for your preferred AI tools
 
 `plugins/` holds two plugins that work across coding agents without any per-agent build: **nx** (workspace skills and the nx MCP server) and **nx-cloud** (CI monitoring, CI failure review, cache investigation, the Nx Cloud API, and the hosted Nx Cloud MCP server). They are not yet what `nx configure-ai-agents` installs.
 
-**Claude Code**: add the marketplace and enable the plugins in `.claude/settings.json`. Disable the current `nx@nx-claude-plugins` plugin in the same file, since both are named `nx`:
+**Claude Code**: the marketplace is a single file, so add it by URL and enable the plugins in `.claude/settings.json`. Disable the current `nx@nx-claude-plugins` plugin in the same file, since both are named `nx`:
 
 ```json
 {
   "extraKnownMarketplaces": {
     "nx-plugins": {
       "source": {
-        "source": "github",
-        "repo": "nrwl/nx-ai-agents-config",
-        "path": "plugins/.claude-plugin/marketplace.json"
+        "source": "url",
+        "url": "https://raw.githubusercontent.com/nrwl/nx-ai-agents-config/main/plugins/.claude-plugin/marketplace.json"
       }
     }
   },
@@ -61,6 +60,8 @@ This will set up the appropriate configuration files for your preferred AI tools
   }
 }
 ```
+
+Or for yourself only: `claude plugin marketplace add https://raw.githubusercontent.com/nrwl/nx-ai-agents-config/main/plugins/.claude-plugin/marketplace.json`, then `claude plugin install nx@nx-plugins` and `claude plugin install nx-cloud@nx-plugins`.
 
 **Codex**: add the marketplace once, then install or enable the plugins:
 
