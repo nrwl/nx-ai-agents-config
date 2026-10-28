@@ -32,6 +32,27 @@ is an asset download, whose raw bytes go to the `-o` file.
   the command does not enforce.
 - Do not use this skill to poll or monitor live CI.
 
+## Authentication
+
+`npx nx-cloud api` authenticates for you; do not read credentials out of
+`nxcloud.ini` or call the API with `curl`. It sends the first available of:
+
+1. A workspace token in `NX_CLOUD_ACCESS_TOKEN` (or `NX_CLOUD_AUTH_TOKEN`). When
+   one is set, the command uses it alone and ignores any stored login.
+2. The user's OAuth login from `npx nx login`, refreshed as needed.
+3. A personal access token stored in `nxcloud.ini` by an older login.
+
+A login or personal access token needs `nxCloudId` in `nx.json`.
+
+If you must call the API without the command, the headers differ per
+credential, and an OAuth access token is not a bearer token:
+
+| Credential            | Headers                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| Workspace (CI) token  | `Authorization: Bearer <token>`                                   |
+| OAuth access token    | `Nx-Cloud-OAuth-Access-Token: <token>` and `Nx-Cloud-Id: <id>`    |
+| Personal access token | `Nx-Cloud-Personal-Access-Token: <token>` and `Nx-Cloud-Id: <id>` |
+
 ## Cache boundary
 
 The API returns recorded task and run fields. It does not query the local Nx
