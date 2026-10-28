@@ -3,7 +3,8 @@
 Answer a defined workspace-data question with `npx nx-cloud api`, the read-only
 Nx Cloud Public API command. This is an API access skill, not a report generator
 or configuration editor. Run every command from the workspace root so the
-command finds `nx.json`.
+command finds `nx.json`, or pass `--nxCloudId <id>` to name the workspace
+(see Authentication).
 
 Run `npx nx-cloud api --help` (or `npx nx-cloud api` alone) once for syntax and
 options. This skill covers the workflow around it.
@@ -42,7 +43,11 @@ is an asset download, whose raw bytes go to the `-o` file.
 2. The user's OAuth login from `npx nx login`, refreshed as needed.
 3. A personal access token stored in `nxcloud.ini` by an older login.
 
-A login or personal access token needs `nxCloudId` in `nx.json`.
+A login or personal access token also needs the workspace's Nx Cloud ID, sent
+as `Nx-Cloud-Id`. The command reads it from `nxCloudId` in `nx.json`;
+`--nxCloudId <id>` overrides it and works outside an Nx workspace, so you can
+query a workspace you are a member of without its checkout. A workspace token
+always reads its own workspace and ignores the ID.
 
 If you must call the API without the command, the headers differ per
 credential, and an OAuth access token is not a bearer token:
