@@ -124,8 +124,9 @@ describe('plugins', () => {
   });
 });
 
-// Nx 23 and older clone the default branch and copy these into workspaces,
-// and their Claude Code setup installs `nx@nx-claude-plugins`.
+// Nx 23 and older clone the default branch and copy generated/ into
+// workspaces, and their Claude Code setup installs the root plugin as
+// `nx@nx-claude-plugins`.
 describe('files older Nx versions read', () => {
   it.each([
     'generated/.agents/skills',
@@ -135,6 +136,11 @@ describe('files older Nx versions read', () => {
     'generated/.codex/agents',
     'generated/.codex/config.toml',
     'generated/.gemini',
+    'skills',
+    'agents',
+    '.mcp.json',
+    '.claude-plugin/plugin.json',
+    '.cursor-plugin/plugin.json',
   ])('%s exists', (path) => {
     expect(existsSync(join(rootDir, path))).toBe(true);
   });

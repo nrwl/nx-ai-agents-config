@@ -1,36 +1,17 @@
-# Development / Contributing
+# Contributing
 
-Want to contribute or modify the AI agent configurations? Here's how to work in this repository:
+Skills live in `plugins/nx/skills` and `plugins/nx-cloud/skills`. Edit the `SKILL.md` files directly; there is no build step. See [AGENTS.md](./AGENTS.md) for how the plugins are laid out and which files older Nx versions still read.
 
-## Making Changes
+Before opening a pull request, run:
 
-1. All source artifacts live in the `/artifacts` directory:
+```sh
+npx nx test
+npx nx validate-cursor-plugin
+claude plugin validate plugins
+```
 
-   - `artifacts/commands/` - Slash commands
-   - `artifacts/skills/` - Skills
-   - `artifacts/agents/` - Subagents
+To try your changes, load a plugin from your checkout:
 
-2. After making changes, run the sync script to distribute to agent-specific formats:
-
-   ```sh
-   npx nx sync-artifacts
-   ```
-
-3. This generates output:
-
-   - **Claude Code and Cursor plugins** share root output: `skills/`, `agents/`, `.mcp.json`
-     - Claude plugin manifest: `.claude-plugin/plugin.json`
-     - Cursor plugin manifest: `.cursor-plugin/plugin.json` (uses convention-based discovery of root `skills/` and `agents/`)
-   - Other agents output to the `generated/` directory (also used by `configure-ai-agents` in nx):
-     - `generated/.opencode/` - OpenCode
-     - `generated/.github/` - GitHub Copilot
-     - `generated/.cursor/` - Cursor
-     - `generated/.gemini/` - Gemini
-
-4. You can validate the Cursor plugin against the official schema:
-
-   ```sh
-   npx nx validate-cursor-plugin
-   ```
-
-> **Note:** The root-level `skills/`, `agents/`, and `.mcp.json` files are auto-generated. Do not edit them directly — modify the source files in `artifacts/` and run `npx nx sync-artifacts` instead. The plugin manifests (`.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`) are maintained manually but their versions are kept in sync by `scripts/bump-version.mjs`.
+- Claude Code: `claude --plugin-dir plugins/nx --plugin-dir plugins/nx-cloud`
+- Codex: `codex plugin marketplace add .`, then `codex plugin add nx@nx-plugins` and `codex plugin add nx-cloud@nx-plugins`
+- Cursor: `cursor-agent --plugin-dir plugins/nx --plugin-dir plugins/nx-cloud`

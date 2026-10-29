@@ -46,7 +46,6 @@ jobs:
           ")
           echo "value=$RELEASE" >> "$GITHUB_OUTPUT"
           node scripts/bump-version.mjs --version "$RELEASE"
-          npx nx sync-artifacts
 
       - name: Open release pull request
         uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
