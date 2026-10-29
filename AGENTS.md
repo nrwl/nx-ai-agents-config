@@ -34,7 +34,7 @@ Marketplaces, both named `nx-plugins`:
 
 Skills must work in every agent: no per-agent templating, no `$ARGUMENTS` or `` !`cmd` `` placeholders, no custom subagents, and no agent-specific tool names. Describe what to do, not how the agent should split up the work. Refer to tools by name and server ("the `ci_information` tool of the nx MCP server"), never in one agent's format (`mcp__nx-mcp__ci_information`).
 
-The nx-cloud skills reach Nx Cloud through `npx nx-cloud` and the hosted Nx Cloud MCP server; monitor-ci also uses the CI tools of the nx MCP server.
+The nx-cloud skills reach Nx Cloud through `npx nx-cloud` and the hosted Nx Cloud MCP server. monitor-ci relies on the experimental Nx Cloud CLI (`NX_CLOUD_EXPERIMENTAL_CLI=true`) for `get pipeline`, `get logs` and `fix`.
 
 Codex starts plugin MCP servers in the plugin's cache directory, without MCP roots or any hint of the workspace, so the nx MCP server only finds the workspace when the workspace's `.codex/config.toml` declares `[mcp_servers.nx-mcp]`, which overrides the plugin's server of the same name. Keep the server name `nx-mcp`.
 
