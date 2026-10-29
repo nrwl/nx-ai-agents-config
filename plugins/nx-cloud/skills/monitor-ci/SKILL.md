@@ -5,7 +5,7 @@ description: Monitor Nx Cloud CI pipeline and handle self-healing fixes. USE WHE
 
 # Monitor CI Command
 
-You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. You read CI state through the `ci_information` and `update_self_healing_fix` tools of the nx MCP server, run deterministic decision scripts, and take action based on the results.
+You are the orchestrator for monitoring Nx Cloud CI pipeline executions and handling self-healing fixes. CI state comes from the `ci_information` and `update_self_healing_fix` tools of the nx MCP server; deterministic decision scripts turn it into the next action.
 
 ## Context
 
@@ -49,7 +49,7 @@ Before starting the monitoring loop, verify the workspace is connected to Nx Clo
 
 ## Architecture Overview
 
-1. **This skill (orchestrator)**: calls the Nx Cloud tools, runs scripts, prints status, does local coding work
+1. **This skill (orchestrator)**: fetches CI state, runs scripts, prints status, does local coding work
 2. **ci-poll-decide.mjs (deterministic script)**: takes ci_information result + state, returns action + status message
 3. **ci-state-update.mjs (deterministic script)**: manages budget gates, post-action state transitions, and cycle classification
 
@@ -169,7 +169,7 @@ Determine select fields based on mode:
 - **Wait mode**: use WAIT_FIELDS (`cipeUrl,commitSha,cipeStatus`)
 - **Normal mode (first poll or after newCipeDetected)**: use LIGHT_FIELDS
 
-Call the `ci_information` tool with the determined `select` fields for the current branch. Wait for the result before proceeding.
+Fetch the status with `ci_information`, using the determined `select` fields for the current branch, and wait for the result before proceeding.
 
 #### 2b. Run decision script
 
@@ -226,16 +226,16 @@ When decision script returns `action == "done"`:
 6. **If action expects new CI Attempt**, update tracking (see Step 3a)
 7. If action results in looping, go to Step 2
 
-#### Tool calls for actions
+#### Data and actions by status
 
-Several statuses require fetching additional data or calling tools:
+Several statuses need additional data or an action on the fix:
 
-- **fix_apply_ready**: Call `update_self_healing_fix` with action `APPLY`
-- **fix_needs_local_verify**: Call `ci_information` with HEAVY_FIELDS for fix details before local verification
-- **fix_needs_review**: Call `ci_information` with HEAVY_FIELDS → get `suggestedFixDescription`, `suggestedFixReasoning`, `suggestedFix` and `taskOutputSummary`
-- **fix_failed / no_fix**: Call `ci_information` with HEAVY_FIELDS → get `taskOutputSummary` for local fix context
-- **environment_issue**: Call `update_self_healing_fix` with action `RERUN_ENVIRONMENT_STATE`
-- **self_healing_throttled**: Call `ci_information` with HEAVY_FIELDS → get `selfHealingSkipMessage`; then call `update_self_healing_fix` with `REJECT` for each old fix
+- **fix_apply_ready**: apply the fix (`update_self_healing_fix` with `APPLY`)
+- **fix_needs_local_verify**: fetch the fix details (`ci_information` with HEAVY_FIELDS) before local verification
+- **fix_needs_review**: fetch HEAVY_FIELDS (`ci_information`) → `suggestedFixDescription`, `suggestedFixReasoning`, `suggestedFix` and `taskOutputSummary`
+- **fix_failed / no_fix**: fetch HEAVY_FIELDS (`ci_information`) → `taskOutputSummary` for local fix context
+- **environment_issue**: request an environment rerun (`update_self_healing_fix` with `RERUN_ENVIRONMENT_STATE`)
+- **self_healing_throttled**: read `selfHealingSkipMessage` (`ci_information`), then reject each old fix (`update_self_healing_fix` with `REJECT`)
 
 ### Step 3a: Track State for New-CI-Attempt Detection
 

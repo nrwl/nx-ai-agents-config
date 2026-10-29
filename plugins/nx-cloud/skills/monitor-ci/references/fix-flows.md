@@ -7,12 +7,12 @@
 The script returns `autoApplySkipReason` in its output.
 
 1. Report the skip reason to the user (e.g., "Auto-apply was skipped because the previous CI pipeline execution was triggered by Nx Cloud")
-2. Offer to apply the fix manually — call `update_self_healing_fix` with `APPLY` if user agrees
+2. Offer to apply the fix manually — if the user agrees, apply it (`update_self_healing_fix` with `APPLY`)
 3. Record `last_cipe_url`, enter wait mode
 
 ### fix_apply_ready
 
-- Call `update_self_healing_fix` with `APPLY`
+- Apply the fix (`update_self_healing_fix` with `APPLY`)
 - Record `last_cipe_url`, enter wait mode
 
 ### fix_needs_local_verify
@@ -21,12 +21,12 @@ The script returns `verifiableTaskIds` in its output.
 
 1. **Detect package manager:** `pnpm-lock.yaml` → `pnpm nx`, `yarn.lock` → `yarn nx`, otherwise `npx nx`
 2. **Run verifiable tasks** — run them in parallel, for example in one `nx run-many` invocation
-3. **If all pass** → call `update_self_healing_fix` with `APPLY`, enter wait mode
+3. **If all pass** → apply the fix (`update_self_healing_fix` with `APPLY`), enter wait mode
 4. **If any fail** → Apply Locally + Enhance Flow (see below)
 
 ### fix_needs_review
 
-Call `ci_information` with HEAVY_FIELDS, then analyze the fix (`suggestedFixDescription`, `suggestedFixReasoning`, `suggestedFix`, `taskOutputSummary`):
+Fetch HEAVY_FIELDS (`ci_information`), then analyze the fix (`suggestedFixDescription`, `suggestedFixReasoning`, `suggestedFix`, `taskOutputSummary`):
 
 - If fix looks correct → apply it with `update_self_healing_fix`
 - If fix needs enhancement → Apply Locally + Enhance Flow
@@ -34,20 +34,20 @@ Call `ci_information` with HEAVY_FIELDS, then analyze the fix (`suggestedFixDesc
 
 ### fix_failed / no_fix
 
-Call `ci_information` with HEAVY_FIELDS for `taskOutputSummary`. Run `ci-state-update.mjs gate --gate-type local-fix` — if not allowed, print message and exit. Otherwise attempt local fix (counter already incremented by gate). If successful → commit, push, enter wait mode. If not → exit with failure.
+Fetch `taskOutputSummary` (`ci_information` with HEAVY_FIELDS). Run `ci-state-update.mjs gate --gate-type local-fix` — if not allowed, print message and exit. Otherwise attempt local fix (counter already incremented by gate). If successful → commit, push, enter wait mode. If not → exit with failure.
 
 ### environment_issue
 
 1. Run `ci-state-update.mjs gate --gate-type env-rerun`. If not allowed, print message and exit.
-2. Call `update_self_healing_fix` with `RERUN_ENVIRONMENT_STATE`
+2. Request an environment rerun (`update_self_healing_fix` with `RERUN_ENVIRONMENT_STATE`)
 3. Enter wait mode with `last_cipe_url` set
 
 ### self_healing_throttled
 
-Call `ci_information` with `select: 'selfHealingSkipMessage'`.
+Read `selfHealingSkipMessage` (`ci_information` with `select: 'selfHealingSkipMessage'`).
 
 1. **Parse throttle message** for CI Attempt URLs (regex: `/cipes/{id}`)
-2. **Reject previous fixes** — for each URL: call `ci_information` with that URL and `select: 'shortLink,cipeUrl'`, then call `update_self_healing_fix` with `REJECT`
+2. **Reject previous fixes** — for each URL, look up its `shortLink` (`ci_information` with that URL and `select: 'shortLink,cipeUrl'`), then reject that fix (`update_self_healing_fix` with `REJECT`)
 3. **Attempt local fix**: Run `ci-state-update.mjs gate --gate-type local-fix`. If not allowed → skip to step 4. Otherwise use `failedTaskIds` and `taskOutputSummary` for context.
 4. **Fallback if local fix not possible or budget exhausted**: push empty commit (`git commit --allow-empty -m "ci: rerun after rejecting throttled fixes"`), enter wait mode
 
@@ -67,7 +67,7 @@ Call `ci_information` with `select: 'selfHealingSkipMessage'`.
 
 ### Apply via MCP
 
-Call `update_self_healing_fix` with `APPLY`. New CI Attempt spawns automatically. No local git ops.
+Apply the fix (`update_self_healing_fix` with `APPLY`). New CI Attempt spawns automatically. No local git ops.
 
 ### Apply Locally + Enhance Flow
 
@@ -80,7 +80,7 @@ Call `update_self_healing_fix` with `APPLY`. New CI Attempt spawns automatically
 ### Reject + Fix From Scratch Flow
 
 1. Run `ci-state-update.mjs gate --gate-type local-fix`. If not allowed, print message and exit.
-2. Call `update_self_healing_fix` with `REJECT`
+2. Reject the fix (`update_self_healing_fix` with `REJECT`)
 3. Fix from scratch locally
 4. Commit and push, enter wait mode
 
