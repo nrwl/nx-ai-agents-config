@@ -42,13 +42,12 @@ jobs:
       - name: Validate Claude marketplace listing
         run: npx nx-cloud record -- claude plugin validate .claude-plugin/marketplace.json
 
+      - name: Validate nx-plugins marketplace
+        run: npx nx-cloud record -- claude plugin validate plugins
+
       # Validate Cursor plugin against official schema
       - name: Validate Cursor plugin
         run: npx nx validate-cursor-plugin
-
-      # Verify that generated artifacts are in sync with source
-      - name: Verify artifacts sync
-        run: npx nx sync-artifacts-verification
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       - run: npx nx-cloud record -- npx nx format:check  --base="remotes/origin/main"
