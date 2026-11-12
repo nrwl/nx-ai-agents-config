@@ -36,6 +36,8 @@ Skills must work in every agent: no per-agent templating, no `$ARGUMENTS` or `` 
 
 The nx-cloud skills reach Nx Cloud through `npx nx-cloud` and the hosted Nx Cloud MCP server. monitor-ci relies on the experimental Nx Cloud CLI (`NX_CLOUD_EXPERIMENTAL_CLI=true`) for `get pipeline`, `get logs` and `fix`.
 
+The Nx Cloud MCP server's URL can be overridden per agent (see the README). Claude Code's `.mcp.json` reads it from `${NX_CLOUD_MCP_URL:-<default>}`. `mcp.json` must hold a literal URL: Codex does not expand variables, and it drops a server whose URL fails to parse without saying so. Keep the default the same in both files, and keep the server name `nx-cloud`, which Codex users override in `config.toml`.
+
 Codex starts plugin MCP servers in the plugin's cache directory, without MCP roots or any hint of the workspace, so the nx MCP server only finds the workspace when the workspace's `.codex/config.toml` declares `[mcp_servers.nx-mcp]`, which overrides the plugin's server of the same name. Keep the server name `nx-mcp`.
 
 ## Legacy files for Nx 23 and older

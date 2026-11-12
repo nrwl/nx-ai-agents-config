@@ -94,7 +94,13 @@ describe('plugins', () => {
             : server,
         ])
       );
-      expect(asClaude).toEqual(claude);
+      // Claude Code expands `${VAR:-default}`; Codex and Cursor take the
+      // URL literally, so mcp.json carries the default on its own.
+      const claudeDefaults = JSON.parse(
+        JSON.stringify(claude).replace(/\$\{\w+:-([^}]*)\}/g, '$1')
+      );
+      expect(asClaude).toEqual(claudeDefaults);
+      expect(JSON.stringify(mcpServers)).not.toContain('${');
     });
 
     it.each(skillsOf(plugin).map((skill) => [skill.name, skill]))(
