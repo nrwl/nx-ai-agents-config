@@ -4,8 +4,9 @@ A pipeline pins the configs its tasks hashed with. Take a recent successful pipe
 branch in question (`cipes` with `branch` and `statuses=SUCCEEDED`), then list its configs:
 
 - `/nx-cloud/data/v0/cipes/{cipeId}/ultracache` lists tasks largest `inputCount` first; filter with
-  `projectName` or `taskId`. `state` must be `PINNED`; otherwise that pipeline did not use
-  Ultracache, so take an earlier one.
+  `projectName` or `taskId`. `state` must be `PINNED`. `DISABLED` means Ultracache was off for that
+  pipeline; `NOT_PINNED` means none of its tasks read configs. Try one or two earlier pipelines, then
+  stop and report that the workspace isn't using Ultracache there.
 - Each task's `links.config` downloads a gzipped JSON `{inputs, outputs}`. Save it with an explicit
   name such as `-o "$dir/config.json.gz"` and read it with `gunzip -c`; it is not a tar.
 - `learnedAtCommit` is where the config was learned. Configs are inherited along history, so it is

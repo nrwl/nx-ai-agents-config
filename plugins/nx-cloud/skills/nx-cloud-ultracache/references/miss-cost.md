@@ -3,15 +3,16 @@
 Pick the source by the question's scope:
 
 - **All branches:** `task-stats` returns one row per target per UTC day, for CI and local runs
-  separately, across every branch. A row's miss time is
-  `totalCount * cacheStatusRatio.cacheMiss * averageDuration.cacheMissMs`. Set the window
-  (`-f dateAfter=<today minus 7 days>`, `-f isCI=true`), fetch every page, sum per
-  `projectName:target` and rank.
+  separately, across every branch. A row's miss time is approximately
+  `totalCount * cacheStatusRatio.cacheMiss * averageDuration.cacheMissMs` (the ratio counts failed
+  misses too; the duration averages successful ones). Set the window
+  (`-f dateAfter=<today minus 7 days>`, `-f isCI=true`), keep `--pages` small, and say whether the
+  list was complete (`nextCursor` is null). Sum per `projectName:target` and rank.
 - **One branch, such as main:** `task-stats` cannot filter by branch. List that branch's runs in the
-  window (`runs` with `branch` and a `createdAt` window) and add up the cache misses from each run's
-  tasks (`runs/{runId}/tasks` with `cacheStatus=cache-miss`), using each task's start and end times.
-  Leave out continuous tasks and tasks that are not `cacheable`: they "miss" on every run and say
-  nothing about the cache. Many runs means many calls; fetch them in one loop and save each page.
+  window (`runs` with `branch`, `createdAfter` and `createdBefore`) and add up the cache misses from
+  each run's tasks (`runs/{runId}/tasks` with `cacheStatus=cache-miss`), using each task's
+  `startedAt` and `completedAt`. Leave out continuous tasks and tasks that are not `cacheable`: they
+  "miss" on every run and say nothing about the cache. Fetch the runs in one loop and save each page.
 
 ```sh
 jq -r '[.items[] | {t: "\(.projectName):\(.target)",
