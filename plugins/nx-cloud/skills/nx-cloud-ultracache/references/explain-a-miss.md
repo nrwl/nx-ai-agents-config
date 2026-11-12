@@ -3,9 +3,8 @@
 1. List earlier executions of the task:
    `/nx-cloud/data/v0/runs/{runId}/tasks/{taskId}/earlier-executions` (pass `branch` to stay on the
    same branch). The response has `current` and `earlier` (newest first, `limit` up to 50), not
-   `items`. With `branch`, the server scans only a few times `limit` recent executions on all
-   branches before filtering, so an empty `earlier` on a busy branch means "none found nearby",
-   not "none exist".
+   `items`. With `branch`, `scanLimited: true` means the search stopped at its cap before finding
+   `limit` matches, so older ones may exist; with it false, an empty `earlier` means there are none.
 2. Check for an earlier execution with `sameHash: true` first. If one exists, the inputs did not
    change: the cache had the hash but did not replay it. That is a replay question, not an input
    question: follow `nx-cloud-cache-investigator` ("Same computation, replay not established").
