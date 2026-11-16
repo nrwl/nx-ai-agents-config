@@ -2,7 +2,7 @@
   "mcpServers": {
     "nx-cloud": {
       "type": "http",
-      "url": "${NX_CLOUD_MCP_URL:-https://snapshot.nx.app/nx-cloud/mcp}"
+      "url": "${NX_CLOUD_MCP_URL:-https://cloud.nx.app/nx-cloud/mcp}"
     }
   }
 }
