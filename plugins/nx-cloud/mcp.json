@@ -3,7 +3,7 @@
   "mcpServers": {
     "nx-cloud": {
       "type": "streamable-http",
-      "url": "https://snapshot.nx.app/nx-cloud/mcp"
+      "url": "https://cloud.nx.app/nx-cloud/mcp"
     }
   }
 }

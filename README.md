@@ -87,6 +87,22 @@ args = ["nx-mcp@latest", "--minimal"]
 
 **Cursor**: load the plugins from a checkout of this repository with `cursor-agent --plugin-dir <checkout>/plugins/nx --plugin-dir <checkout>/plugins/nx-cloud`.
 
+#### Pointing the Nx Cloud MCP server at another host
+
+The nx-cloud plugin connects to `https://cloud.nx.app/nx-cloud/mcp`. To use another Nx Cloud host, such as a single-tenant instance or a local server, give the agent that host's `/nx-cloud/mcp` URL:
+
+- **Claude Code**: set `NX_CLOUD_MCP_URL`, for example to `https://snapshot.nx.app/nx-cloud/mcp`. Put it under `env` in `~/.claude/settings.json` (every project), the workspace's `.claude/settings.json` (everyone in the workspace) or `.claude/settings.local.json` (you, in this workspace), or export it in the shell that starts Claude Code. Declaring another server named `nx-cloud` does not work: Claude Code runs it next to the plugin's server instead of replacing it.
+- **Codex**: declare a server with the plugin's name. It replaces the plugin's server. `codex mcp add nx-cloud --url https://snapshot.nx.app/nx-cloud/mcp` adds it to `~/.codex/config.toml`; for one workspace, add it to the workspace's `.codex/config.toml`, which Codex reads once the project is trusted:
+
+  ```toml
+  [mcp_servers.nx-cloud]
+  url = "https://snapshot.nx.app/nx-cloud/mcp"
+  ```
+
+- **Cursor**: change the URL in `plugins/nx-cloud/mcp.json` of the checkout you load the plugin from.
+
+The server signs you in with OAuth for each host, so authenticate again after switching.
+
 ## Features
 
 https://github.com/user-attachments/assets/edd45819-e955-4ba7-adba-8255f4174da6
