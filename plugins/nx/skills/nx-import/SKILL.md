@@ -230,6 +230,7 @@ Identify technologies in the source repo, then read and apply the matching refer
 
 Available references:
 
+- `references/DOTNET.md` — .NET projects: `@nx/dotnet` detection, restore before the first build, shared `Directory.Build.props`/`Directory.Packages.props`/`global.json` left behind by subdirectory imports, broken `ProjectReference` paths failing the whole graph.
 - `references/ESLINT.md` — ESLint projects: duplicate `lint`/`eslint:lint` targets, legacy `.eslintrc.*` linting generated files, flat config `.cjs` self-linting, `typescript-eslint` v7/v9 peer dep conflict, mixed ESLint v8+v9 in one workspace.
 - `references/GRADLE.md`
 - `references/JEST.md` — Jest testing: `@nx/jest/plugin` setup, jest.preset.js, testing deps by framework, tsconfig.spec.json, Jest vs Vitest coexistence, Babel transforms, CI atomization.
