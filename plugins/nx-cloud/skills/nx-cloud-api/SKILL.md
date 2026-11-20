@@ -1,6 +1,6 @@
 ---
 name: nx-cloud-api
-description: Query the read-only Nx Cloud Public API for workspace data with `npx nx-cloud api`. Use this skill when a user asks to inspect or retrieve CIPEs, pipelines, run groups, runs, tasks, workflows, agents, task statistics, flaky tasks, cache data, or API endpoint details. Use this skill before any Nx Cloud API call. It covers endpoint discovery, link navigation, pagination, asset downloads, and error recovery. Do not use it for live CI monitoring.
+description: Query the read-only Nx Cloud Public API for workspace data with `npx nx-cloud api`. Use this skill when a user asks to inspect or retrieve CIPEs, pipelines, run groups, runs, tasks, workflows, agents, task statistics, flaky tasks, cache data, CI compute or credit estimates, or API endpoint details. Use this skill before any Nx Cloud API call. It covers endpoint discovery, link navigation, pagination, asset downloads, and error recovery. Do not use it for live CI monitoring.
 ---
 
 # Nx Cloud API
@@ -37,6 +37,8 @@ is an asset download, whose raw bytes go to the `-o` file.
 - Read the operation description from `--describe`. It states server limits that
   the command does not enforce.
 - Do not use this skill to poll or monitor live CI.
+- Only read. `--list-operations` also lists actions (`method: POST`, such as
+  `ci/{ciExecutionId}/rerun`); take one only when the user asks for it.
 
 ## Authentication
 
@@ -50,9 +52,12 @@ is an asset download, whose raw bytes go to the `-o` file.
 
 A login or personal access token also needs the workspace's Nx Cloud ID, sent
 as `Nx-Cloud-Id`. The command reads it from `nxCloudId` in `nx.json`;
-`--nxCloudId <id>` overrides it and works outside an Nx workspace, so you can
-query a workspace you are a member of without its checkout. A workspace token
-always reads its own workspace and ignores the ID.
+`--nxCloudId <id>` overrides it, so you can query a workspace you are a member
+of without its checkout. The command still reads an `nx.json` in the current
+directory, so outside a checkout run it from a scratch directory holding an
+`nx.json` of `{}`, with `NX_CLOUD_API` set to the workspace's Nx Cloud host
+when it is not `https://cloud.nx.app`. A workspace token always reads its own
+workspace and ignores the ID.
 
 If you must call the API without the command, the headers differ per
 credential, and an OAuth access token is not a bearer token:
@@ -187,6 +192,11 @@ in its output says whether more pages exist, and it records no resume cursor. It
 Use it only when completeness does not matter; otherwise use the default JSON
 output.
 
+To read the tasks of many runs, prefer the batch read
+`/nx-cloud/data/batch/v0/run-tasks` (repeat `-f run=<id>`, up to 25 runs) over
+one `runs/{runId}/tasks` call per run: it returns each run's first page for one
+unit of the rate limit. Check its limits with `--describe batchRunTasks`.
+
 For multi-range extraction, task or log assets, or a calculation, read
 [references/extraction-and-calculation.md](references/extraction-and-calculation.md)
 first.
@@ -204,6 +214,17 @@ Label cache statements by evidence source:
 - **Nx target query:** a value from `nx show project ... --json` in a matching
   checkout.
 - **Tool-native cache:** `Unknown` until its executor options are inspected.
+
+## Compute and credits
+
+For how much compute CI used, start with `cipe-stats` (VM minutes and CPU and
+memory utilization over a window) and each CIPE's `compute` field. The API has
+no billing record. A run group's credits are the sum of `estimatedTotalCredits`
+over its `workflows[]` (the deprecated `workflow` is only the first one). That
+sum is an estimate of compute credits by launch template, not execution
+credits or the invoice, and it is absent for run groups without a workflow
+(such as on the customer's own runners). Call it an estimate, and say how many
+run groups had none.
 
 ## Empty task assets
 

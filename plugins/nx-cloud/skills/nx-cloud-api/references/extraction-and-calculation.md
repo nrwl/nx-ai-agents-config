@@ -81,3 +81,29 @@ Save the bounded input. Use a script that:
 5. Deletes raw data unless the user requests retention.
 
 Do not calculate material rates, percentiles, or durations by inspection.
+
+## Counting rules
+
+These keep CI numbers from being wrong, and comparable between windows:
+
+- Count each task once per pipeline. With distribution, the same task can show
+  up in more than one run of a run group; check which run executed it before
+  summing counts, hit rates, or miss time.
+- Leave non-cacheable (`cacheable: false`) and `continuous` tasks out of hit
+  rates, miss time, and same-hash comparisons; they miss every time. They also
+  look flaky in `flaky-tasks` while they keep one hash, so check
+  `cacheable` before calling one flaky.
+- Treat cache misses on PR branches with one miss per hash as code changes, not
+  a cache problem. Only several misses of the same hash point at the cache.
+- Count only executed tasks (`cache-miss`) in failure rates; restored tasks did
+  not run.
+- Find where failures come from (one or two PR branches, many, or the default
+  branch) before you report a failure rate.
+- Sum the shards of a sharded target before comparing windows; shard names come
+  and go when the shard count changes.
+- Separate an incident from a trend: give the rate before, during, and after.
+- To compare two periods, measure both with the same method and filters. Do not
+  compare with numbers from an earlier report.
+- Check the earliest and latest timestamps in what you fetched. Raw CI data can
+  be retained for a shorter time than daily statistics; a window that starts
+  late divides into too-low per-week figures.
