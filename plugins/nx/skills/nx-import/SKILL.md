@@ -85,8 +85,8 @@ Inferred targets (via Nx plugins) resolve config relative to project root — no
 
 ### Plugin Detection
 
-- **Whole-repo import**: `nx import` detects and offers to install plugins. Accept them.
-- **Subdirectory import**: Plugins NOT auto-detected. Manually add with `npx nx add @nx/PLUGIN`. Check `include`/`exclude` patterns — defaults won't match alternate directories (e.g. `apps-beta/`).
+- After every import, whole-repo or subdirectory, `nx import` scans the whole destination workspace and offers to install plugins it detects that are not yet installed. Accept the ones that match the imported code. Add any it missed with `npx nx add @nx/PLUGIN`.
+- Check plugin `include`/`exclude` patterns in `nx.json`. Defaults won't match alternate directories (e.g. `apps-beta/`).
 - Run `npx nx reset` after any plugin config changes.
 
 ### Redundant Root Files (Whole-Repo Only)
@@ -230,6 +230,7 @@ Identify technologies in the source repo, then read and apply the matching refer
 
 Available references:
 
+- `references/DOTNET.md` — .NET projects: `@nx/dotnet` detection, restore before the first build, shared `Directory.Build.props`/`Directory.Packages.props`/`global.json` left behind by subdirectory imports, broken `ProjectReference` paths failing the whole graph.
 - `references/ESLINT.md` — ESLint projects: duplicate `lint`/`eslint:lint` targets, legacy `.eslintrc.*` linting generated files, flat config `.cjs` self-linting, `typescript-eslint` v7/v9 peer dep conflict, mixed ESLint v8+v9 in one workspace.
 - `references/GRADLE.md`
 - `references/JEST.md` — Jest testing: `@nx/jest/plugin` setup, jest.preset.js, testing deps by framework, tsconfig.spec.json, Jest vs Vitest coexistence, Babel transforms, CI atomization.
