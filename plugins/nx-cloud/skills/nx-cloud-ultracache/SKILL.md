@@ -13,12 +13,12 @@ changes on every run, or a commit that changed what it learned.
 Use `nx-cloud-api` for every read. The Ultracache operations are pre-release, so address them by
 their full path. `npx nx-cloud api --describe <path>` documents each one:
 
-| Data | Operation |
-|---|---|
-| Daily hits, misses and miss durations per target | `task-stats` |
-| The inputs each task of a pipeline learned | `/nx-cloud/data/v0/cipes/{cipeId}/ultracache` |
-| Earlier executions of a task, with their hashes | `/nx-cloud/data/v0/runs/{runId}/tasks/{taskId}/earlier-executions` |
-| What went into one execution's hash | `/nx-cloud/data/v0/runs/{runId}/tasks/{taskId}/hash-details` |
+| Data                                             | Operation                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------ |
+| Daily hits, misses and miss durations per target | `task-stats`                                                       |
+| The inputs each task of a pipeline learned       | `/nx-cloud/data/v0/cipes/{cipeId}/ultracache`                      |
+| Earlier executions of a task, with their hashes  | `/nx-cloud/data/v0/runs/{runId}/tasks/{taskId}/earlier-executions` |
+| What went into one execution's hash              | `/nx-cloud/data/v0/runs/{runId}/tasks/{taskId}/hash-details`       |
 
 Read the reference for the question before you start:
 
