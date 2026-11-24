@@ -46,6 +46,10 @@ not JSON. Use `-o <file>` with an explicit extension such as `.tar.gz`; the
 command refuses to write a download to a terminal. Encrypted
 artifacts can be decrypted with `npx nx-cloud decrypt-artifact`.
 
+For the logs of more than one task, get their download URLs in one request from
+`batch/v0/task-logs` (see Bulk reads in the skill) instead of one asset link per
+task, and download each URL as it is. The bytes are the same log asset.
+
 A returned asset link proves only that a route was advertised. A successful
 download proves only that it resolves now. A 404 does not prove that the asset
 never existed.
