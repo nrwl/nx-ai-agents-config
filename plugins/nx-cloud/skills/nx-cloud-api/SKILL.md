@@ -146,7 +146,7 @@ bodies carry a stable `code` (except 401 and an empty-body 429); branch on
 | 4    | 401  | none (`body` is plain text)                                                                          | When `NX_CLOUD_ACCESS_TOKEN` is set, `nx-cloud api` sends that token alone, so the 401 means the token is invalid or has no access to this workspace; tell the user. Otherwise `nx-cloud api` sends the user's Nx Cloud login for this host with `nxCloudId` from `nx.json`: run `npx nx-cloud login --status` from the workspace root, and when it does not report the user as logged in, ask them to run `npx nx login`, which signs in by approving a code in the browser, and to follow what it prints. |
 | 4    | 403  | `plan_not_allowed`                                                                                   | The organization's plan does not include the Nx Cloud Public API. Tell the user; do not retry or use another person's token.                                                                                                                                                                                                                                                                                                                                                                                |
 | 4    | 404  | `not_found`                                                                                          | The ID in the path or in a parent-ID filter (`cipeId`, `runGroup`, `stepId`, `agentName`) is wrong. An unknown parent is never an empty result. Recheck the ID, or follow a link instead.                                                                                                                                                                                                                                                                                                                   |
-| 4    | 404  | none (no `body`)                                                                                     | The path matched no route, usually because a raw ID containing `/` (such as `@scope/app:build`) was pasted into it. Use the `{placeholder}` path with `-p`, or follow `links`, and check the path with `--describe`.                                                                                                                                                                                                                                                                                        |
+| 4    | 404  | none (no `body`)                                                                                     | The path matched no route, usually because a raw ID containing `/` (such as `@scope/app:build`) was pasted into it. Use the `{placeholder}` path with `-p`, or follow `links`, and check the path with `--describe`. For a batch read or view, the cluster may not have it yet; see Bulk reads.                                                                                                                                                                                                             |
 | 4    | 409  | `not_terminal`                                                                                       | The entity is still running. This is not a failure; its data is not final yet. See same-session retry below.                                                                                                                                                                                                                                                                                                                                                                                                |
 | 4    | 429  | `rate_limit_exceeded` or no `body`                                                                   | The organization-wide quota is exhausted. The command already retried 3 times honoring `Retry-After`. Back off, narrow filters, and make fewer requests.                                                                                                                                                                                                                                                                                                                                                    |
 | 5    | 503  | `data_api_at_capacity`, `query_deadline_exceeded`, `audit_log_unavailable`, `rate_limit_unavailable` | No data was returned. The command already retried 3 times. Back off before one more attempt; for `query_deadline_exceeded`, narrow the time range or filters.                                                                                                                                                                                                                                                                                                                                               |
@@ -192,14 +192,59 @@ in its output says whether more pages exist, and it records no resume cursor. It
 Use it only when completeness does not matter; otherwise use the default JSON
 output.
 
-To read the tasks of many runs, prefer the batch read
-`/nx-cloud/data/batch/v0/run-tasks` (repeat `-f run=<id>`, up to 25 runs) over
-one `runs/{runId}/tasks` call per run: it returns each run's first page for one
-unit of the rate limit. Check its limits with `--describe batchRunTasks`.
-
 For multi-range extraction, task or log assets, or a calculation, read
 [references/extraction-and-calculation.md](references/extraction-and-calculation.md)
 first.
+
+## Bulk reads
+
+A batch read or a view answers in one request what otherwise takes one request
+per run or task, and costs one unit of the rate limit whatever it returns. Use
+one whenever you would otherwise loop over runs or tasks:
+
+- **Why a pipeline failed, or where it stands:** the view
+  `views/v0/pipeline-status/{cipeId}` returns the CIPE, its run groups and runs,
+  and the failed and timed-out tasks of up to 25 failed or canceled runs, under
+  `resources`. `complete: false` means it left something out; continue a list
+  at its resource with its `nextCursor`, and read the failed tasks of the runs
+  missing from `failedTasks` at their `links.tasks`.
+- **The tasks of many runs:** `batch/v0/run-tasks`, with `-f run=<id>` repeated
+  for up to 25 runs. Each item holds one run's first page in `tasks.items`, or
+  its `error`; the task list's filters apply to every run. Continue a run at its
+  `links.tasks` with the same filters.
+- **The logs of many tasks:** `batch/v0/task-logs`, with
+  `-f task=<runId>:<taskId>` repeated for up to 25 tasks from any runs. Each
+  item holds a signed `url` of the log asset, or its `error`. `nx-cloud api`
+  does not fetch that URL; download it as it is (`curl -sfL "$url" -o <file>`)
+  and decode it as an asset (see the reference below). It takes no `batchId` or
+  `attempt`; read another batch's or attempt's log at the task's own asset link.
+- `batch/v0/task-dependencies` and `batch/v0/task-dependents` do the same for
+  the task graph edges of up to 25 tasks.
+
+An item's `error` fails only that run or task, with the `status` and `code` its
+single-resource route would answer. Check each with `--describe` for its limits.
+
+```sh
+npx nx-cloud api 'views/v0/pipeline-status/{cipeId}' -p cipeId="$cipe_id" -o "$dir/status.json"
+jq '{complete, cipeStatus,
+     runGroups: [.resources.runGroups.items[] | {status, criticalErrorMessage}],
+     failedTasks: [.resources.failedTasks[] | .runId as $r | .tasks.items[] | "\($r):\(.id)"]}' \
+  "$dir/status.json"
+
+# The logs of those failed tasks (at most 25) in one request.
+args=()
+while read -r t; do args+=(-f "task=$t"); done < <(
+  jq -r '.resources.failedTasks[] | .runId as $r | .tasks.items[] | "\($r):\(.id)"' \
+    "$dir/status.json" | head -n 25)
+npx nx-cloud api batch/v0/task-logs "${args[@]}" -o "$dir/logs.json"
+jq '.items[] | {runId, taskId, batchId, hasUrl: (.url != null), error}' "$dir/logs.json"
+```
+
+Enterprise (single-tenant) clusters do not have these routes yet. There a batch
+read or view answers 404 with no `body`, and `--describe` does not know it. Fall
+back to the single-resource routes: `cipes/{cipeId}` and its linked run groups
+and runs, `runs/{runId}/tasks` per run, and each task's logs asset link. A 404
+whose body has `code: not_found` is a wrong ID, not a missing route.
 
 ## Interpret responses
 

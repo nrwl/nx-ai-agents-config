@@ -31,9 +31,11 @@ Query `statuses=FAILED`, `statuses=TIMED_OUT`, and `statuses=CANCELED` (the
 branches, CI contexts, statuses, endpoints, and record counts. Ask before widening
 the window or mixing unrelated repositories/workspaces.
 
-Use **nx-cloud-api** (`npx nx-cloud api`) for every read. Inspect the live
-schemas with `--describe` for `cipes`, `run-groups`, `run-groups/{runGroupId}`,
-`runs`, `runs/{runId}/tasks`, and the linked `steps` and `instances` endpoints.
+Use **nx-cloud-api** (`npx nx-cloud api`) for every read, and its Bulk reads
+before any per-run or per-task loop. Inspect the live schemas with `--describe`
+for `cipes`, `viewPipelineStatus`, `batchRunTasks`, `batchTaskLogs`,
+`run-groups`, `run-groups/{runGroupId}`, `runs`, `runs/{runId}/tasks`, and the
+linked `steps` and `instances` endpoints.
 Use `--list-operations` to confirm the routes; the public API has no separate
 workflow routes. Reach child records by following returned `links`. Start with supplied CIPEs in focused investigation mode. Start with failed CIPEs
 and their linked run groups in review mode. Use only live documented filters and
@@ -45,10 +47,21 @@ Collect in this order:
    context. Use a small, stated `--pages` value. Rank groups workspace-wide
    only after a zero exit with `nextCursor: null`; otherwise
    report the data as incomplete.
-2. Linked run groups and their documented critical-error fields.
-3. Runs and terminal task rows for each selected group.
+2. For each selected CIPE, one `views/v0/pipeline-status/{cipeId}` read: its
+   run groups with their critical-error fields, its runs, and the failed and
+   timed-out tasks of its failed or canceled runs. When `complete` is false,
+   read what it left out as nx-cloud-api describes.
+3. Other terminal task rows (canceled, or cache status for a restoration error)
+   with `batch/v0/run-tasks`, up to 25 runs per request.
 4. Workflow and instance status only when task data does not explain the group.
-5. The smallest relevant task or instance log excerpt for representative cases.
+5. The failed tasks' logs with `batch/v0/task-logs`, up to 25 tasks per
+   request, and from them the smallest relevant excerpt for representative
+   cases. Read an instance log at its own link.
+
+If the view or a batch read answers 404 with no body (an Enterprise cluster that
+does not have it yet), walk the single-resource routes instead: the CIPE's linked
+run groups and runs, `runs/{runId}/tasks` for each run, and each failed task's
+logs asset link.
 
 Use a semaphore of at most five narrow detail requests. Fetch logs only after a
 group reaches the top five. Tell the user before reading CI log content. Quote
