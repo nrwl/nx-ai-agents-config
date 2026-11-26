@@ -39,7 +39,7 @@ This will set up the appropriate configuration files for your preferred AI tools
 
 ### Preview: the nx and nx-cloud plugins
 
-`plugins/` holds two plugins that work across coding agents without any per-agent build: **nx** (workspace skills and the nx MCP server) and **nx-cloud** (CI monitoring, CI failure review, cache investigation, the Nx Cloud API, and the hosted Nx Cloud MCP server). They are not yet what `nx configure-ai-agents` installs.
+`plugins/` holds two plugins that work across coding agents without any per-agent build: **nx** (workspace skills and the nx MCP server) and **nx-cloud** (CI monitoring, CI failure review, cache investigation, CI optimization, the Nx Cloud API, and the hosted Nx Cloud MCP server). They are not yet what `nx configure-ai-agents` installs.
 
 **Claude Code**: the marketplace is a single file, so add it by URL and enable the plugins in `.claude/settings.json`. Disable the current `nx@nx-claude-plugins` plugin in the same file, since both are named `nx`:
 

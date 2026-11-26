@@ -24,7 +24,7 @@
         "path": "plugins/nx-cloud",
         "ref": "main"
       },
-      "description": "Work with Nx Cloud from your coding agent: monitor CI and act on self-healing fixes, review CI failures, investigate cache misses, and query the Nx Cloud API."
+      "description": "Work with Nx Cloud from your coding agent: monitor CI and act on self-healing fixes, review CI failures, investigate cache misses, find CI optimizations, and query the Nx Cloud API."
     }
   ]
 }
