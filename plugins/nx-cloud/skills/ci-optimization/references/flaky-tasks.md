@@ -9,18 +9,20 @@ Each `flaky-tasks` row is one task (project, target, configuration) on one day:
 
 - `flakinessRate`: the share of successful cache misses whose input hash also
   failed that day. `sampleSizeFlakinessRate` is its denominator.
-- `totalReruns`: reruns that day. `deflakedAutomatically`: hashes that both
-  failed and passed within one Nx execution, usually Nx Cloud's automatic retry.
-  A high count means the flake costs time even though CI ends green.
+- `totalReruns`: repeat cache misses of the same hash that day, including
+  hashes that never failed; not a count of retries. `deflakedAutomatically`:
+  hashes that both failed and passed within one Nx execution, usually Nx
+  Cloud's automatic retry. It doesn't prove the last attempt passed.
 - `isCacheable: false` rows can look flaky while the hash stays the same; leave
   them out (see the counting rules in `nx-cloud-api`).
 
 `minFlakinessRate` drops the zero-rate rows. `windowEndBefore` set to yesterday
 leaves out today's incomplete row.
 
-Rank by time lost, not by rate: the reruns over the window times the task's
-typical miss duration, from `task-stats` (`durationPercentiles` p50, or
-`averageDuration.cacheMissMs` weighted by misses). `flaky-tasks` has no
+Rank by time lost, not by rate: `deflakedAutomatically` over the window times
+the task's typical miss duration, from `task-stats` (`durationPercentiles` p50,
+or `averageDuration.cacheMissMs` weighted by misses). It misses flakes fixed by
+rerunning the whole pipeline, so it is a lower bound. `flaky-tasks` has no
 durations, so read `task-stats` only for the projects of the tasks with the
 most reruns. A flake that fails by timing out costs its timeout, not the
 typical duration; the failed attempts' `startedAt` and `completedAt` in
