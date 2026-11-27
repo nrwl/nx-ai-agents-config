@@ -17,8 +17,8 @@ One does not prove the other.
 ## Select the mode
 
 - **Cache-health trend:** This skill covers a specific task or artifact question,
-  not a multi-run rate regression. Use a separate bounded trend workflow for
-  rate or regression questions.
+  not a multi-run rate regression. Use the `nx-cloud-ultracache` skill for rate,
+  cost or regression questions.
 - **API-only:** Use this for supplied runs, CIPEs, tasks, or artifact errors when no
   matching checkout exists. Do not request local configuration unless required.
 - **Specific comparison:** Get two comparable executions. Ask for missing target,
@@ -135,9 +135,12 @@ record or one controlled completed run.
 ### Different computation
 
 Different non-null hashes prove only this: **Nx considered at least one computation
-input different.** They do not name the input. Request two comparable controlled
-runs with direct hash-detail output when supported. This is a **Needs diagnostic
-run** result, not a configuration recommendation.
+input different.** To name the input, diff the two executions' recorded hash details
+with the `nx-cloud-ultracache` skill ([explain a miss](../nx-cloud-ultracache/references/explain-a-miss.md)).
+A changed key names the input, or the set of files, Nx hashed differently. It is
+evidence for the change gate, not a configuration recommendation by itself. When the
+hash details are unavailable (they are kept for about 14 days), request two comparable
+controlled runs with direct hash-detail output. That is a **Needs diagnostic run** result.
 
 ### Same computation, replay not established
 
